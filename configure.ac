@@ -23,9 +23,6 @@ AM_MAINTAINER_MODE
 
 AC_CONFIG_HEADER([config.h])
 
-pkgdocdir='${datarootdir}/doc/${PACKAGE_NAME}'
-AC_SUBST([pkgdocdir])
-
 BT_PROG_XCODE
 AC_PROG_CC
 BT_PROG_CC_WARN
