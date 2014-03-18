@@ -1,0 +1,483 @@
+'\" t
+.\"     Title: twine.conf
+.\"    Author: Mo McRoberts
+.\" Generator: DocBook XSL-NS Stylesheets v1.76.1 <http://docbook.sf.net/>
+.\"      Date: 03/18/2014
+.\"    Manual: Twine Configuration File
+.\"    Source: Twine
+.\"  Language: English
+.\"
+.TH "TWINE\&.CONF" "5" "03/18/2014" "Twine" "Twine Configuration File"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+twine.conf \- Twine configuration file
+.SH "DESCRIPTION"
+.PP
+
+twine\&.conf
+is the configuration file used by components of Twine, a Linked Open Data workflow engine\&. The file uses the Windows \&.INI file format (albeit with Unix line\-endings), with sets of configuration values split into groups\&. Each key and value pair begins on a new line within a section, with an equals sign separating the value from the key\&. Comments begin with a semicolon or hash sign at the start of a line\&.
+.PP
+For example:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+; This is a comment
+[section1]
+string1=value1
+bool1=yes
+bool2=false
+int\-option=124
+
+[section2]
+# This is another comment
+string2 = another value
+
+multi\-string = This is a \e
+multi\-line string \e
+value\&.
+.fi
+.if n \{\
+.RE
+.\}
+.SH "VALUE TYPES"
+.PP
+Strings
+.RS 4
+Strings are written as\-is following the equals sign\&. Leading spaces will be trimmed\&. Multi\-line strings are written by placing a backslash immediately before the newline character\&.
+.RE
+.PP
+Booleans
+.RS 4
+Boolean values express either true or false\&. True is expressed either a non\-zero integer, the word
+\fBtrue\fR, or the word
+\fByes\fR\&. Any other expression will evaluate to false\&.
+.RE
+.PP
+Integers
+.RS 4
+Integer values are simply whole decimal numbers\&. There is, at present, no mechanism for expressing hexadecimal, octal, or binary values\&.
+.RE
+.SH "[AMQP] SECTION"
+.PP
+The
+[amqp]
+section contains global defaults for communication with the AMQP 1\&.0 message broker\&.
+.PP
+uri (String)
+.RS 4
+Specifies the default URI to use for AMQP connections\&. The URI takes the following general form:
+.sp
+
+amqp://[\fIuser\fR[:\fIauth\-info\fR]@]\fIhost\fR[:\fIport\fR]/\fIqueue\-or\-exchange\fR
+.RE
+.SH "[SPARQL] SECTION"
+.PP
+The
+[sparql]
+section specifies SPARQL endpoints which are used by
+\fBtwine\-writerd\fR
+to update the quad\-store\&.
+.PP
+update (String)
+.RS 4
+Specifies the HTTP or HTTPS URI of a SPARQL 1\&.1 Update protocol endpoint which can be used to update the quad\-store\&.
+.RE
+.PP
+data (String)
+.RS 4
+Specifies the HTTP or HTTPS URI of a SPARQL 1\&.1 Graph Store protocol endpoint which can be used to update the quad\-store\&. This endpoint will receive
+PUT
+requests when graphs must be updated\&.
+.RE
+.SH "[WRITERD]"
+.PP
+The
+[writerd]
+section specifies configuration values used only by
+\fBtwine-writerd\fR(8)\&.
+.PP
+amqp\-uri (String)
+.RS 4
+If supplied, contains an AMQP URI which is used by
+\fBtwine\-writerd\fR
+to connect to the message broker\*(Aqs queue instead of the default specified in the
+[amqp]
+section\&. This may be useful where the message broker topology or configuration dictates that the writer daemon must connect to a different endpoint to receive messages than bridges should use to send them\&.
+.RE
+.PP
+pidfile (String)
+.RS 4
+Specifies the full pathname of the PID file which will be written by
+\fBtwine\-writerd\fR
+when it detaches from the controlling terminal and begins running in the background\&. If this file already exists, it must be writeable by the user the writer daemon is running as; alternatively, the parent directory must be writeable by that user\&.
+.RE
+.PP
+module (String)
+.RS 4
+Specifies the name of a processor module to load\&.
+.sp
+If the filename contains a
+/, it is assumed to be an absolute path, or a path relative to the current working directory of the daemon when it is first executed\&. Otherwise, it is assumed to be the name of a file within the Twine modules directory\&. (Typically
+/usr/lib/twine)\&.
+.sp
+This configuration key may be repeated as many times as there are modules which should be loaded\&.
+.RE
+.SH "[INJECT] SECTION"
+.PP
+The
+[inject]
+section specifies configuration values used only by
+\fBtwine-inject\fR(1)\&.
+.PP
+amqp\-uri (String)
+.RS 4
+If supplied, contains an AMQP URI which is used by
+\fBtwine\-inject\fR
+to connect to the message broker\*(Aqs exchange instead of the default specified in the
+[amqp]
+section\&.
+.RE
+.SH "[LOG] SECTION"
+.PP
+The
+[log]
+section specifies logging defaults for any Twine daemons (in particular,
+\fBtwine-writerd\fR(8))\&.
+.PP
+syslog (Boolean)
+.RS 4
+.PP
+Whether to send log messages to the system log using
+\fBsyslog\fR(3)\&. The default is
+\fBtrue\fR\&.
+.RE
+.PP
+stderr (Boolean)
+.RS 4
+.PP
+Whether to send log messages to standard error\&. The default is
+\fBfalse\fR\&.
+.RE
+.PP
+level (String)
+.RS 4
+Specifies the minimum severity of messages to be logged\&. Messages lower than this severity will be discarded\&.
+.sp
+The following log levels are defined (from lowest to highest severity):
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 1.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  1." 4.2
+.\}
+\fBdebug\fR
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 2.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  2." 4.2
+.\}
+\fBinfo\fR
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 3.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  3." 4.2
+.\}
+\fBnotice\fR
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 4.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  4." 4.2
+.\}
+\fBwarning\fR
+or
+\fBwarn\fR
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 5.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  5." 4.2
+.\}
+\fBerror\fR
+or
+\fBerr\fR
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 6.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  6." 4.2
+.\}
+\fBcritical\fR
+or
+\fBcrit\fR
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 7.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  7." 4.2
+.\}
+\fBalert\fR
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 8.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  8." 4.2
+.\}
+\fBemergency\fR
+or
+\fBemerg\fR
+.RE
+.sp
+The default value is
+\fBnotice\fR\&.
+.RE
+.PP
+facility (String)
+.RS 4
+Specifies the logging facility where logging via
+\fBsyslog\fR(3)
+is enabled\&. The following facilities are defined:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+\fBauth\fR
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+\fBpriv\fR
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+\fBcron\fR
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+\fBdaemon\fR
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+\fBftp\fR
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+\fBkern\fR
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+\fBlpr\fR
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+\fBmail\fR
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+\fBnews\fR
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+\fBsecurity\fR
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+\fBsyslog\fR
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+\fBremoteauth\fR
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+\fBuucp\fR
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+\fBuser\fR
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+\fBlocal0\fR\&.\&.\&.\fBlocal7\fR
+.RE
+.sp
+Note that not all facilities are available on all systems\&. Only
+\fBuser\fR
+and
+\fBlocal0\fR\&.\&.\&.\fBlocal7\fR
+are defined by the Single UNIX Specification\&.
+.sp
+The default value is
+\fBdaemon\fR
+if the facility is available, and
+\fBuser\fR
+otherwise\&.
+.RE
+.PP
+ident (String)
+.RS 4
+Specifies the source ident which precedes log messages\&. It is not recommended that this value be specified in the configuration file\&.
+.sp
+The default value is the base name of the process generating the log message (e\&.g\&.,
+twine\-writerd)\&.
+.RE
+.SH "SEE ALSO"
+.PP
+
+\fBtwine-writerd\fR(8),
+\fBtwine-inject\fR(1)\&.

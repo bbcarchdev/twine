@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<refentry xml:id="twine-writerd-8" xmlns="http://docbook.org/ns" version="5.0" xml:lang="en">
+  <info>
+	<title>Twine Configuration File</title>
+	<productname>Twine</productname>
+	<authorgroup>
+	  <author>
+		<personname>
+		  <firstname>Mo</firstname>
+		  <surname>McRoberts</surname>
+		</personname>
+		<affiliation>
+		  <org>
+			<orgname>BBC</orgname>
+			<orgdiv>Archive Development</orgdiv>
+			<uri>http://www.bbc.co.uk/archive/</uri>
+		  </org>
+		</affiliation>
+	  </author>
+	</authorgroup>
+	<copyright>
+	  <year>2014</year>
+	  <holder>BBC</holder>
+	</copyright>
+  </info>
+  
+  <refmeta>
+	<refentrytitle>twine.conf</refentrytitle>
+	<manvolnum>5</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+	<refname>twine.conf</refname>
+	<refpurpose>Twine configuration file</refpurpose>
+  </refnamediv>
+
+  <refsect1>
+	<title>Description</title>
+	<para>
+	  <filename>twine.conf</filename> is the configuration file used by
+	  components of Twine, a Linked Open Data workflow engine. The file
+	  uses the Windows .INI file format (albeit with Unix line-endings),
+	  with sets of configuration values split into groups.
+	  Each key and value pair begins on a new line within
+	  a section, with an equals sign separating the value from the key.
+	  Comments begin with a semicolon or hash sign at the start of a line.
+	</para>
+	<para>
+	  For example:
+	</para>
+	<programlisting linenumbering="unnumbered" language="ini"><![CDATA[
+; This is a comment
+[section1]
+string1=value1
+bool1=yes
+bool2=false
+int-option=124
+
+[section2]
+# This is another comment
+string2 = another value
+
+multi-string = This is a \
+multi-line string \
+value.
+]]></programlisting>
+  </refsect1>
+
+  <refsect1>
+	<title>Value types</title>
+	<variablelist>
+	  <varlistentry>
+		<term>Strings</term>
+		<listitem>
+		  <para>
+			Strings are written as-is following the equals sign. Leading
+			spaces will be trimmed. Multi-line strings are written by
+			placing a backslash immediately before the newline character.
+		  </para>
+		</listitem>
+	  </varlistentry>
+	  <varlistentry>
+		<term>Booleans</term>
+		<listitem>
+		  <para>
+			Boolean values express either true or false. True is expressed
+			either a non-zero integer, the word <constant>true</constant>,
+			or the word <constant>yes</constant>. Any other expression
+			will evaluate to false.
+		  </para>
+		</listitem>
+	  </varlistentry>
+	  <varlistentry>
+		<term>Integers</term>
+		<listitem>
+		  <para>
+			Integer values are simply whole decimal numbers. There is,
+			at present, no mechanism for expressing hexadecimal, octal, or
+			binary values.
+		  </para>
+		</listitem>
+	  </varlistentry>
+	</variablelist>
+  </refsect1>
+
+  <refsect1>
+	<title>[amqp] section</title>
+	<para>
+	  The <literal>[amqp]</literal> section contains global defaults for
+	  communication with the AMQP 1.0 message broker.
+	</para>
+	<variablelist>
+	  <varlistentry>
+		<term><literal>uri</literal> (String)</term>
+		<listitem>
+		  <para>
+			Specifies the default URI to use for AMQP connections. The URI takes the following general form:
+		  </para>
+		  <para>
+			<literal>amqp://</literal><optional><replaceable>user</replaceable><optional><literal>:</literal><replaceable>auth-info</replaceable></optional><literal>@</literal></optional><replaceable>host</replaceable><optional><literal>:</literal><replaceable>port</replaceable></optional><literal>/</literal><replaceable>queue-or-exchange</replaceable>
+		  </para>
+		</listitem>
+	  </varlistentry>
+	</variablelist>
+  </refsect1>
+
+  <refsect1>
+	<title>[sparql] section</title>
+	<para>
+	  The <literal>[sparql]</literal> section specifies SPARQL endpoints
+	  which are used by <command>twine-writerd</command> to update the
+	  quad-store.
+	</para>
+	<variablelist>
+	  <varlistentry>
+		<term><literal>update</literal> (String)</term>
+		<listitem>
+		  <para>
+			Specifies the HTTP or HTTPS URI of a SPARQL 1.1 Update protocol
+			endpoint which can be used to update the quad-store.
+		  </para>
+		</listitem>
+	  </varlistentry>
+
+	  <varlistentry>
+		<term><literal>data</literal> (String)</term>
+		<listitem>
+		  <para>
+			Specifies the HTTP or HTTPS URI of a SPARQL 1.1 Graph Store
+			protocol endpoint which can be used to update the quad-store. This
+			endpoint will receive <literal>PUT</literal> requests when
+			graphs must be updated.
+		  </para>
+		</listitem>
+	  </varlistentry>
+
+	</variablelist>
+  </refsect1>
+
+  <refsect1>
+	<title>[writerd]</title>
+	<para>
+	  The <literal>[writerd]</literal> section specifies configuration
+	  values used only by
+	  <citerefentry><refentrytitle>twine-writerd</refentrytitle><manvolnum>8</manvolnum></citerefentry>.
+	</para>
+	<variablelist>
+	  <varlistentry>
+		<term><literal>amqp-uri</literal> (String)</term>
+		<listitem>
+		  <para>
+			If supplied, contains an AMQP URI which is used by
+			<command>twine-writerd</command> to connect to the message broker's
+			queue instead of the default specified in the <literal>[amqp]</literal>
+			section. This may be useful where the message broker topology or
+			configuration dictates that the writer daemon must connect
+			to a different endpoint to receive messages than bridges should
+			use to send them.
+		  </para>
+		</listitem>		
+	  </varlistentry>
+	  <varlistentry>
+		<term><literal>pidfile</literal> (String)</term>
+		<listitem>
+		  <para>
+			Specifies the full pathname of the PID file which will be written
+			by <command>twine-writerd</command> when it detaches from the
+			controlling terminal and begins running in the background. If this
+			file already exists, it must be writeable by the user the
+			writer daemon is running as; alternatively, the parent directory
+			must be writeable by that user.
+		  </para>
+		</listitem>
+	  </varlistentry>
+	  <varlistentry>
+		<term><literal>module</literal> (String)</term>
+		<listitem>
+		  <para>
+			Specifies the name of a processor module to load.
+		  </para>
+		  <para>
+			If the filename contains a <literal>/</literal>, it is assumed
+			to be an absolute path, or a path relative to the current
+			working directory of the daemon when it is first executed.
+			Otherwise, it is assumed to be the name of a file within the
+			Twine modules directory. (Typically
+			<filename>/usr/lib/twine</filename>).
+		  </para>
+		  <para>
+			This configuration key may be repeated as many times as there
+			are modules which should be loaded.
+		  </para>
+		</listitem>
+	  </varlistentry>
+	</variablelist>
+  </refsect1>
+
+  <refsect1>
+	<title>[inject] section</title>
+	<para>
+	  The <literal>[inject]</literal> section specifies configuration values
+	  used only by
+	  <citerefentry><refentrytitle>twine-inject</refentrytitle><manvolnum>1</manvolnum></citerefentry>.
+	</para>
+	<variablelist>
+	  <varlistentry>
+		<term><literal>amqp-uri</literal> (String)</term>
+		<listitem>
+		  <para>
+			If supplied, contains an AMQP URI which is used by
+			<command>twine-inject</command> to connect to the message broker's
+			exchange instead of the default specified in the <literal>[amqp]</literal>
+			section.
+		  </para>
+		</listitem>		
+	  </varlistentry>
+	</variablelist>
+  </refsect1>
+	
+  <refsect1>
+	<title>[log] section</title>
+	<para>
+	  The <literal>[log]</literal> section specifies logging defaults for
+	  any Twine daemons (in particular, <citerefentry><refentrytitle>twine-writerd</refentrytitle><manvolnum>8</manvolnum></citerefentry>).
+	</para>
+	<variablelist>
+	  <varlistentry>
+		<term><literal>syslog</literal> (Boolean)</term>
+		<para>
+		  Whether to send log messages to the system log using
+		  <citerefentry><refentrytitle>syslog</refentrytitle><manvolnum>3</manvolnum></citerefentry>.
+		  The default is <constant>true</constant>.
+		</para>
+	  </varlistentry>
+	  <varlistentry>
+		<term><literal>stderr</literal> (Boolean)</term>
+		<para>
+		  Whether to send log messages to standard error.
+		  The default is <constant>false</constant>.
+		</para>		
+	  </varlistentry>
+	  <varlistentry>
+		<term><literal>level</literal> (String)</term>
+		<listitem>
+		  <para>
+			Specifies the minimum severity of messages to be logged. Messages
+			lower than this severity will be discarded.
+		  </para>
+		  <para>
+			The following log levels are defined (from lowest to highest severity):
+		  </para>
+		  <orderedlist>
+			<listitem><para><constant>debug</constant></para></listitem>
+			<listitem><para><constant>info</constant></para></listitem>
+			<listitem><para><constant>notice</constant></para></listitem>
+			<listitem><para><constant>warning</constant> or <constant>warn</constant></para></listitem>
+			<listitem><para><constant>error</constant> or <constant>err</constant></para></listitem>
+			<listitem><para><constant>critical</constant> or <constant>crit</constant></para></listitem>
+			<listitem><para><constant>alert</constant></para></listitem>
+			<listitem><para><constant>emergency</constant> or <constant>emerg</constant></para></listitem>
+		  </orderedlist>
+		  <para>
+			The default value is <constant>notice</constant>.
+		  </para>
+		</listitem>
+	  </varlistentry>
+	  <varlistentry>
+		<term><literal>facility</literal> (String)</term>
+		<listitem>
+		  <para>
+			Specifies the logging facility where logging via
+			<citerefentry><refentrytitle>syslog</refentrytitle><manvolnum>3</manvolnum></citerefentry>
+			is enabled. The following facilities are defined:
+		  </para>
+		  <itemizedlist>
+			<listitem><para><constant>auth</constant></para></listitem>
+			<listitem><para><constant>priv</constant></para></listitem>
+			<listitem><para><constant>cron</constant></para></listitem>
+			<listitem><para><constant>daemon</constant></para></listitem>
+			<listitem><para><constant>ftp</constant></para></listitem>
+			<listitem><para><constant>kern</constant></para></listitem>
+			<listitem><para><constant>lpr</constant></para></listitem>
+			<listitem><para><constant>mail</constant></para></listitem>
+			<listitem><para><constant>news</constant></para></listitem>
+			<listitem><para><constant>security</constant></para></listitem>
+			<listitem><para><constant>syslog</constant></para></listitem>
+			<listitem><para><constant>remoteauth</constant></para></listitem>
+			<listitem><para><constant>uucp</constant></para></listitem>
+			<listitem><para><constant>user</constant></para></listitem>
+			<listitem><para><constant>local0</constant>...<constant>local7</constant></para></listitem>
+		  </itemizedlist>
+		  <para>
+			Note that not all facilities are available on all systems. Only <constant>user</constant> and <constant>local0</constant>...<constant>local7</constant> are defined by the Single UNIX Specification.
+		  </para>
+		  <para>
+			The default value is <constant>daemon</constant> if the facility is available, and <constant>user</constant> otherwise.
+		  </para>
+		</listitem>
+	  </varlistentry>
+	  <varlistentry>
+		<term><literal>ident</literal> (String)</term>
+		<listitem>
+		  <para>
+			Specifies the source ident which precedes log messages. It is not
+			recommended that this value be specified in the configuration
+			file.
+		  </para>
+		  <para>
+			The default value is the base name of the process generating
+			the log message (e.g., <literal>twine-writerd</literal>).
+		  </para>
+		</listitem>
+	  </varlistentry>
+	</variablelist>
+  </refsect1>
+
+  <refsect1>
+	<title>See also</title>
+	<para>
+	  <citerefentry><refentrytitle>twine-writerd</refentrytitle><manvolnum>8</manvolnum></citerefentry>,
+	  <citerefentry><refentrytitle>twine-inject</refentrytitle><manvolnum>1</manvolnum></citerefentry>.
+	</para>
+  </refsect1>
+
+</refentry>

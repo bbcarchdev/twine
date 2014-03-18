@@ -1,0 +1,6 @@
+[submodule "libsupport"]
+	path = libsupport
+	url = git://github.com/nevali/libsupport.git
+[submodule "m4"]
+	path = m4
+	url = git://github.com/nevali/m4.git

@@ -1,0 +1,39 @@
+;; Configuration specifically for the writer daemon (twine-writerd)
+[writerd]
+;; If twine-writerd should use a specific AMQP URI, specify it here
+;amqp-uri=amqp://localhost/custom-inbound
+
+;; The location of the writer PID file
+pidfile=@LOCALSTATEDIR@/run/twine-writerd.pid
+
+;; Loadable modules for Twine processors
+module=rdf.so
+module=example-xml.so
+
+;; Configuration specifically for the inject tool (twine-inject)
+[inject]
+;; If twine-inject should use a specific AMQP URI, specify it here
+;amqp-uri=amqp://localhost/custom-outbound
+
+;; AMQP defaults
+[amqp]
+;; Default AMQP URI -- overridden by specific amqp-uri values where supplied
+uri=amqp://localhost/amq.direct
+
+;; SPARQL server configuration 
+[sparql]
+;; The URI to the SPARQL Update endpoint
+update=http://localhost/update/
+;; The URI to the RESTful endpoint (supporting PUT for graphs)
+data=http://localhost/data/
+
+;; Logging options for daemons
+[log]
+;; Whether to log via syslog or not
+syslog=1
+;; Whether to also log to stderr
+stderr=0
+;; Only log messages of importance 'notice' or a higher severity
+level=notice
+;; Logging facility
+facility=daemon

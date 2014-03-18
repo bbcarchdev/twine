@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<refentry xml:id="twine-writerd-8" xmlns="http://docbook.org/ns" version="5.0" xml:lang="en">
+  <info>
+	<title>Twine Writer Daemon</title>
+	<productname>Twine</productname>
+	<authorgroup>
+	  <author>
+		<personname>
+		  <firstname>Mo</firstname>
+		  <surname>McRoberts</surname>
+		</personname>
+		<affiliation>
+		  <org>
+			<orgname>BBC</orgname>
+			<orgdiv>Archive Development</orgdiv>
+			<uri>http://www.bbc.co.uk/archive/</uri>
+		  </org>
+		</affiliation>
+	  </author>
+	</authorgroup>
+	<copyright>
+	  <year>2014</year>
+	  <holder>BBC</holder>
+	</copyright>
+  </info>
+  
+  <refmeta>
+	<refentrytitle>twine-writerd</refentrytitle>
+	<manvolnum>8</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+	<refname>twine-writerd</refname>
+	<refpurpose>Twine writer daemon</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+	<cmdsynopsis>
+	    <command>twine-writerd</command>
+		<arg choice="opt"><option>-h</option></arg>
+		<arg choice="opt"><option>-c <replaceable>config-file</replaceable></option></arg>
+		<arg choice="opt"><option>-f</option></arg>
+		<arg choice="opt"><option>-d</option></arg>
+	</cmdsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1>
+	<title>Description</title>
+	<para>
+	  <command>twine-writerd</command> is the processing and writer daemon
+	  for <productname>Twine</productname>, a Linked Open Data workflow engine.
+	</para>
+	<para>
+	  <command>twine-writerd</command> connects to a queue on an AMQP 1.0
+	  message broker and waits for messages to arrive. When they do, they are
+	  routed to a processor module, depending upon the content type of the
+	  message. The processor module translates the message contents into some
+	  kind of update operation on a quad-store.
+	</para>
+	<para>
+	  Messages are delivered to the message broker through one or more bridges
+	  (see <citerefentry><refentrytitle>twine-inject</refentrytitle><manvolnum>1</manvolnum></citerefentry>
+	  for an example of a simple one-shot bridge).
+	</para>
+  </refsect1>
+  
+  <refsect1>
+	<title>Options</title>
+	
+	<variablelist>
+	  <varlistentry>
+		<term><option>-h</option></term>
+		<listitem>
+		  <para>
+			Print a summary of command-line options and exit immediately.
+		  </para>
+		</listitem>
+	  </varlistentry>
+	  
+	  <varlistentry>
+		<term><option>-c <replaceable>config-file</replaceable></option></term>
+		<listitem>
+		  <para>
+			Causes <command>twine-writerd</command> to load the specified
+			configuration file instead of the default system-wide configuration
+			file. See <citerefentry><refentrytitle>twine.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>
+			for further information on the configuration file format.
+		  </para>
+		</listitem>
+	  </varlistentry>
+
+	  <varlistentry>
+		<term><option>-f</option></term>
+		<listitem>
+		  <para>
+			Remain in the foreground.
+		  </para>
+		  <para>
+			Ordinarily, <command>twine-writerd</command> detaches from the
+			controlling terminal and operates as a background process. The
+			<option>-f</option> prevents this from happening.
+		  </para>
+		</listitem>
+	  </varlistentry>
+	  
+	  <varlistentry>
+		<term><option>-d</option></term>
+		<listitem>
+		  <para>
+			Run in debugging mode (implies <option>-f</option>).
+		  </para>
+		  <para>
+			This option overrides the configuration such that logs
+			are also sent to standard error, and the minimum log severity
+			is set to <constant>debug</constant>.
+		  </para>
+		  <para>
+			Note that if connection URIs include credentials or other
+			pieces of sensitive information, these will appear both on
+			standard error, and in the system-wide logs (if logging-via-syslog
+			is enabled in the configuration).
+		  </para>
+		</listitem>
+
+	  </varlistentry>
+
+	</variablelist>
+  </refsect1>
+
+  <refsect1>
+	<title>See also</title>
+	<para>
+	  <citerefentry><refentrytitle>twine.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>,
+	  <citerefentry><refentrytitle>twine-inject</refentrytitle><manvolnum>1</manvolnum></citerefentry>.
+	</para>
+  </refsect1>
+
+</refentry>

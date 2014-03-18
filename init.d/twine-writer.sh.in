@@ -1,0 +1,102 @@
+#! /bin/sh
+#
+### BEGIN INIT INFO
+# Provides:          twine-writer
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Should-Start:      qpidd rabbitmq-server
+# Should-Stop:       qpidd rabbitmq-server
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: start or stop twine-writer
+# Description:       Twine is a workflow engine for populating an RDF
+#                    quad-store.
+### END INIT INFO
+
+# Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+DESC="Twine writer daemon"
+NAME=twine-writerd
+DAEMON="@SBINDIR@/$NAME"
+DAEMON_ARGS=""
+PIDFILE="@LOCALSTATEDIR@/run/$NAME.pid"
+
+[ -x "$DAEMON" ] || exit 0
+
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+[ -d /lib/init ] && [ -r /lib/init/vars.sh ] && . /lib/init/vars.sh
+
+. /lib/lsb/init-functions
+
+do_start()
+{
+	start-stop-daemon --start --quiet --pidfile "$PIDFILE" --exec "$DAEMON" --test >/dev/null || return 1
+	start-stop-daemon --start --quiet --pidfile "$PIDFILE" --exec "$DAEMON" -- $DAEMON_ARGS || return 2
+}
+
+do_stop()
+{
+	start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 --pidfile "$PIDFILE" --name "$NAME"
+	RETVAL="$?"
+	[ "$RETVAL" = 2 ] && return 2
+	rm -f $PIDFILE
+	return "$RETVAL"
+}
+
+case "$1" in
+	start)
+		[ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+		do_start
+		case "$?" in
+			0|1)
+				[ "$VERBOSE" != no ] && log_end_msg 0
+				;;
+			2)
+				[ "$VERBOSE" != no ] && log_end_msg 1
+				;;
+		esac
+		;;
+	stop|force-stop)
+		log_daemon_msg "Stopping $DESC" "$NAME"
+		do_stop
+		case "$?" in
+			0|1)
+				[ "$VERBOSE" != no ] && log_end_msg 0
+				;;
+			2)
+				[ "$VERBOSE" != no ] && log_end_msg 1
+				;;
+		esac
+		;;
+	restart|force-reload)
+		log_daemon_msg "Restarting $DESC" $NAME
+		do_stop
+		case "$?" in
+			0|1)
+				do_start
+				case "$?" in
+					0)
+						log_end_msg 0
+						;;
+					1)
+						log_end_msg 1
+						;;
+					*)
+						log_end_msg 1
+						;;
+				esac
+				;;
+			*)
+				log_end_msg 1
+				;;
+		esac
+		;;
+	status)
+		status_of_proc "$DAEMON" $NAME && exit 0 || exit $?
+		;;
+	*)
+		echo "Usage: $0 {start|stop|force-stop|restart|force-reload|status}" >&2
+		exit 1
+esac
