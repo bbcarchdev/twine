@@ -20,10 +20,11 @@ pkgconfigdir = @libdir@/pkgconfig
 
 LIBS = \
 	@LIBRDF_LIBS@ @LIBRDF_LOCAL_LIBS@ \
-	@LIBDL_LIBS@ @LIBDL_LOCAL_LIBS@
+	@LIBDL_LIBS@ @LIBDL_LOCAL_LIBS@ \
+	@LIBSPARQLCLIENT_LIBS@ @LIBSPARQLCLIENT_LOCAL_LIBS@
 
 AM_CPPFLAGS = @AM_CPPFLAGS@ \
-	-I$(top_builddir)/libsparqlclient -I$(top_srcdir)/libsparqlclient
+	@LIBSPARQLCLIENT_CPPFLAGS@
 
 lib_LTLIBRARIES = libtwine.la
 
@@ -33,8 +34,6 @@ libtwine_la_SOURCES = p_libtwine.h libtwine.h libtwine-internals.h \
 	init.c plugin.c logging.c sparql.c rdf.c config.c
 
 libtwine_la_LDFLAGS = -avoid-version
-
-libtwine_la_LIBADD = $(top_builddir)/libsparqlclient/libsparqlclient.la
 
 pkgconfig_DATA = libtwine.pc
 

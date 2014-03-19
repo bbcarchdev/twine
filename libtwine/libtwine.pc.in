@@ -7,5 +7,5 @@ Name: libtwine
 Description: Twine processor API
 Requires: libsparqlclient
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -lsparqlclient @LIBRDF_LIBS@ @LIBRDF_LOCAL_LIBS@ @LIBDL_LIBS@ @LIBDL_LOCAL_LIBS@
+Libs: -L${libdir} @LIBSPARQLCLIENT_INSTALLED_LIBS@ @LIBSPARQLCLIENT_LIBS@ @LIBRDF_LIBS@ @LIBRDF_LOCAL_LIBS@ @LIBDL_LIBS@ @LIBDL_LOCAL_LIBS@
 Cflags: -I${includedir} @LIBRDF_CPPFLAGS@ @LIBDL_CPPFLAGS@

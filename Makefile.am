@@ -18,8 +18,12 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = libsupport libsparqlclient libutils libtwine \
+DIST_SUBDIRS = libsupport libsparqlclient libutils libtwine \
 	writer bridges processors \
 	init.d conf m4
+
+SUBDIRS = libsupport @subdirs@ libutils libtwine \
+	writer bridges processors \
+	init.d conf
 
 EXTRA_DIST = README.md LICENSE-2.0
