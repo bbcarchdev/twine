@@ -38,6 +38,7 @@ BT_REQUIRE_LIBRDF
 BT_REQUIRE_LIBQPID_PROTON
 BT_REQUIRE_LIBXML2
 BT_REQUIRE_LIBXSLT
+BT_REQUIRE_LIBSPARQLCLIENT_INCLUDED
 
 BT_BUILD_DOCS
 
@@ -45,9 +46,6 @@ BT_DEFINE_PREFIX
 
 AC_CONFIG_FILES([Makefile
 libsupport/Makefile
-libsparqlclient/Makefile
-libsparqlclient/libsparqlclient.pc
-libsparqlclient/libsparqlclient-uninstalled.pc
 libutils/Makefile
 libtwine/Makefile
 libtwine/libtwine.pc
