@@ -69,6 +69,8 @@ static const char *xpath = "concat('http://example.com/things/', string(/item/id
 static xmlDocPtr xsltdoc;
 static xsltStylesheetPtr xslt;
 static int process_example_xml(const char *mime, const char *buf, size_t buflen);
+static int xslt_process(const char *buf, size_t buflen, xsltStylesheetPtr stylesheet, const char *xpath);
+
 
 /* Twine plug-in entry-point */
 int
@@ -79,21 +81,14 @@ twine_plugin_init(void)
 	return 0;
 }
 
-
+/* Process a block of application/x-example+xml using the stylesheet
+ * and XPath expression above
+ */
 static int
 process_example_xml(const char *mime, const char *buf, size_t buflen)
 {
-	xmlDocPtr xmldoc, res;
-	xmlChar *xmlbuf;
-	xmlXPathContextPtr xpctx;
-	xmlXPathObjectPtr xpobj;
-	int xmlbuflen;
-	librdf_model *model;
-	librdf_stream *stream;
-	char *p;
-
 	(void) mime;
-
+	
 	/* If the XSLT document hasn't yet been parsed, do so now */
 	if(!xsltdoc)
 	{
@@ -111,6 +106,26 @@ process_example_xml(const char *mime, const char *buf, size_t buflen)
 			return -1;
 		}
 	}
+	return xslt_process(buf, buflen, xslt, xpath);
+}
+	
+
+/* Process a buffer using an XSLT stylesheet, and evaluate an XPath expression
+ * in order to determine the URI of the graph which the resulting RDF/XML will
+ * replace.
+ */
+static int
+xslt_process(const char *buf, size_t buflen, xsltStylesheetPtr stylesheet, const char *xpath)
+{
+	xmlDocPtr xmldoc, res;
+	xmlChar *xmlbuf;
+	xmlXPathContextPtr xpctx;
+	xmlXPathObjectPtr xpobj;
+	int xmlbuflen;
+	librdf_model *model;
+	librdf_stream *stream;
+	char *p;
+
 	/* Parse the incoming buffer as an XML document */
 	xmldoc = xmlParseMemory(buf, buflen);
 	if(!xmldoc)
@@ -119,7 +134,7 @@ process_example_xml(const char *mime, const char *buf, size_t buflen)
 		return -1;
 	}
 	/* Apply the XSLT stylesheet to the parsed XML document */
-	res = xsltApplyStylesheet(xslt, xmldoc, NULL);
+	res = xsltApplyStylesheet(stylesheet, xmldoc, NULL);
 	if(!res)
 	{
 		twine_logf(LOG_ERR, "failed to apply stylesheet to XML document\n");
@@ -129,7 +144,7 @@ process_example_xml(const char *mime, const char *buf, size_t buflen)
 	/* Obtain the results of applying the stylesheet as a string buffer */
 	xmlbuf = NULL;
 	xmlbuflen = 0;
-	if(xsltSaveResultToString(&xmlbuf, &xmlbuflen, res, xslt))
+	if(xsltSaveResultToString(&xmlbuf, &xmlbuflen, res, stylesheet))
 	{
 		twine_logf(LOG_ERR, "failed to store processed XML\n");
 		xmlFreeDoc(res);
