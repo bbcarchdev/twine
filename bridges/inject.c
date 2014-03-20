@@ -62,7 +62,7 @@ main(int argc, char **argv)
 			usage();
 			return 0;
 		case 'd':
-			config_set("log:level", "debug");
+			log_set_level(LOG_DEBUG);
 			break;
 		case 'c':
 			config_set("global:configFile", optarg);
@@ -152,7 +152,7 @@ usage(void)
 		   "\n"
 		   "OPTIONS is one or more of:\n\n"
 		   "  -h                   Print this notice and exit\n"
-		   "  -D                   Enable debug output\n"
+		   "  -d                   Enable debug output\n"
 		   "  -c FILE              Specify path to configuration file\n\n",
 			utils_progname);
 }
