@@ -8,7 +8,7 @@ pidfile=@LOCALSTATEDIR@/run/twine-writerd.pid
 
 ;; Loadable modules for Twine processors
 module=rdf.so
-module=example-xml.so
+module=xslt.so
 
 ;; Configuration specifically for the inject tool (twine-inject)
 [inject]
@@ -37,3 +37,12 @@ stderr=0
 level=notice
 ;; Logging facility
 facility=daemon
+
+;; Define a MIME type to be processed via the XSLT processor
+[xslt:application/x-example+xml]
+;; A description of this type
+desc=Example XSLT-transformable XML
+;; Specify the path to the XSLT stylesheet
+xslt=@LIBDIR@/twine/example-xml.xsl
+;; Specify the XPath expression to retrieve the graph URI
+graph-uri=concat('http://example.com/things/', string(/item/id))

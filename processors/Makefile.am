@@ -24,15 +24,17 @@ LIBS = $(top_builddir)/libtwine/libtwine.la
 
 moduledir = $(libdir)/twine
 
-module_LTLIBRARIES = rdf.la example-xml.la
+module_LTLIBRARIES = rdf.la xslt.la
 
 rdf_la_SOURCES = rdf.c
 rdf_la_LDFLAGS = -no-undefined -module -avoid-version
 
-example_xml_la_SOURCES = example-xml.c
-example_xml_la_LIBADD = \
+xslt_la_SOURCES = xslt.c
+xslt_la_LIBADD = \
 	@LIBXSLT_LIBS@ @LIBXSLT_LOCAL_LIBS@ \
 	@LIBXML2_LIBS@ @LIBXML2_LOCAL_LIBS@
-example_xml_la_LDFLAGS = -no-undefined -module -avoid-version
+xslt_la_LDFLAGS = -no-undefined -module -avoid-version
 
 dist_doc_DATA = example-xml.xml
+
+dist_module_DATA = example-xml.xsl
