@@ -63,6 +63,9 @@ static const char *xsltbuf = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
 	"  </rdf:RDF>"
 	"</xsl:template>"
 	"</xsl:stylesheet>";
+
+static const char *xpath = "concat('http://example.com/things/', string(/item/id))";
+
 static xmlDocPtr xsltdoc;
 static xsltStylesheetPtr xslt;
 static int process_example_xml(const char *mime, const char *buf, size_t buflen);
@@ -82,15 +85,12 @@ process_example_xml(const char *mime, const char *buf, size_t buflen)
 {
 	xmlDocPtr xmldoc, res;
 	xmlChar *xmlbuf;
+	xmlXPathContextPtr xpctx;
+	xmlXPathObjectPtr xpobj;
 	int xmlbuflen;
 	librdf_model *model;
 	librdf_stream *stream;
-	librdf_node *node;
-	librdf_uri *uri;
-	librdf_statement *st;
-	const char *uristr, *t;
 	char *p;
-	size_t l;
 
 	(void) mime;
 
@@ -136,7 +136,6 @@ process_example_xml(const char *mime, const char *buf, size_t buflen)
 		xmlFreeDoc(xmldoc);
 		return -1;
 	}
-	xmlFreeDoc(xmldoc);
 	xmlFreeDoc(res);
 	/* Create an RDF model to store the graph in */
 	model = twine_rdf_model_create();
@@ -144,6 +143,7 @@ process_example_xml(const char *mime, const char *buf, size_t buflen)
 	{
 		twine_logf(LOG_ERR, "failed to create a new RDF model\n");
 		free(xmlbuf);
+		xmlFreeDoc(xmldoc);
 		return -1;
 	}
 	/* Parse the RDF/XML result of the stylesheet */
@@ -152,52 +152,48 @@ process_example_xml(const char *mime, const char *buf, size_t buflen)
 		twine_logf(LOG_ERR, "failed to parse transformed RDF/XML into RDF model\n");
 		free(xmlbuf);
 		librdf_free_model(model);
+		xmlFreeDoc(xmldoc);
 		return -1;
 	}	
 	free(xmlbuf);
 	/* Find the subject in the form <http://example.com/things/ID#id> */
-	uristr = NULL;
-	stream = librdf_model_as_stream(model);
-	while(!librdf_stream_end(stream))
+	xpctx = xmlXPathNewContext(xmldoc);
+	if(!xpctx)
 	{
-		st = librdf_stream_get_object(stream);
-		node = librdf_statement_get_subject(st);
-		uri = librdf_node_get_uri(node);
-		if(!uri)
-		{
-			continue;
-		}
-		uristr = (const char *) librdf_uri_as_string(uri);
-		l = strlen(uristr);
-		t = strrchr(uristr, '#');
-		if(t && !strcmp(t, "#id") && !strncmp("http://example.com/things/", uristr, 26))
-		{
-			break;
-		}
-		uristr = NULL;
-		librdf_stream_next(stream);
-	}
-	if(uristr)
-	{
-		p = (char *) malloc(l);
-		if(!p)
-		{
-			twine_logf(LOG_CRIT, "failed to allocate %u bytes\n", (unsigned) l);
-			librdf_free_stream(stream);
-			librdf_free_model(model);
-			return -1;
-		}
-		strncpy(p, uristr, l - 3);
-		p[l-3] = 0;
-	}
-	else
-	{
-		twine_logf(LOG_ERR, "failed to determine graph URI from model\n");
-		librdf_free_stream(stream);
+		twine_logf(LOG_CRIT, "failed to create new XPath context from XML document\n");
 		librdf_free_model(model);
+		xmlFreeDoc(xmldoc);
 		return -1;
 	}
-	librdf_free_stream(stream);
+	xpobj = xmlXPathEvalExpression((const xmlChar *) xpath, xpctx);
+	if(!xpobj)
+	{
+		twine_logf(LOG_ERR, "failed to evaluate Graph URI XPath expression: %s\n", xpath);
+		librdf_free_model(model);
+		xmlXPathFreeContext(xpctx);
+		xmlFreeDoc(xmldoc);
+		return -1;
+	}
+	if(xpobj->type != XPATH_STRING)
+	{
+		twine_logf(LOG_ERR, "Graph URI XPath expression did not result in a string node\n");
+		librdf_free_model(model);
+		xmlXPathFreeContext(xpctx);
+		xmlFreeDoc(xmldoc);
+		return -1;
+	}
+	twine_logf(LOG_DEBUG, "Graph URI XPath result: <%s>\n", xpobj->stringval);
+	p = strdup((const char *) xpobj->stringval);
+	if(!p)
+	{
+		twine_logf(LOG_CRIT, "failed to duplicate graph URI XPath result string\n");
+		librdf_free_model(model);
+		xmlXPathFreeContext(xpctx);
+		xmlFreeDoc(xmldoc);
+		return -1;
+	}		
+	xmlXPathFreeContext(xpctx);
+	xmlFreeDoc(xmldoc);
 	/* Replace the graph */
 	stream = librdf_model_as_stream(model);	
 	twine_sparql_put_stream(p, stream);
