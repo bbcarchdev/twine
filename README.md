@@ -39,10 +39,11 @@ those changes as messages on the queue that the writer daemon listens on.
 
 A simple bridge, `twine-inject`, is provided: this simply reads data from
 a file and submits it as a message. You must specify the MIME type of the
-file on the command-line, and this type is checked to ensure that it's
-supported by a known processor before submission. A more complex bridge
-might wait on a queue provided by another system, receiving updates and
-continually submitting them to Twine for processing.
+file on the command-line, which must be a typed registered by a processor
+module loaded by the writer daemon.
+
+A more complex bridge might wait on a change-feed provided by another system,
+receiving updates and continually submitting them to Twine for processing.
 
 The rationale for splitting the processors and bridges (despite many
 applications having a need for them to be tightly-coupled) is:
