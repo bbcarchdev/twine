@@ -70,7 +70,7 @@ twine_sparql_create(void)
 {
 	SPARQL *p;
 
-	p = sparql_create();
+	p = sparql_create(NULL);
 	if(!p)
 	{
 		return NULL;
