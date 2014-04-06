@@ -45,12 +45,24 @@ main(int argc, char **argv)
 		fprintf(stderr, "%s: cannot connect to '%s'\n", argv[0], argv[1]);
 		return 1;
 	}
-	printf("waiting for messages\n");
-	while((msg = mq_next(connection)))
+	if(mq_error(connection))
 	{
+		fprintf(stderr, "%s: cannot connect to '%s': %s\n", argv[0], argv[1], mq_errmsg(connection));
+		mq_disconnect(connection);
+		return 1;
+	}
+	printf("%s: waiting for messages\n", argv[0]);
+	while(1)
+	{
+		msg = mq_next(connection);
+		if(!msg)
+		{
+			fprintf(stderr, "%s: failed to obtain next message: %s\n", argv[0], mq_errmsg(connection));
+			break;
+		}
 		len = mq_message_len(msg);
-		printf("received message; type='%s', length=%lu\n",
-			   mq_message_type(msg), (unsigned long) len);
+		printf("%s: received message; type='%s', length=%lu\n",
+			   argv[0], mq_message_type(msg), (unsigned long) len);
 		if(len && len != (size_t) -1)
 		{
 			printf("------------------------------------------------------------------------\n");

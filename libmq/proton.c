@@ -38,15 +38,12 @@ mq_proton_connect_recv_(struct mq_proton_struct *proton, const char *uri)
 	pn_messenger_start(proton->messenger);
 	if(pn_messenger_errno(proton->messenger))
 	{
-		pn_messenger_free(proton->messenger);
-		return -1;
+		return 1;
 	}
 	pn_messenger_subscribe(proton->messenger, uri);
 	if(pn_messenger_errno(proton->messenger))
 	{
-		pn_messenger_stop(proton->messenger);
-		pn_messenger_free(proton->messenger);
-		return -1;
+		return 1;
 	}
 	return 0;
 }
@@ -67,7 +64,7 @@ mq_proton_next_(struct mq_proton_struct *proton, struct mq_proton_message_struct
 		pn_messenger_recv(proton->messenger, PROTON_BUFSIZE);
 		if(pn_messenger_errno(proton->messenger))
 		{
-			return -1;
+			return 1;
 		}
 	}
 	message->msg = pn_message();
@@ -79,7 +76,7 @@ mq_proton_next_(struct mq_proton_struct *proton, struct mq_proton_message_struct
 	if(pn_messenger_errno(proton->messenger))
 	{
 		pn_message_free(message->msg);
-		return -1;
+		return 1;
 	}
 	message->tracker = pn_messenger_incoming_tracker(proton->messenger);
 	message->body = pn_message_body(message->msg);
@@ -166,6 +163,22 @@ mq_proton_message_len_(struct mq_proton_struct *proton, struct mq_proton_message
 	}
 	errno = EINVAL;
 	return (size_t) -1;
+}
+
+int
+mq_proton_errcode_(struct mq_proton_struct *proton)
+{
+	return pn_messenger_errno(proton->messenger);
+}
+
+const char *
+mq_proton_errmsg_(struct mq_proton_struct *proton, int errcode, char *buf, size_t buflen)   
+{
+	(void) errcode;
+	(void) buf;
+	(void) buflen;
+
+	return pn_error_text(pn_messenger_error(proton->messenger));
 }
 
 #endif /*WITH_LIBQPID_PROTON*/

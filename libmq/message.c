@@ -27,11 +27,19 @@
 int
 mq_message_accept(MQMESSAGE *message)
 {
+	int e;
+
+	RESET_ERROR(message->connection);
 	switch(message->connection->type)
 	{
 #ifdef WITH_LIBQPID_PROTON
 	case MQT_PROTON:
-		mq_proton_message_accept_(&(message->connection->d.proton), &(message->d.proton));
+		if((e = mq_proton_message_accept_(&(message->connection->d.proton), &(message->d.proton))))
+		{
+			SET_ERROR(message->connection, e);
+			free(message);
+			return -1;
+		}
 		break;
 #endif
 	}
@@ -43,11 +51,19 @@ mq_message_accept(MQMESSAGE *message)
 int
 mq_message_reject(MQMESSAGE *message)
 {
+	int e;
+
+	RESET_ERROR(message->connection);
 	switch(message->connection->type)
 	{
 #ifdef WITH_LIBQPID_PROTON
 	case MQT_PROTON:
-		mq_proton_message_reject_(&(message->connection->d.proton), &(message->d.proton));
+		if((e = mq_proton_message_reject_(&(message->connection->d.proton), &(message->d.proton))))
+		{
+			SET_ERROR(message->connection, e);
+			free(message);
+			return -1;
+		}
 		break;
 #endif
 	}
@@ -59,11 +75,19 @@ mq_message_reject(MQMESSAGE *message)
 int
 mq_message_pass(MQMESSAGE *message)
 {
+	int e;
+
+	RESET_ERROR(message->connection);
 	switch(message->connection->type)
 	{
 #ifdef WITH_LIBQPID_PROTON
 	case MQT_PROTON:
-		mq_proton_message_pass_(&(message->connection->d.proton), &(message->d.proton));
+		if((e = mq_proton_message_pass_(&(message->connection->d.proton), &(message->d.proton))))
+		{
+			SET_ERROR(message->connection, e);
+			free(message);
+			return -1;
+		}
 		break;
 #endif
 	}
@@ -74,7 +98,8 @@ mq_message_pass(MQMESSAGE *message)
 /* Return the content type of a message */
 const char *
 mq_message_type(MQMESSAGE *message)
-{
+{	
+	RESET_ERROR(message->connection);
 	switch(message->connection->type)
 	{
 #ifdef WITH_LIBQPID_PROTON
