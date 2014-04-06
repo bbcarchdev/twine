@@ -46,6 +46,7 @@ BT_DEFINE_PREFIX
 
 AC_CONFIG_FILES([Makefile
 libsupport/Makefile
+libmq/Makefile
 libutils/Makefile
 libtwine/Makefile
 libtwine/libtwine.pc

@@ -1,4 +1,4 @@
-## Twine: A Linked Data workflow engine
+## libmq: A library for interacting with message queues
 ##
 ## Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
 ##
@@ -16,14 +16,14 @@
 ##  See the License for the specific language governing permissions and
 ##  limitations under the License.
 
-ACLOCAL_AMFLAGS = -I m4
+noinst_LTLIBRARIES = libmq.la
 
-DIST_SUBDIRS = libsupport libsparqlclient libmq libutils libtwine \
-	writer bridges processors \
-	init.d conf m4
+libmq_la_SOURCES = libmq.h p_libmq.h \
+	connection.c message.c proton.c
 
-SUBDIRS = libsupport @subdirs@ libmq libutils libtwine \
-	writer bridges processors \
-	init.d conf
+libmq_la_LDFLAGS = -static
 
-EXTRA_DIST = README.md LICENSE-2.0
+noinst_PROGRAMS = mq-recv
+
+mq_recv_SOURCES = mq-recv.c
+mq_recv_LDADD = libmq.la
