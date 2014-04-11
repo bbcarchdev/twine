@@ -9,11 +9,13 @@ Copyright (c) 2014 BBC
 <book version="5.0" xml:lang="en-gb" xmlns="http://docbook.org/ns" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:xlink="http://www.w3.org/1999/xlink">
   <title>Twine</title>
   <subtitle>A linked data workflow engine</subtitle>
-  <legalnotice>
-	<para>
-	  Copyright © 2014 BBC.
-	</para>
-  </legalnotice>
+  <info>
+	<legalnotice>
+	  <para>
+		Copyright © 2014 BBC.
+	  </para>
+	</legalnotice>
+  </info>
 
   <preface xml:id="preface">
 	<title>Preface</title>
