@@ -1,0 +1,13 @@
+body>header .masthead {
+	display: block;
+	background: #859900;
+}
+body.book>header .masthead {
+	background: #859900 url('twine-masthead.png') 50% 50% no-repeat;
+}
+.refentry>header, .refentry>section, .refentry>article>section {
+	page-break-after: inherit;
+}
+.refentry>article>section>h1::before {
+    content: '';
+}

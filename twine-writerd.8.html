@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+	<head>
+
+			<meta charset="utf-8" />
+<title>twine-writerd</title><link rel="stylesheet" type="text/css" href="http://bbcarchdev.github.io/painting-by-numbers/style.css"/><link rel="stylesheet" type="text/css" href="http://bbcarchdev.github.io/painting-by-numbers/print.css" media="print"/><link rel="stylesheet" type="text/css" href="http://cloud.typography.com/6699852/732262/css/fonts.css"/><link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Roboto:300,500,300italic,500italic|Inconsolata|Arapey"/><link rel="stylesheet" type="text/css" href="local.css"/>
+	</head>
+<body class="refentry"><header><nav class="global"><div class="inner"><ul>
+	<li class="logo"><a href="#"><abbr title="Research &amp; Education Space">RES</abbr></a></li>
+  </ul></div></nav>
+		<div class="masthead"></div>
+		<h1>twine-writerd</h1><h2>Twine writer daemon</h2></header><article>
+  
+  
+  
+
+  
+
+  <section class="refsynopsisdiv"><h1>Synopsis</h1>
+	<p class="cmdsynopsis"><code>
+	    <kbd class="command">twine-writerd</kbd>
+		-h
+		-c config-file
+		-f
+		-d
+	</code></p>
+  </section>
+
+  <section class="refsect1"><h1>Description</h1>
+	
+	<p>
+	  <kbd class="command">twine-writerd</kbd> is the processing and writer daemon
+	  for Twine, a Linked Open Data workflow engine.
+	</p>
+	<p>
+	  <kbd class="command">twine-writerd</kbd> connects to a queue on an AMQP 1.0
+	  message broker and waits for messages to arrive. When they do, they are
+	  routed to a processor module, depending upon the content type of the
+	  message. The processor module translates the message contents into some
+	  kind of update operation on a quad-store.
+	</p>
+	<p>
+	  Messages are delivered to the message broker through one or more bridges
+	  (see twine-inject
+	  for an example of a simple one-shot bridge).
+	</p>
+  </section>
+  
+  <section class="refsect1"><h1>Options</h1>
+	
+	
+	<dl>
+		<dt>-h</dt>
+		<dd>
+			Print a summary of command-line options and exit immediately.
+		  </dd>
+	  
+		<dt>-c config-file</dt>
+		<dd>
+			Causes <kbd class="command">twine-writerd</kbd> to load the specified
+			configuration file instead of the default system-wide configuration
+			file. See twine.conf
+			for further information on the configuration file format.
+		  </dd>
+	  
+		<dt>-f</dt>
+		<dd>
+		  <p>
+			Remain in the foreground.
+		  </p>
+		  <p>
+			Ordinarily, <kbd class="command">twine-writerd</kbd> detaches from the
+			controlling terminal and operates as a background process. The
+			-f prevents this from happening.
+		  </p>
+		</dd>
+	  
+		<dt>-d</dt>
+		<dd>
+		  <p>
+			Run in debugging mode (implies -f).
+		  </p>
+		  <p>
+			This option overrides the configuration such that logs
+			are also sent to standard error, and the minimum log severity
+			is set to <code class="constant">debug</code>.
+		  </p>
+		  <p>
+			Note that if connection URIs include credentials or other
+			pieces of sensitive information, these will appear both on
+			standard error, and in the system-wide logs (if logging-via-syslog
+			is enabled in the configuration).
+		  </p>
+		</dd>
+
+	  </dl>
+  </section>
+
+  <section class="refsect1"><h1>See also</h1>
+	
+	<p>
+	  twine.conf,
+	  twine-inject.
+	</p>
+  </section>
+
+</article></body>
+</html>
+

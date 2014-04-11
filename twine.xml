@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
+
+Copyright (c) 2014 BBC
+
+-->
+<book version="5.0" xml:lang="en-gb" xmlns="http://docbook.org/ns" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <title>Twine</title>
+  <subtitle>A linked data workflow engine</subtitle>
+  <legalnotice>
+	<para>
+	  Copyright © 2014 BBC.
+	</para>
+  </legalnotice>
+
+  <preface xml:id="preface">
+	<title>Preface</title>
+	<para>
+	  Twine has been developed as part of the <firstterm>Research &amp;
+	  Education Space</firstterm> (RES), a project being jointly delivered by
+	  <link xlink:href="http://jisc.ac.uk">Jisc</link>, the
+	  <link xlink:href="http://bufvc.ac.uk">British Universities Film &amp; Video Council</link> (BUFVC), and the <link xlink:href="http://www.bbc.co.uk/">BBC</link>.
+	  Its aim is to bring as much as possible of the UK’s publicly-held archives, and more besides, to learners and teachers across the UK.
+	</para>
+  </preface>
+
+  <section xml:id="intro">
+	<title>Introduction</title>
+	<para>
+	  Twine is a modular, queue-driven workflow engine for pushing RDF into
+	  quad-stores for later serving as <firstterm>Linked Open Data</firstterm>
+	  (LOD).
+	</para>
+	<para>
+	  Twine consists of:
+	</para>
+	<itemizedlist>
+	  <listitem>
+		<para>
+		  A queue-driven daemon (<link xlink:href="twine-writerd.8.html"><command>twine-writerd</command></link>).
+		</para>
+	  </listitem>
+	  <listitem>
+		<para>
+		  <firstterm>Processor</firstterm> modules which are loaded by the writer daemon.
+		</para>
+	  </listitem>
+	  <listitem>
+		<para>
+		  <firstterm>Bridge</firstterm> components which feed data into the queues.
+		</para>
+	  </listitem>
+	</itemizedlist>
+	<para>
+	  The intention is that you will write your own processors and bridges to
+	  support your particular application's needs.
+	</para>
+	<para>	  
+	  Twine can use any
+	  <link xlink:href="https://www.amqp.org/resources/specifications">AMQP 1.0-compliant</link>
+	  message broker, and any
+	  <link xlink:href="http://www.w3.org/TR/sparql11-overview/">SPARQL 1.1-compliant</link>
+	  quad-store. In development, we use Apache <link xlink:href="http://qpid.apache.org">Qpid's</link> C++
+	  broker and <link xlink:href="http://4store.org">4store</link>. Twine
+	  uses the
+	  <link xlink:href="http://qpid.apache.org/proton/">Apache Qpid Proton</link>
+	  messaging libraries to speak to AMQP servers and
+	  <link xlink:href="http://curl.haxx.se/libcurl/">libcurl</link>
+	  to speak to quad-stores.
+	</para>
+	<para>
+	  Twine is constructed with the assumption that the quad-store you use for
+	  your RDF will contain one named graph per resource you intend to serve
+	  to consuming applications. This means that retrieval can happen very
+	  quickly and easily, but of course you can write processors which store
+	  data in a different way if your prefer.
+	</para>
+  </section>
+  
+  <section xml:id="processors">
+	<title>Processor modules</title>
+	<para>
+	  The role of a processor module is to receive a chunk of arbitrary data
+	  and transform or interpret it such that the quad-store can be updated.
+	  A simple case might be parsing a JSON or XML blob, creating some triples
+	  from that blob, and then performing an HTTP PUT into a particular named
+	  graph.
+	</para>
+	<para>
+	  Twine includes a simple processor module which can parse quads in either
+	  N-Quads or TriG serialisations, and which are processed by iterating
+	  each of the named graphs in them and pushing them into the quad-store.
+	</para>
+  </section>
+
+  <section xml:id="bridges">
+	<title>Bridges</title>
+	<para>
+	  The role of a bridge is to obtain change data from some source and submit
+	  those changes as messages on the queue that the writer daemon listens on.
+	</para>
+	<para>
+	  A simple bridge,
+	  <link xlink:href="twine-inject.8.html"><command>twine-inject</command></link>,
+	  is provided: this simply reads data from a file and submits it as a
+	  message. You must specify the MIME type of the file on the command-line,
+	  which must be a typed registered by a processor module loaded by the
+	  writer daemon.
+	</para>
+	<para>
+	  A more complex bridge might wait on a change-feed provided by another
+	  system, receiving updates and continually submitting them to Twine for
+	  processing.
+	</para>
+	<para>
+	  The rationale for splitting the processors and bridges (despite many
+	  applications having a need for them to be tightly-coupled) is:
+	</para>
+	<orderedlist>
+	  <listitem>
+		<para>
+		  the processor may need to have more involved interaction with the
+		  quad-store than a simple push/replace operation, which wouldn't be
+		  appropriate for a bridge, as it shouldn't (and indeed may not be able
+		  to) access the quad-store directly.
+		</para>
+	  </listitem>
+	  <listitem>
+		<para>
+		  it should be possible to push the same format of updates (i.e.,
+		  content types) from multiple sources, resulting in consistent
+		  processing regardless of where the message came from.
+		</para>
+	  </listitem>
+	</orderedlist>
+  </section>
+  
+  <section xml:id="manpages">
+	<title>Manual pages</title>
+	<variablelist>
+	  <varlistentry>
+		<term><link xlink:href="twine-writerd.8.html"><command>twine-writerd</command></link></term>
+		<listitem>
+		  <para>
+			Twine writer daemon.
+		  </para>
+		</listitem>
+	  </varlistentry>
+
+	  <varlistentry>
+		<term><link xlink:href="twine-inject.8.html"><command>twine-inject</command></link></term>
+		<listitem>
+		  <para>
+			Inject a file into the Twine processing queue.
+		  </para>
+		</listitem>
+	  </varlistentry>
+
+	  <varlistentry>
+		<term><link xlink:href="twine.conf.5.html"><command>twine.conf</command></link></term>
+		<listitem>
+		  <para>
+			Twine configuration file.
+		  </para>
+		</listitem>
+	  </varlistentry>
+
+	</variablelist>
+  </section>
+
+</book>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+	<head>
+
+			<meta charset="utf-8" />
+<title>twine-inject</title><link rel="stylesheet" type="text/css" href="http://bbcarchdev.github.io/painting-by-numbers/style.css"/><link rel="stylesheet" type="text/css" href="http://bbcarchdev.github.io/painting-by-numbers/print.css" media="print"/><link rel="stylesheet" type="text/css" href="http://cloud.typography.com/6699852/732262/css/fonts.css"/><link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Roboto:300,500,300italic,500italic|Inconsolata|Arapey"/><link rel="stylesheet" type="text/css" href="local.css"/>
+	</head>
+<body class="refentry"><header><nav class="global"><div class="inner"><ul>
+	<li class="logo"><a href="#"><abbr title="Research &amp; Education Space">RES</abbr></a></li>
+  </ul></div></nav>
+		<div class="masthead"></div>
+		<h1>twine-inject</h1><h2>Inject a file into the Twine processing queue</h2></header><article>
+  
+  
+  
+
+  
+
+  <section class="refsynopsisdiv"><h1>Synopsis</h1>
+	<p class="cmdsynopsis"><code>
+	    <kbd class="command">twine-inject</kbd>
+		-h
+		-c config-file
+		-t mime-type
+		&lt; input-file
+	</code></p>
+  </section>
+
+  <section class="refsect1"><h1>Description</h1>
+	
+	<p>
+	  <kbd class="command">twine-inject</kbd> reads a file from standard-input and
+	  feeds it to the AMQP message broker used by twine-writerd.
+	</p>
+	<p>
+	  You can use <kbd class="command">twine-inject</kbd> in lieu of having a
+	  specifically-written bridge, in order to inject messages of any content
+	  type for processing on an individual basis. Depending upon
+	  requirements, using <kbd class="command">twine-inject</kbd> may be suitable for
+	  use as part of simple workflows, or simply for debugging message
+	  processing.
+	</p>
+	<p>
+	  Note that at present, <kbd class="command">twine-inject</kbd> does not
+	  interpret the specified MIME type nor file contents in any way
+	  whatsoever: provided the contents of the file were delivered to
+	  the AMQP message broker without incident, <kbd class="command">twine-inject</kbd>
+	  will exit successfully.
+	</p>
+  </section>
+  
+  <section class="refsect1"><h1>Options</h1>
+	
+	
+	<dl>
+		<dt>-h</dt>
+		<dd>
+			Print a summary of command-line options and exit immediately.
+		  </dd>
+	  
+		<dt>-c config-file</dt>
+		<dd>
+			Causes <kbd class="command">twine-writerd</kbd> to load the specified
+			configuration file instead of the default system-wide configuration
+			file. See twine.conf
+			for further information on the configuration file format.
+		  </dd>
+	  
+		<dt>-t mime-type</dt>
+		<dd>
+		  <p>
+			Input file MIME type. Required.
+		  </p>
+		  <p>
+			Specifies the content type of the message sent to
+			twine-writerd.
+			The processor module used to handle the message depends upon
+			the MIME type specified; if no loaded processor module supports
+			the MIME type of the message, processing by <kbd class="command">twine-writerd</kbd> will fail.
+		  </p>
+		</dd>
+	  </dl>
+  </section>
+  
+  <section class="refsect1"><h1>See also</h1>
+	
+	<p>
+	  twine.conf,
+	  twine-writerd.
+	</p>
+  </section>
+
+</article></body>
+</html>
+

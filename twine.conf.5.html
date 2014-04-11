@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+	<head>
+
+			<meta charset="utf-8" />
+<title>twine.conf</title><link rel="stylesheet" type="text/css" href="http://bbcarchdev.github.io/painting-by-numbers/style.css"/><link rel="stylesheet" type="text/css" href="http://bbcarchdev.github.io/painting-by-numbers/print.css" media="print"/><link rel="stylesheet" type="text/css" href="http://cloud.typography.com/6699852/732262/css/fonts.css"/><link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Roboto:300,500,300italic,500italic|Inconsolata|Arapey"/><link rel="stylesheet" type="text/css" href="local.css"/>
+	</head>
+<body class="refentry"><header><nav class="global"><div class="inner"><ul>
+	<li class="logo"><a href="#"><abbr title="Research &amp; Education Space">RES</abbr></a></li>
+  </ul></div></nav>
+		<div class="masthead"></div>
+		<h1>twine.conf</h1><h2>Twine configuration file</h2></header><article>
+  
+  
+  
+
+  
+
+  <section class="refsect1"><h1>Description</h1>
+	
+	<p>
+	  <code class="filename">twine.conf</code> is the configuration file used by
+	  components of Twine, a Linked Open Data workflow engine. The file
+	  uses the Windows .INI file format (albeit with Unix line-endings),
+	  with sets of configuration values split into groups.
+	  Each key and value pair begins on a new line within
+	  a section, with an equals sign separating the value from the key.
+	  Comments begin with a semicolon or hash sign at the start of a line.
+	</p>
+	<p>
+	  For example:
+	</p>
+	<pre class="code ini"><code>
+; This is a comment
+[section1]
+string1=value1
+bool1=yes
+bool2=false
+int-option=124
+
+[section2]
+# This is another comment
+string2 = another value
+
+multi-string = This is a \
+multi-line string \
+value.
+</code></pre>
+  </section>
+
+  <section class="refsect1"><h1>Value types</h1>
+	
+	<dl>
+		<dt>Strings</dt>
+		<dd>
+			Strings are written as-is following the equals sign. Leading
+			spaces will be trimmed. Multi-line strings are written by
+			placing a backslash immediately before the newline character.
+		  </dd>
+	  
+		<dt>Booleans</dt>
+		<dd>
+			Boolean values express either true or false. True is expressed
+			either a non-zero integer, the word <code class="constant">true</code>,
+			or the word <code class="constant">yes</code>. Any other expression
+			will evaluate to false.
+		  </dd>
+	  
+		<dt>Integers</dt>
+		<dd>
+			Integer values are simply whole decimal numbers. There is,
+			at present, no mechanism for expressing hexadecimal, octal, or
+			binary values.
+		  </dd>
+	  </dl>
+  </section>
+
+  <section class="refsect1"><h1>[amqp] section</h1>
+	
+	<p>
+	  The <code class="literal">[amqp]</code> section contains global defaults for
+	  communication with the AMQP 1.0 message broker.
+	</p>
+	<dl>
+		<dt><code class="literal">uri</code> (String)</dt>
+		<dd>
+		  <p>
+			Specifies the default URI to use for AMQP connections. The URI takes the following general form:
+		  </p>
+		  <p>
+			<code class="literal">amqp://</code>user<code class="literal">:</code>auth-info<code class="literal">@</code>host<code class="literal">:</code>port<code class="literal">/</code>queue-or-exchange
+		  </p>
+		</dd>
+	  </dl>
+  </section>
+
+  <section class="refsect1"><h1>[sparql] section</h1>
+	
+	<p>
+	  The <code class="literal">[sparql]</code> section specifies SPARQL endpoints
+	  which are used by <kbd class="command">twine-writerd</kbd> to update the
+	  quad-store.
+	</p>
+	<dl>
+		<dt><code class="literal">update</code> (String)</dt>
+		<dd>
+			Specifies the HTTP or HTTPS URI of a SPARQL 1.1 Update protocol
+			endpoint which can be used to update the quad-store.
+		  </dd>
+	  
+		<dt><code class="literal">data</code> (String)</dt>
+		<dd>
+			Specifies the HTTP or HTTPS URI of a SPARQL 1.1 Graph Store
+			protocol endpoint which can be used to update the quad-store. This
+			endpoint will receive <code class="literal">PUT</code> requests when
+			graphs must be updated.
+		  </dd>
+	  </dl>
+  </section>
+
+  <section class="refsect1"><h1>[writerd]</h1>
+	
+	<p>
+	  The <code class="literal">[writerd]</code> section specifies configuration
+	  values used only by
+	  twine-writerd.
+	</p>
+	<dl>
+		<dt><code class="literal">amqp-uri</code> (String)</dt>
+		<dd>
+			If supplied, contains an AMQP URI which is used by
+			<kbd class="command">twine-writerd</kbd> to connect to the message broker's
+			queue instead of the default specified in the <code class="literal">[amqp]</code>
+			section. This may be useful where the message broker topology or
+			configuration dictates that the writer daemon must connect
+			to a different endpoint to receive messages than bridges should
+			use to send them.
+		  </dd>		
+	  
+		<dt><code class="literal">pidfile</code> (String)</dt>
+		<dd>
+			Specifies the full pathname of the PID file which will be written
+			by <kbd class="command">twine-writerd</kbd> when it detaches from the
+			controlling terminal and begins running in the background. If this
+			file already exists, it must be writeable by the user the
+			writer daemon is running as; alternatively, the parent directory
+			must be writeable by that user.
+		  </dd>
+	  
+		<dt><code class="literal">module</code> (String)</dt>
+		<dd>
+		  <p>
+			Specifies the name of a processor module to load.
+		  </p>
+		  <p>
+			If the filename contains a <code class="literal">/</code>, it is assumed
+			to be an absolute path, or a path relative to the current
+			working directory of the daemon when it is first executed.
+			Otherwise, it is assumed to be the name of a file within the
+			Twine modules directory. (Typically
+			<code class="filename">/usr/lib/twine</code>).
+		  </p>
+		  <p>
+			This configuration key may be repeated as many times as there
+			are modules which should be loaded.
+		  </p>
+		</dd>
+	  </dl>
+  </section>
+
+  <section class="refsect1"><h1>[inject] section</h1>
+	
+	<p>
+	  The <code class="literal">[inject]</code> section specifies configuration values
+	  used only by
+	  twine-inject.
+	</p>
+	<dl>
+		<dt><code class="literal">amqp-uri</code> (String)</dt>
+		<dd>
+			If supplied, contains an AMQP URI which is used by
+			<kbd class="command">twine-inject</kbd> to connect to the message broker's
+			exchange instead of the default specified in the <code class="literal">[amqp]</code>
+			section.
+		  </dd>		
+	  </dl>
+  </section>
+	
+  <section class="refsect1"><h1>[log] section</h1>
+	
+	<p>
+	  The <code class="literal">[log]</code> section specifies logging defaults for
+	  any Twine daemons (in particular, twine-writerd).
+	</p>
+	<dl>
+		<dt><code class="literal">syslog</code> (Boolean)</dt>
+		
+		  Whether to send log messages to the system log using
+		  syslog3.
+		  The default is true.
+		
+	  
+		<dt><code class="literal">stderr</code> (Boolean)</dt>
+		
+		  Whether to send log messages to standard error.
+		  The default is false.
+				
+	  
+		<dt><code class="literal">level</code> (String)</dt>
+		<dd>
+		  <p>
+			Specifies the minimum severity of messages to be logged. Messages
+			lower than this severity will be discarded.
+		  </p>
+		  <p>
+			The following log levels are defined (from lowest to highest severity):
+		  </p>
+		  <ol>
+			<li><code class="constant">debug</code></li>
+			<li><code class="constant">info</code></li>
+			<li><code class="constant">notice</code></li>
+			<li><code class="constant">warning</code> or <code class="constant">warn</code></li>
+			<li><code class="constant">error</code> or <code class="constant">err</code></li>
+			<li><code class="constant">critical</code> or <code class="constant">crit</code></li>
+			<li><code class="constant">alert</code></li>
+			<li><code class="constant">emergency</code> or <code class="constant">emerg</code></li>
+		  </ol>
+		  <p>
+			The default value is <code class="constant">notice</code>.
+		  </p>
+		</dd>
+	  
+		<dt><code class="literal">facility</code> (String)</dt>
+		<dd>
+		  <p>
+			Specifies the logging facility where logging via
+			syslog
+			is enabled. The following facilities are defined:
+		  </p>
+		  <ul>
+			<li><code class="constant">auth</code></li>
+			<li><code class="constant">priv</code></li>
+			<li><code class="constant">cron</code></li>
+			<li><code class="constant">daemon</code></li>
+			<li><code class="constant">ftp</code></li>
+			<li><code class="constant">kern</code></li>
+			<li><code class="constant">lpr</code></li>
+			<li><code class="constant">mail</code></li>
+			<li><code class="constant">news</code></li>
+			<li><code class="constant">security</code></li>
+			<li><code class="constant">syslog</code></li>
+			<li><code class="constant">remoteauth</code></li>
+			<li><code class="constant">uucp</code></li>
+			<li><code class="constant">user</code></li>
+			<li><code class="constant">local0</code>...<code class="constant">local7</code></li>
+		  </ul>
+		  <p>
+			Note that not all facilities are available on all systems. Only <code class="constant">user</code> and <code class="constant">local0</code>...<code class="constant">local7</code> are defined by the Single UNIX Specification.
+		  </p>
+		  <p>
+			The default value is <code class="constant">daemon</code> if the facility is available, and <code class="constant">user</code> otherwise.
+		  </p>
+		</dd>
+	  
+		<dt><code class="literal">ident</code> (String)</dt>
+		<dd>
+		  <p>
+			Specifies the source ident which precedes log messages. It is not
+			recommended that this value be specified in the configuration
+			file.
+		  </p>
+		  <p>
+			The default value is the base name of the process generating
+			the log message (e.g., <code class="literal">twine-writerd</code>).
+		  </p>
+		</dd>
+	  </dl>
+  </section>
+
+  <section class="refsect1"><h1>See also</h1>
+	
+	<p>
+	  twine-writerd,
+	  twine-inject.
+	</p>
+  </section>
+
+</article></body>
+</html>
+
