@@ -7,3 +7,9 @@
 [submodule "libsparqlclient"]
 	path = libsparqlclient
 	url = git://github.com/bbcarchdev/libsparqlclient.git
+[submodule "docbook-html5"]
+	path = docbook-html5
+	url = git://github.com/bbcarchdev/docbook-html5.git
+[submodule "docs"]
+	path = docs
+	url = git://github.com/bbcarchdev/twine.git

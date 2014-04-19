@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<refentry xml:id="twine-writerd-8" xmlns="http://docbook.org/ns" version="5.0" xml:lang="en">
+<refentry xml:id="twine-conf-5" xmlns="http://docbook.org/ns" version="5.0" xml:lang="en">
   <info>
 	<title>Twine Configuration File</title>
 	<productname>Twine</productname>

@@ -20,10 +20,10 @@ ACLOCAL_AMFLAGS = -I m4
 
 DIST_SUBDIRS = libsupport libsparqlclient libmq libutils libtwine \
 	writer bridges processors \
-	init.d conf m4
+	init.d conf docs m4 docbook-html5
 
 SUBDIRS = libsupport @subdirs@ libmq libutils libtwine \
 	writer bridges processors \
-	init.d conf
+	init.d conf docs
 
 EXTRA_DIST = README.md LICENSE-2.0

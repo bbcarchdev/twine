@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<refentry xml:id="twine-writerd-8" xmlns="http://docbook.org/ns" version="5.0" xml:lang="en">
+<refentry xml:id="twine-inject-8" xmlns="http://docbook.org/ns" version="5.0" xml:lang="en">
   <info>
 	<title>Twine Queue Injection Utility</title>
 	<productname>Twine</productname>
@@ -36,7 +36,7 @@
 
   <refsynopsisdiv>
 	<cmdsynopsis>
-	    <command>twine-writerd</command>
+	    <command>twine-inject</command>
 		<arg choice="opt"><option>-h</option></arg>
 		<arg choice="opt"><option>-c <replaceable>config-file</replaceable></option></arg>
 		<arg choice="req"><option>-t <replaceable>mime-type</replaceable></option></arg>
