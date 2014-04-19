@@ -102,6 +102,7 @@ mq_next(MQ *connection)
 		return NULL;
 	}
 	message->connection = connection;
+	message->state = MQS_RECEIVED;
 	switch(connection->type)
 	{
 #ifdef WITH_LIBQPID_PROTON

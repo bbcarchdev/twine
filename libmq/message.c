@@ -30,6 +30,11 @@ mq_message_accept(MQMESSAGE *message)
 	int e;
 
 	RESET_ERROR(message->connection);
+	if(message->state != MQS_RECEIVED)
+	{
+		SET_SYSERR(message->connection, EINVAL);
+		return -1;
+	}
 	switch(message->connection->type)
 	{
 #ifdef WITH_LIBQPID_PROTON
@@ -54,6 +59,11 @@ mq_message_reject(MQMESSAGE *message)
 	int e;
 
 	RESET_ERROR(message->connection);
+	if(message->state != MQS_RECEIVED)
+	{
+		SET_SYSERR(message->connection, EINVAL);
+		return -1;
+	}
 	switch(message->connection->type)
 	{
 #ifdef WITH_LIBQPID_PROTON
@@ -78,6 +88,11 @@ mq_message_pass(MQMESSAGE *message)
 	int e;
 
 	RESET_ERROR(message->connection);
+	if(message->state != MQS_RECEIVED)
+	{
+		SET_SYSERR(message->connection, EINVAL);
+		return -1;
+	}
 	switch(message->connection->type)
 	{
 #ifdef WITH_LIBQPID_PROTON
