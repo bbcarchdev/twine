@@ -14,6 +14,8 @@ Copyright (c) 2014 BBC
 	  <para>
 		Copyright © 2014 BBC.
 	  </para>
+	  <para>Twine is licensed under the terms of the <link xlink:href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</link> and is available to browse or download via <link xlink:href="https://github.com/bbcarchdev/docbook-html5">GitHub</link>.</para>
+	  <para>The text of this document is licensed under the terms of the <link xlink:href="http://www.nationalarchives.gov.uk/doc/open-government-licence/version/2/">Open Government Licence, v2.0</link>.</para>
 	</legalnotice>
   </info>
 
@@ -25,6 +27,12 @@ Copyright (c) 2014 BBC
 	  <link xlink:href="http://jisc.ac.uk">Jisc</link>, the
 	  <link xlink:href="http://bufvc.ac.uk">British Universities Film &amp; Video Council</link> (BUFVC), and the <link xlink:href="http://www.bbc.co.uk/">BBC</link>.
 	  Its aim is to bring as much as possible of the UK’s publicly-held archives, and more besides, to learners and teachers across the UK.
+	</para>
+	<para>
+	  Twine has been released as open source software under the terms of the
+	  <link xlink:href="http://www.apache.org/licenses/LICENSE-2.0">Apache
+	  License, 2.0</link>. You can browse and download the source from
+	  the <link xlink:href="https://github.com/bbcarchdev/twine">Twine GitHub repository</link>.
 	</para>
   </preface>
 
