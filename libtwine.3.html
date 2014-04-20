@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+	<head>
+
+			<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+			<meta charset="utf-8" />
+			<!--[if lt IE 9]><script>document.createElement('header');document.createElement('nav');document.createElement('section');document.createElement('article');document.createElement('aside');document.createElement('footer');</script><![endif]-->
+		<title>libtwine</title><link rel="stylesheet" type="text/css" href="http://bbcarchdev.github.io/painting-by-numbers/style.css"/><link rel="stylesheet" type="text/css" href="http://bbcarchdev.github.io/painting-by-numbers/print.css" media="print"/><link rel="stylesheet" type="text/css" href="http://cloud.typography.com/6699852/732262/css/fonts.css"/><link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Roboto:300,500,300italic,500italic|Inconsolata|Arapey"/><link rel="stylesheet" type="text/css" href="local.css"/><meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1"/><!--[if lt IE 9]><link rel="stylesheet" type="text/css" href="http://bbcarchdev.github.io/painting-by-numbers/ie78.css" /><![endif]-->
+	</head>
+<body class="refentry"><header><nav class="global"><div class="inner"><ul>
+		<li class="logo"><a href="http://bbcarchdev.github.io/res/"><abbr title="Research &amp; Education Space">RES</abbr></a></li>
+		<li><a href="http://bbcarchdev.github.io/res/guides">Guides</a></li>
+		<li><a href="http://acropolis.org.uk">Developer API</a></li>
+		<li><a href="http://bbcarchdev.github.io/res/tools">Tools</a></li>
+		<li><a href="http://bbcarchdev.github.io/res/code">Source code</a></li>
+	</ul></div></nav>
+		<div class="masthead"></div>
+		<h1>libtwine</h1><h2>Twine processor module API</h2></header><article>
+  
+  
+  
+
+  
+
+  <section class="refsynopsisdiv"><h1>Synopsis</h1>
+	<p class="cmdsynopsis"><code>
+	  <kbd class="command">cc</kbd>
+	  flag
+	  file …
+	  -ltwine
+	  library …
+	</code></p>
+	
+	  #include &lt;libtwine.h&gt;
+	
+  </section>
+  
+  <section class="refsect1"><h1>Description</h1>
+	
+	<p>
+	  libtwine provides the API to
+	  <a href="http://bbcarchdev.github.io/twine/">Twine</a>
+	  which is used by loadable processor modules.
+	</p>	
+  </section>
+
+  <section class="refsect1"><h1>Interfaces</h1>
+	
+	<p>
+	  libtwine provides the public interfaces listed
+	  below:
+	</p>
+	
+	<div class="table"><table><thead><tr><th scope="col">Function</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code class="function">twine_plugin_register</code></td><td>Invoked by a module in order to perform self-registration</td></tr><tr><td><code class="function">twine_rdf_world</code></td><td>Obtain the shared <code class="type">librdf_world</code> instance</td></tr><tr><td><code class="function">twine_rdf_model_create</code></td><td>Create a new <code class="type">librdf_model</code> using the shared <code class="type">librdf_world</code></td></tr><tr><td><code class="function">twine_rdf_model_parse</code></td><td>Parse a buffer containing serialised RDF into a <code class="type">librdf_model</code></td></tr><tr><td><code class="function">twine_sparql_create</code></td><td>Create a new SPARQL connection based upon the Twine configuration settings</td></tr><tr><td><code class="function">twine_sparql_put</code></td><td>Replace a named graph with the N-Triples in the supplied buffer using a SPARQL datastore PUT operation</td></tr><tr><td><code class="function">twine_sparql_put_stream</code></td><td>Replace a named graph with the contents of a <code class="type">librdf_stream</code> using a SPARQL datastore PUT operation</td></tr><tr><td><code class="function">twine_logf</code></td><td>Log an event using the configured logging mechanism</td></tr><tr><td><code class="function">twine_vlogf</code></td><td>Log an event (passing a <code class="type">va_args</code>) using the configured logging mechanism</td></tr><tr><td><code class="function">twine_config_get</code></td><td>Copy a configuration value into the supplied buffer</td></tr><tr><td><code class="function">twine_config_geta</code></td><td>Duplicate a configuration value and return it</td></tr><tr><td><code class="function">twine_config_get_int</code></td><td>Return the integer value of a configuration value</td></tr><tr><td><code class="function">twine_config_get_bool</code></td><td>Return the integer value of a configuration value</td></tr><tr><td><code class="function">twine_config_get_all</code></td><td>Invoke a callback function for each configuration value matching given criteria</td></tr></tbody></table></div>
+  </section>
+  
+</article></body>
+</html>
+

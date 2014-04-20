@@ -177,6 +177,15 @@ Copyright (c) 2014 BBC
 		</listitem>
 	  </varlistentry>
 
+	  <varlistentry>
+		<term><link xlink:href="libtwine.3.html"><package>libtwine</package></link></term>
+		<listitem>
+		  <para>
+			The API provided to loadable processor modules.
+		  </para>
+		</listitem>
+	  </varlistentry>
+
 	</variablelist>
   </section>
 

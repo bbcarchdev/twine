@@ -27,7 +27,8 @@ dist_noinst_DATA = \
 	index.html twine.xml local.css \
 	twine-writerd.8.html \
 	twine-inject.8.html \
-	twine.conf.5.html
+	twine.conf.5.html \
+	libtwine.3.html
 
 if BUILD_DOCS
 
@@ -59,6 +60,15 @@ twine-inject.8.html: $(top_srcdir)/bridges/twine-inject.xml $(XSLT) $(abs_top_sr
 		$<
 
 twine.conf.5.html: $(top_srcdir)/conf/twine.conf.xml $(XSLT) $(abs_top_srcdir)/docbook-html5/res-links.xml $(abs_top_srcdir)/docbook-html5/res-nav.xml
+	$(XSLTPROC) --nonet --xinclude \
+		--param "html.linksfile" "'$(abs_top_srcdir)/docbook-html5/res-links.xml'" \
+		--param "html.navfile" "'$(abs_top_srcdir)/docbook-html5/res-nav.xml'" \
+		--param "html.ie78css" "'http://bbcarchdev.github.io/painting-by-numbers/ie78.css'" \
+		-o $@ \
+		$(top_srcdir)/docbook-html5/docbook-html5.xsl \
+		$<
+
+libtwine.3.html: $(top_srcdir)/libtwine/libtwine.xml $(XSLT) $(abs_top_srcdir)/docbook-html5/res-links.xml $(abs_top_srcdir)/docbook-html5/res-nav.xml
 	$(XSLTPROC) --nonet --xinclude \
 		--param "html.linksfile" "'$(abs_top_srcdir)/docbook-html5/res-links.xml'" \
 		--param "html.navfile" "'$(abs_top_srcdir)/docbook-html5/res-nav.xml'" \
