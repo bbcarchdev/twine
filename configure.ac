@@ -41,7 +41,27 @@ BT_REQUIRE_LIBXSLT
 BT_REQUIRE_LIBSPARQLCLIENT_INCLUDED
 
 BT_BUILD_DOCS
-AM_CONDITIONAL([BUILD_DOCS],[test x"$build_docs" = x"yes"])
+
+## Override the XML2HTML variable to use docbook-html5 XSLT
+if test x"$build_docs" = x"yes" ; then
+   XML2HTML="\$(XSLTPROC) --nonet --xinclude \
+   		--param \"html.linksfile\" \"'\$(abs_top_srcdir)/docbook-html5/res-links.xml'\" \
+		--param \"html.navfile\" \"'\$(abs_top_srcdir)/docbook-html5/res-nav.xml'\" \
+		--param \"html.ie78css\" \"'http://bbcarchdev.github.io/painting-by-numbers/ie78.css'\" \
+		-o \$@ \
+		\$(top_srcdir)/docbook-html5/docbook-html5.xsl"
+fi
+
+XSLTFILES='$(top_srcdir)/docbook-html5/docbook-html5.xsl \
+	$(top_srcdir)/docbook-html5/doc.xsl \
+	$(top_srcdir)/docbook-html5/block.xsl \
+	$(top_srcdir)/docbook-html5/inline.xsl \
+	$(top_srcdir)/docbook-html5/toc.xsl \
+	$(top_srcdir)/docbook-html5/res-links.xml \
+	$(top_srcdir)/docbook-html5/res-nav.xml'
+
+AC_SUBST([XML2HTML])
+AC_SUBST([XSLTFILES])
 
 BT_DEFINE_PREFIX
 
