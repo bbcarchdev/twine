@@ -16,13 +16,6 @@
 ##  See the License for the specific language governing permissions and
 ##  limitations under the License.
 
-XSLT = \
-	$(top_srcdir)/docbook-html5/docbook-html5.xsl \
-	$(top_srcdir)/docbook-html5/doc.xsl \
-	$(top_srcdir)/docbook-html5/block.xsl \
-	$(top_srcdir)/docbook-html5/inline.xsl \
-	$(top_srcdir)/docbook-html5/toc.xsl
-
 dist_noinst_DATA = \
 	index.html twine.xml local.css \
 	twine-writerd.8.html \
@@ -30,51 +23,17 @@ dist_noinst_DATA = \
 	twine.conf.5.html \
 	libtwine.3.html
 
-if BUILD_DOCS
+index.html: twine.xml $(XSLTFILES)
+	$(XML2HTML) -o $@ $<
 
-index.html: twine.xml $(XSLT) $(abs_top_srcdir)/docbook-html5/res-links.xml $(abs_top_srcdir)/docbook-html5/res-nav.xml
-	$(XSLTPROC) --nonet --xinclude \
-		--param "html.linksfile" "'$(abs_top_srcdir)/docbook-html5/res-links.xml'" \
-		--param "html.navfile" "'$(abs_top_srcdir)/docbook-html5/res-nav.xml'" \
-		--param "html.ie78css" "'http://bbcarchdev.github.io/painting-by-numbers/ie78.css'" \
-		-o $@ \
-		$(top_srcdir)/docbook-html5/docbook-html5.xsl \
-		$<
+twine-writerd.8.html: $(top_srcdir)/writer/twine-writerd.xml $(XSLTFILES)
+	$(XML2HTML) $<
 
-twine-writerd.8.html: $(top_srcdir)/writer/twine-writerd.xml $(XSLT) $(abs_top_srcdir)/docbook-html5/res-links.xml $(abs_top_srcdir)/docbook-html5/res-nav.xml
-	$(XSLTPROC) --nonet --xinclude \
-		--param "html.linksfile" "'$(abs_top_srcdir)/docbook-html5/res-links.xml'" \
-		--param "html.navfile" "'$(abs_top_srcdir)/docbook-html5/res-nav.xml'" \
-		--param "html.ie78css" "'http://bbcarchdev.github.io/painting-by-numbers/ie78.css'" \
-		-o $@ \
-		$(top_srcdir)/docbook-html5/docbook-html5.xsl \
-		$<
+twine-inject.8.html: $(top_srcdir)/bridges/twine-inject.xml $(XSLTFILES)
+	$(XML2HTML) $<
 
-twine-inject.8.html: $(top_srcdir)/bridges/twine-inject.xml $(XSLT) $(abs_top_srcdir)/docbook-html5/res-links.xml $(abs_top_srcdir)/docbook-html5/res-nav.xml
-	$(XSLTPROC) --nonet --xinclude \
-		--param "html.linksfile" "'$(abs_top_srcdir)/docbook-html5/res-links.xml'" \
-		--param "html.navfile" "'$(abs_top_srcdir)/docbook-html5/res-nav.xml'" \
-		--param "html.ie78css" "'http://bbcarchdev.github.io/painting-by-numbers/ie78.css'" \
-		-o $@ \
-		$(top_srcdir)/docbook-html5/docbook-html5.xsl \
-		$<
+twine.conf.5.html: $(top_srcdir)/conf/twine.conf.xml $(XSLTFILES)
+	$(XML2HTML) $<
 
-twine.conf.5.html: $(top_srcdir)/conf/twine.conf.xml $(XSLT) $(abs_top_srcdir)/docbook-html5/res-links.xml $(abs_top_srcdir)/docbook-html5/res-nav.xml
-	$(XSLTPROC) --nonet --xinclude \
-		--param "html.linksfile" "'$(abs_top_srcdir)/docbook-html5/res-links.xml'" \
-		--param "html.navfile" "'$(abs_top_srcdir)/docbook-html5/res-nav.xml'" \
-		--param "html.ie78css" "'http://bbcarchdev.github.io/painting-by-numbers/ie78.css'" \
-		-o $@ \
-		$(top_srcdir)/docbook-html5/docbook-html5.xsl \
-		$<
-
-libtwine.3.html: $(top_srcdir)/libtwine/libtwine.xml $(XSLT) $(abs_top_srcdir)/docbook-html5/res-links.xml $(abs_top_srcdir)/docbook-html5/res-nav.xml
-	$(XSLTPROC) --nonet --xinclude \
-		--param "html.linksfile" "'$(abs_top_srcdir)/docbook-html5/res-links.xml'" \
-		--param "html.navfile" "'$(abs_top_srcdir)/docbook-html5/res-nav.xml'" \
-		--param "html.ie78css" "'http://bbcarchdev.github.io/painting-by-numbers/ie78.css'" \
-		-o $@ \
-		$(top_srcdir)/docbook-html5/docbook-html5.xsl \
-		$<
-
-endif
+libtwine.3.html: $(top_srcdir)/libtwine/libtwine.xml $(XSLTFILES)
+	$(XML2HTML) $<
