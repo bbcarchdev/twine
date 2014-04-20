@@ -1,0 +1,131 @@
+'\" t
+.\"     Title: libtwine
+.\"    Author: Mo McRoberts
+.\" Generator: DocBook XSL-NS Stylesheets v1.76.1 <http://docbook.sf.net/>
+.\"      Date: 04/20/2014
+.\"    Manual: Library functions
+.\"    Source: Twine workflow engine
+.\"  Language: English
+.\"
+.TH "LIBTWINE" "3" "04/20/2014" "Twine workflow engine" "Library functions"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+libtwine \- Twine processor module API
+.SH "SYNOPSIS"
+.HP \w'\fBcc\fR\ 'u
+\fBcc\fR [\fB\fIflag\fR\fR] \fIfile\ \&...\fR \-ltwine [\fB\fIlibrary\ \&...\fR\fR]
+.sp
+.ft B
+.nf
+#include <libtwine\&.h>
+.fi
+.ft
+.SH "DESCRIPTION"
+.PP
+
+libtwine
+provides the API to
+\m[blue]\fBTwine\fR\m[]
+which is used by loadable processor modules\&.
+.SH "INTERFACES"
+.PP
+
+libtwine
+provides the public interfaces listed below:
+.\" line length increase to cope w/ tbl weirdness
+.ll +(\n(LLu * 62u / 100u)
+.TS
+ll.
+\fIFunction\fR	\fIDescription\fR
+T{
+\fBtwine_plugin_register\fR
+T}	T{
+Invoked by a module in order to perform self\-registration
+T}
+T{
+\fBtwine_rdf_world\fR
+T}	T{
+Obtain the shared \fBlibrdf_world\fR instance
+T}
+T{
+\fBtwine_rdf_model_create\fR
+T}	T{
+Create a new \fBlibrdf_model\fR using the shared \fBlibrdf_world\fR
+T}
+T{
+\fBtwine_rdf_model_parse\fR
+T}	T{
+Parse a buffer containing serialised RDF into a \fBlibrdf_model\fR
+T}
+T{
+\fBtwine_sparql_create\fR
+T}	T{
+Create a new SPARQL connection based upon the Twine configuration settings
+T}
+T{
+\fBtwine_sparql_put\fR
+T}	T{
+Replace a named graph with the N\-Triples in the supplied buffer using a SPARQL datastore PUT operation
+T}
+T{
+\fBtwine_sparql_put_stream\fR
+T}	T{
+Replace a named graph with the contents of a \fBlibrdf_stream\fR using a SPARQL datastore PUT operation
+T}
+T{
+\fBtwine_logf\fR
+T}	T{
+Log an event using the configured logging mechanism
+T}
+T{
+\fBtwine_vlogf\fR
+T}	T{
+Log an event (passing a \fBva_args\fR) using the configured logging mechanism
+T}
+T{
+\fBtwine_config_get\fR
+T}	T{
+Copy a configuration value into the supplied buffer
+T}
+T{
+\fBtwine_config_geta\fR
+T}	T{
+Duplicate a configuration value and return it
+T}
+T{
+\fBtwine_config_get_int\fR
+T}	T{
+Return the integer value of a configuration value
+T}
+T{
+\fBtwine_config_get_bool\fR
+T}	T{
+Return the integer value of a configuration value
+T}
+T{
+\fBtwine_config_get_all\fR
+T}	T{
+Invoke a callback function for each configuration value matching given criteria
+T}
+.TE
+.\" line length decrease back to previous value
+.ll -(\n(LLu * 62u / 100u)
+.sp
