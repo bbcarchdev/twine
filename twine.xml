@@ -151,7 +151,7 @@ Copyright (c) 2014 BBC
 	<title>Manual pages</title>
 	<variablelist>
 	  <varlistentry>
-		<term><link xlink:href="twine-writerd.8.html"><command>twine-writerd</command></link></term>
+		<term><link xlink:href="twine-writerd.8"><command>twine-writerd</command></link></term>
 		<listitem>
 		  <para>
 			Twine writer daemon.
@@ -160,7 +160,7 @@ Copyright (c) 2014 BBC
 	  </varlistentry>
 
 	  <varlistentry>
-		<term><link xlink:href="twine-inject.8.html"><command>twine-inject</command></link></term>
+		<term><link xlink:href="twine-inject.8"><command>twine-inject</command></link></term>
 		<listitem>
 		  <para>
 			Inject a file into the Twine processing queue.
@@ -169,7 +169,7 @@ Copyright (c) 2014 BBC
 	  </varlistentry>
 
 	  <varlistentry>
-		<term><link xlink:href="twine.conf.5.html"><command>twine.conf</command></link></term>
+		<term><link xlink:href="twine.conf.5"><command>twine.conf</command></link></term>
 		<listitem>
 		  <para>
 			Twine configuration file.
@@ -178,7 +178,7 @@ Copyright (c) 2014 BBC
 	  </varlistentry>
 
 	  <varlistentry>
-		<term><link xlink:href="libtwine.3.html"><package>libtwine</package></link></term>
+		<term><link xlink:href="libtwine.3"><package>libtwine</package></link></term>
 		<listitem>
 		  <para>
 			The API provided to loadable processor modules.

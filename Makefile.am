@@ -24,7 +24,7 @@ dist_noinst_DATA = \
 	libtwine.3.html
 
 index.html: twine.xml $(XSLTFILES)
-	$(XML2HTML) -o $@ $<
+	$(XML2HTML) $<
 
 twine-writerd.8.html: $(top_srcdir)/writer/twine-writerd.xml $(XSLTFILES)
 	$(XML2HTML) $<
