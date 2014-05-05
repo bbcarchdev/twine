@@ -16,6 +16,11 @@
 ##  See the License for the specific language governing permissions and
 ##  limitations under the License.
 
+XML2HTMLFLAGS = \
+	--param "html.linksfile" "'file://$(abs_top_srcdir)/docbook-html5/res-links.xml'" \
+	--param "html.navfile" "'file://$(abs_top_srcdir)/docbook-html5/res-nav.xml'" \
+	--param "html.ie78css" "'http://bbcarchdev.github.io/painting-by-numbers/ie78.css'"
+
 dist_noinst_DATA = \
 	index.html twine.xml local.css \
 	twine-writerd.8.html \
