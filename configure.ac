@@ -1,4 +1,4 @@
-##  Twine: A Linked Data workflow engine
+1;2c##  Twine: A Linked Data workflow engine
 ##
 ##  Author: Mo McRoberts
 ##
@@ -39,6 +39,7 @@ BT_REQUIRE_LIBQPID_PROTON
 BT_REQUIRE_LIBXML2
 BT_REQUIRE_LIBXSLT
 BT_REQUIRE_LIBSPARQLCLIENT_INCLUDED
+BT_REQUIRE_LIBUUID
 
 use_docbook_html5=yes
 BT_BUILD_DOCS
@@ -55,6 +56,7 @@ libtwine/libtwine-uninstalled.pc
 writer/Makefile
 bridges/Makefile
 processors/Makefile
+processors/spindle/Makefile
 init.d/Makefile
 conf/Makefile
 conf/twine.conf
