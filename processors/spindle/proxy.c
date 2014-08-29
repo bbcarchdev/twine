@@ -124,6 +124,14 @@ spindle_proxy_create(const char *uri1, const char *uri2)
 		twine_logf(LOG_DEBUG, PLUGIN_NAME ": <%s> <=> <%s> already exists\n", uri1, uri2);		
 		return 0;
 	}
+	/* If both entities already have local proxies, we just pick the first
+	 * to use as the new unified proxy.
+	 *
+	 * If only one entity has a proxy, just use that and attach the new
+	 * referencing triples to it.
+	 *
+	 * If neither does, generate a new local name and populate it.
+	 */
 	uu = (u1 ? u1 : (u2 ? u2 : NULL));
 	if(!uu)
 	{
@@ -133,19 +141,22 @@ spindle_proxy_create(const char *uri1, const char *uri2)
 			return -1;
 		}
 	}
+	/* If the first entity didn't previously have a local proxy, attach it */
 	if(!u1)
 	{
-		twine_logf(LOG_DEBUG, PLUGIN_NAME ": adding <%s> owl:sameAs <%s>\n", uri1, uu);
 		spindle_proxy_relate(uri1, uu);
-		/* <uri1> owl:sameAs <uu> */
 	}
+	/* If the second entity didn't previously have a local proxy, attach it */
 	if(!u2)
 	{
 		spindle_proxy_relate(uri2, uu);
-		/* <uri2> owl:sameAs <uu> */
 	}
 	else if(strcmp(u2, uu))
 	{
+		/* However, if it did have a local proxy and it was different to
+		 * the one we've chosen, migrate its references over, leaving a single
+		 * unified proxy.
+		 */
 		twine_logf(LOG_DEBUG, PLUGIN_NAME ": relocating references from <%s> to <%s>\n", u2, uu);
 		spindle_proxy_migrate(u2, uu, NULL);
 	}
