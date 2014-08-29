@@ -162,27 +162,167 @@ spindle_proxy_create(const char *uri1, const char *uri2)
 int
 spindle_proxy_migrate(const char *from, const char *to, char **refs)
 {
-	size_t c;
+	size_t c, slen, len;
+	int allocated;
+	char *qbuf, *qp;
 
-	if(!refs)
+	if(refs)
 	{
-		refs = spindle_proxy_refs(from);
+		allocated = 0;
 	}
-	/* dels = 'DELETE DATA { GRAPH <root> { ' */
+	else
+	{
+		allocated = 1;
+		refs = spindle_proxy_refs(from);
+		if(!refs)
+		{
+			twine_logf(LOG_ERR, PLUGIN_NAME ": failed to obtain references from <%s>\n", from);
+			return -1;
+		}
+	}
+	if(strlen(from) > strlen(to))
+	{
+		slen = strlen(from);
+	}
+	else
+	{
+		slen = strlen(to);
+	}
+	len = 80 + strlen(spindle_root);
 	for(c = 0; refs[c]; c++)
 	{
-		/* dels += '<ref> owl:sameAs <from>' */
-		/* adds += '<ref> owl:sameAs <to>' */
+		len += strlen(refs[c]) +  slen + 16;
+	}
+	qbuf = (char *) calloc(1, len + 1);
+	if(!qbuf)
+	{
+		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to allocate SPARQL query buffer\n");
+		if(allocated)
+		{
+			spindle_proxy_refs_destroy(refs);
+		}
+		return -1;
+	}
+	/* Generate an INSERT DATA for the new references */
+	qp = qbuf;
+	qp += sprintf(qp, "PREFIX owl: <http://www.w3.org/2002/07/owl#>\n"
+				  "INSERT DATA {\n"
+				  "GRAPH <%s> {\n", spindle_root);
+	for(c = 0; refs[c]; c++)
+	{
+		qp += sprintf(qp, "<%s> owl:sameAs <%s> .\n", refs[c], to);
+	}
+	qp += sprintf(qp, "} }");
+	sparql_update(spindle_sparql, qbuf, strlen(qbuf));
+	/* Generate a DELETE DATA for the old references */
+	qp = qbuf;
+	qp += sprintf(qp, "PREFIX owl: <http://www.w3.org/2002/07/owl#>\n"
+				  "DELETE DATA {\n"
+				  "GRAPH <%s> {\n", spindle_root);
+	for(c = 0; refs[c]; c++)
+	{
+		qp += sprintf(qp, "<%s> owl:sameAs <%s> .\n", refs[c], from);
+	}
+	qp += sprintf(qp, "} }");
+	sparql_update(spindle_sparql, qbuf, strlen(qbuf));
+	free(qbuf);
+	if(allocated)
+	{
+		spindle_proxy_refs_destroy(refs);
 	}
 	return 0;
 }
 
 /* Obtain all of the outbound references from a proxy */
-char *
+char **
 spindle_proxy_refs(const char *uri)
 {
-	/* SELECT DISTINCT ?s FROM <root> WHERE { ?s owl:sameAs <uri> . } */
-	return NULL;
+	char *qbuf;
+	char **refs, **p;
+	size_t l;
+	SPARQLRES *res;
+	SPARQLROW *row;
+	librdf_node *node;
+	librdf_uri *ruri;
+	size_t count, size;
+	const char *str;
+
+	refs = NULL;
+	count = 0;
+	size = 0;
+	l = strlen(uri) + strlen(spindle_root) + 127;
+	qbuf = (char *) calloc(1, l + 1);
+	if(!qbuf)
+	{
+		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to allocate SPARQL query string\n");
+		return NULL;
+	}
+	snprintf(qbuf, l, "SELECT DISTINCT ?s FROM <%s> WHERE { ?s <http://www.w3.org/2002/07/owl#sameAs> <%s> . }", spindle_root, uri);
+	res = sparql_query(spindle_sparql, qbuf, strlen(qbuf));
+	if(!res)
+	{
+		twine_logf(LOG_ERR, PLUGIN_NAME ": SPARQL query failed");
+		free(qbuf);
+		return NULL;
+	}
+	free(qbuf);
+	twine_logf(LOG_DEBUG, PLUGIN_NAME ": <%s> =>\n", uri);
+	while((row = sparqlres_next(res)))
+	{
+		node = sparqlrow_binding(row, 0);
+		if(node && librdf_node_is_resource(node) && (ruri = librdf_node_get_uri(node)))
+		{
+			str = (const char *) librdf_uri_as_string(ruri);
+			if(!str)
+			{
+				twine_logf(LOG_ERR, PLUGIN_NAME ": failed to obtain string form of URI\n");
+				continue;
+			}
+			twine_logf(LOG_DEBUG, PLUGIN_NAME ": + <%s>\n", str);
+			if(count + 1 >= size)
+			{
+				p = (char **) realloc(refs, sizeof(char *) * (size + SET_BLOCKSIZE));
+				if(!p)
+				{
+					twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to extend reference list\n");
+					spindle_proxy_refs_destroy(refs);
+					refs = NULL;
+					break;
+				}
+				refs = p;
+				size += SET_BLOCKSIZE;				
+			}
+			refs[count] = strdup(str);
+			if(!refs[count])
+			{
+				twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to duplicate <%s>\n", str);
+				spindle_proxy_refs_destroy(refs);
+				refs = NULL;
+				break;				
+			}
+			count++;
+			refs[count] = NULL;
+		}
+	}
+	sparqlres_destroy(res);
+	return refs;
+}
+
+/* Destroy a list of references */
+void
+spindle_proxy_refs_destroy(char **refs)
+{
+	size_t c;
+
+	if(!refs)
+	{
+		return;
+	}
+	for(c = 0; refs[c]; c++)
+	{
+		free(refs[c]);
+	}
+	free(refs);
 }
 
 /* Store a relationship between a proxy and a processed entity */

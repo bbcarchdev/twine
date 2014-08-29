@@ -73,6 +73,8 @@ int spindle_proxy_create(const char *uri1, const char *uri2);
 /* Store a relationship between a proxy and a processed entity */
 int spindle_proxy_relate(const char *remote, const char *proxy);
 /* Obtain all of the outbound references from a proxy */
-char *spindle_proxy_refs(const char *uri);
+char **spindle_proxy_refs(const char *uri);
+/* Destroy a list of references */
+void spindle_proxy_refs_destroy(char **refs);
 
 #endif /*!P_SPINDLE_H_*/
