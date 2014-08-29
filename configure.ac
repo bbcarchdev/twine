@@ -1,4 +1,4 @@
-1;2c##  Twine: A Linked Data workflow engine
+##  Twine: A Linked Data workflow engine
 ##
 ##  Author: Mo McRoberts
 ##
