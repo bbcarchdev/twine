@@ -96,16 +96,63 @@ twine_sparql_create(void)
 int
 twine_sparql_put(const char *uri, const char *triples, size_t length)
 {
-	int r;
+	int r, pp;
 	SPARQL *conn;
-	
+	librdf_model *oldgraph, *newgraph;
+	char *qbuf;
+	size_t l;
+
+	pp = twine_postproc_registered_();
 	conn = twine_sparql_create();
 	if(!conn)
 	{
 		return -1;
 	}
+	if(pp)
+	{
+		/* Obtain 'old' graph */
+		l = strlen(uri) + 60;
+		qbuf = (char *) calloc(1, l + 1);
+		if(!qbuf)
+		{
+			sparql_destroy(conn);
+			return -1;
+		}
+		snprintf(qbuf, l, "SELECT * WHERE { GRAPH <%s> { ?s ?p ?o . } }", uri);
+		oldgraph = twine_rdf_model_create();
+		if(!oldgraph)
+		{
+			sparql_destroy(conn);
+			return -1;
+		}
+		r = sparql_query_model(conn, qbuf, strlen(qbuf), oldgraph);
+		free(qbuf);
+		if(r)
+		{
+			twine_logf(LOG_ERR, "failed to obtain triples for graph <%s>\n", uri);
+			librdf_free_model(oldgraph);
+			sparql_destroy(conn);
+			return -1;
+		}
+	}
 	r = sparql_put(conn, uri, triples, length);
 	sparql_destroy(conn);
+	if(!r && pp)
+	{
+		newgraph = twine_rdf_model_create();
+		if(!twine_rdf_model_parse(newgraph, "application/n-triples", triples, length))
+		{
+			twine_postproc_process_(newgraph, oldgraph, uri);
+		}
+	}
+	if(oldgraph)
+	{
+		librdf_free_model(oldgraph);
+	}
+	if(newgraph)
+	{
+		librdf_free_model(newgraph);
+	}
 	return r;
 }
 
@@ -118,7 +165,6 @@ twine_sparql_put_stream(const char *uri, librdf_stream *stream)
 	librdf_world *world;
 	librdf_serializer *serializer;
 	int r;
-	SPARQL *conn;
 
 	world = twine_rdf_world();
 	serializer = librdf_new_serializer(world, "ntriples", NULL, NULL);
@@ -135,16 +181,7 @@ twine_sparql_put_stream(const char *uri, librdf_stream *stream)
 		twine_logf(LOG_ERR, "failed to serialise buffer\n");
 		return -1;
 	}
-	conn = twine_sparql_create();
-	if(conn)
-	{
-		r = sparql_put(conn, uri, buf, buflen);
-		sparql_destroy(conn);
-	}
-	else
-	{
-		r = -1;
-	}
+	r = twine_sparql_put(uri, buf, buflen);
 	librdf_free_memory(buf);
 	librdf_free_serializer(serializer);
 	return r;

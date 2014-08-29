@@ -24,11 +24,16 @@
 #include "p_libtwine.h"
 
 #define MIMETYPE_BLOCKSIZE              4
+#define POSTPROC_BLOCKSIZE              4
 #define PLUGINDIR                       LIBDIR "/twine/"
 
 static struct twine_mime_struct *mimetypes;
 static size_t mimecount, mimesize;
 static void *current;
+
+static struct twine_postproc_struct *postprocs;
+static size_t ppcount, ppsize;
+static int postprocessing;
 
 /* Internal: load a plug-in and invoke its initialiser callback */
 
@@ -130,6 +135,37 @@ twine_plugin_register(const char *mimetype, const char *description, twine_proce
 	return 0;
 }
 
+/* Register a post-processing module */
+int
+twine_postproc_register(const char *name, twine_postproc_fn fn)
+{
+	struct twine_postproc_struct *p;
+
+	if(ppcount >= ppsize)
+	{
+		p = (struct twine_postproc_struct *) realloc(postprocs, sizeof(struct twine_postproc_struct) * (ppsize + POSTPROC_BLOCKSIZE));
+		if(!p)
+		{
+			twine_logf(LOG_CRIT, "failed to allocate memory to register post-processing module '%s'\n", name);
+			return -1;
+		}
+		postprocs = p;
+		ppsize += POSTPROC_BLOCKSIZE;
+	}
+	p = &(postprocs[ppcount]);
+	p->module = current;
+	p->fn = fn;
+	p->name = strdup(name);
+	if(!p->name)
+	{
+		return -1;
+	}
+	ppcount++;
+	twine_logf(LOG_INFO, "registered post-processor module: '%s'\n", name);
+	return 0;
+}
+
+/* Internal: un-register all plugins attached to a module */
 int
 twine_plugin_unregister_all_(void *handle)
 {
@@ -152,6 +188,22 @@ twine_plugin_unregister_all_(void *handle)
 		}
 		mimecount--;
 	}
+	l = 0;
+	while(l < ppcount)
+	{
+		if(postprocs[l].module != handle)
+		{
+			l++;
+			continue;
+		}
+		twine_logf(LOG_INFO, "deregistering post-processor '%s'\n", postprocs[l].name);
+		free(postprocs[l].name);
+		if(l + 1 < ppcount)
+		{
+			memmove(&(postprocs[l]), &(postprocs[l + 1]), sizeof(struct twine_postproc_struct) * (ppcount - l - 1));
+		}
+		ppcount--;
+	}
 	return 0;
 }
 
@@ -160,14 +212,51 @@ int
 twine_plugin_process_(const char *mimetype, const char *message, size_t msglen)
 {
 	size_t l;
+	void *prev;
+	int r;
 
+	prev = current;
 	for(l = 0; l < mimecount; l++)
 	{
 		if(!strcmp(mimetypes[l].mimetype, mimetype))
 		{
-			return mimetypes[l].processor(mimetype, message, msglen);
+			current = mimetypes[l].module;
+			r = mimetypes[l].processor(mimetype, message, msglen);
+			current = prev;
+			return r;
 		}
 	}
 	twine_logf(LOG_ERR, "no available processor for messages of type '%s'\n", mimetype);
 	return -1;
+}
+
+/* Internal: return nonzero if any postprocessors have been registered */
+int
+twine_postproc_registered_(void)
+{
+	return (ppcount ? 1 : 0);
+}
+
+/* Internal: invoke post-processing handlers after a graph has been replaced */
+int
+twine_postproc_process_(librdf_model *newgraph, librdf_model *oldgraph, const char *graphuri)
+{
+	size_t c;
+	void *prev;
+
+	if(postprocessing)
+	{
+		return 0;
+	}
+	twine_logf(LOG_DEBUG, "invoking post-processors for <%s>\n", graphuri);
+	postprocessing = 1;
+	prev = current;
+	for(c = 0; c < ppcount; c++)
+	{
+		current = postprocs[c].module;
+		postprocs[c].fn(newgraph, oldgraph, graphuri);
+	}
+	current = prev;
+	postprocessing = 0;
+	return 0;
 }

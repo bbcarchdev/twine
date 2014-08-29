@@ -104,6 +104,10 @@ twine_rdf_model_parse(librdf_model *model, const char *mime, const char *buf, si
 	{
 		name = "nquads";
 	}
+	else if(!strcmp(mime, "application/n-triples"))
+	{
+		name = "ntriples";
+	}
 	/* If we have a specific parser name, don't use the MIME type */
 	if(name)
 	{

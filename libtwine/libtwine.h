@@ -36,11 +36,20 @@ extern "C" {
  */
 typedef int (*twine_processor_fn)(const char *uri, const char *data, size_t length);
 
+/* A Twine post-processing callback
+ *
+ * This callback is invoked after a graph has been added, removed, or modified
+ */
+typedef int (*twine_postproc_fn)(librdf_model *newgraph, librdf_model *oldgraph, const char *uri);
+
 /* Twine plug-in entry-point */
 int twine_plugin_init(void);
 
 /* Register a processor callback for a given MIME type */
 int twine_plugin_register(const char *mimetype, const char *description, twine_processor_fn fn);
+
+/* Register a post-processor */
+int twine_postproc_register(const char *name, twine_postproc_fn fn);
 
 /* Obtain the shared librdf world */
 librdf_world *twine_rdf_world(void);

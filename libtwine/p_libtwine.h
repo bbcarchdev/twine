@@ -37,6 +37,13 @@ struct twine_mime_struct
 	void *module;
 };
 
+struct twine_postproc_struct
+{
+	twine_postproc_fn fn;
+	void *module;
+	char *name;
+};
+
 extern twine_log_fn twine_logger_;
 
 int twine_log_init_(twine_log_fn logfn);
