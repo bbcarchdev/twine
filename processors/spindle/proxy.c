@@ -112,16 +112,37 @@ spindle_proxy_locate(const char *uri)
 
 /* Assert that two URIs are equivalent */
 int
-spindle_proxy_create(const char *uri1, const char *uri2)
+spindle_proxy_create(const char *uri1, const char *uri2, struct spindle_strset_struct *changeset)
 {
 	char *u1, *u2, *uu;
 
 	u1 = spindle_proxy_locate(uri1);
-	u2 = spindle_proxy_locate(uri2);
+	if(uri2)
+	{
+		u2 = spindle_proxy_locate(uri2);
+	}
+	else
+	{
+		u2 = NULL;
+	}
 	if(u1 && u2 && !strcmp(u1, u2))
 	{
 		/* The coreference already exists */
-		twine_logf(LOG_DEBUG, PLUGIN_NAME ": <%s> <=> <%s> already exists\n", uri1, uri2);		
+		twine_logf(LOG_DEBUG, PLUGIN_NAME ": <%s> <=> <%s> already exists\n", uri1, uri2);
+		if(changeset)
+		{
+			spindle_strset_add(changeset, u1);
+		}
+		return 0;
+	}
+	else if(!uri2 && u1)
+	{
+		/* The lone subject already exists */
+		twine_logf(LOG_DEBUG, PLUGIN_NAME ": <%s> already exists\n", uri1);
+		if(changeset)
+		{
+			spindle_strset_add(changeset, u1);
+		}
 		return 0;
 	}
 	/* If both entities already have local proxies, we just pick the first
@@ -149,7 +170,10 @@ spindle_proxy_create(const char *uri1, const char *uri2)
 	/* If the second entity didn't previously have a local proxy, attach it */
 	if(!u2)
 	{
-		spindle_proxy_relate(uri2, uu);
+		if(uri2)
+		{
+			spindle_proxy_relate(uri2, uu);
+		}
 	}
 	else if(strcmp(u2, uu))
 	{
@@ -159,6 +183,14 @@ spindle_proxy_create(const char *uri1, const char *uri2)
 		 */
 		twine_logf(LOG_DEBUG, PLUGIN_NAME ": relocating references from <%s> to <%s>\n", u2, uu);
 		spindle_proxy_migrate(u2, uu, NULL);
+		if(changeset)
+		{
+			spindle_strset_add(changeset, u2);
+		}
+	}
+	if(changeset)
+	{
+		spindle_strset_add(changeset, uu);
 	}
 	free(u1);
 	free(u2);

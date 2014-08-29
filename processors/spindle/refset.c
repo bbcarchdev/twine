@@ -70,15 +70,45 @@ spindle_coref_extract(librdf_model *model, const char *graphuri)
 	}
 	librdf_free_stream(stream);
 	librdf_free_statement(query);
+	query = librdf_new_statement(spindle_world);
+	stream = librdf_model_find_statements(model, query);
+	while(!librdf_stream_end(stream))
+	{
+		st = librdf_stream_get_object(stream);
+		subj = librdf_statement_get_subject(st);
+		if(librdf_node_is_resource(subj) &&
+		   (uri = librdf_node_get_uri(subj)) &&
+		   (l = librdf_uri_as_string(uri)))
+		{
+			if(spindle_coref_add(set, (const char *) l, NULL))
+			{
+				spindle_coref_destroy(set);
+				set = NULL;
+				break;
+			}
+		}
+		librdf_stream_next(stream);
+	}
+	librdf_free_stream(stream);
+	librdf_free_statement(query);
 	return set;
 }
 
-/* Add a single co-reference to a set */
+/* Add a single co-reference to a set (or if r is NULL, a lone subject) */
 int
 spindle_coref_add(struct spindle_corefset_struct *set, const char *l, const char *r)
 {
 	struct spindle_coref_struct *p;
+	size_t c;
 	
+	for(c = 0; c < set->refcount; c++)
+	{
+		if(!strcmp(l, set->refs[c].left) &&
+		   (!r || !strcmp(r, set->refs[c].right)))
+		{
+			return 0;
+		}
+	}
 	if(set->refcount >= set->size)
 	{
 		p = (struct spindle_coref_struct *) realloc(set->refs, sizeof(struct spindle_coref_struct) * (set->size + SET_BLOCKSIZE));
@@ -93,8 +123,11 @@ spindle_coref_add(struct spindle_corefset_struct *set, const char *l, const char
 	p = &(set->refs[set->refcount]);
 	memset(p, 0, sizeof(struct spindle_coref_struct));
 	p->left = strdup(l);
-	p->right = strdup(r);
-	if(!p->left || !p->right)
+	if(r)
+	{
+		p->right = strdup(r);
+	}
+	if(!p->left || (r && !p->right))
 	{
 		free(p->left);
 		free(p->right);

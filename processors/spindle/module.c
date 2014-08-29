@@ -49,14 +49,11 @@
  *
  *   Extraction of browse metadata for attaching to proxies
  *
- *   Class derivation
+ *   Class derivation should be described in RDF
  *
  *   Sifting/splitting on de-assertion
  *
  *   Same-origin policies
- *
- *   Ensure that proxies entities are generated for all subjects, not solely
- *   the subject and object of owl:sameAs references.
  *
  */
 
@@ -106,9 +103,15 @@ static int
 spindle_process_(librdf_model *newgraph, librdf_model *oldgraph, const char *graph)
 {
 	struct spindle_corefset_struct *oldset, *newset;
+	struct spindle_strset_struct *changes;
 	size_t c;
 
 	twine_logf(LOG_DEBUG, PLUGIN_NAME ": processing updated graph <%s>\n", graph);
+	changes = spindle_strset_create();
+	if(!changes)
+	{
+		return -1;
+	}
 	/* find all owl:sameAs refs where either side is same-origin as graph */
 	oldset = spindle_coref_extract(oldgraph, graph);
 	if(!oldset)
@@ -128,11 +131,12 @@ spindle_process_(librdf_model *newgraph, librdf_model *oldgraph, const char *gra
 	twine_logf(LOG_DEBUG, PLUGIN_NAME ": new graph contains %d coreferences\n", (int) newset->refcount);
 	for(c = 0; c < newset->refcount; c++)
 	{
-		if(spindle_proxy_create(newset->refs[c].left, newset->refs[c].right))
+		if(spindle_proxy_create(newset->refs[c].left, newset->refs[c].right, changes))
 		{
 			twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create proxy entity\n");
 			spindle_coref_destroy(oldset);
 			spindle_coref_destroy(newset);
+			spindle_strset_destroy(changes);
 			return -1;
 		}
 	}
@@ -142,6 +146,9 @@ spindle_process_(librdf_model *newgraph, librdf_model *oldgraph, const char *gra
 	/* for each, invoke remove_coref() */
 	spindle_coref_destroy(oldset);
 	spindle_coref_destroy(newset);
+	/* Re-build the metadata for any related proxies */
+	spindle_cache_update_set(changes);
+	spindle_strset_destroy(changes);
 	return 0;
 }
 

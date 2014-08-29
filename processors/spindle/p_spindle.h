@@ -48,6 +48,13 @@ struct spindle_corefset_struct
 	size_t size;
 };
 
+struct spindle_strset_struct
+{
+	char **strings;
+	size_t count;
+	size_t size;
+};
+
 /* The librdf execution context from Twine */
 librdf_world *spindle_world;
 /* The URI of our graph, and prefix for proxy entities */
@@ -62,6 +69,13 @@ int spindle_coref_add(struct spindle_corefset_struct *set, const char *l, const 
 /* Free the resources used by a co-reference set */
 int spindle_coref_destroy(struct spindle_corefset_struct *set);
 
+/* Create an empty string-set */
+struct spindle_strset_struct *spindle_strset_create(void);
+/* Add a string to a string-set */
+int spindle_strset_add(struct spindle_strset_struct *set, const char *str);
+/* Free the resources used by a string set */
+int spindle_strset_destroy(struct spindle_strset_struct *set);
+
 /* Generate a new local URI for an external URI */
 char *spindle_proxy_generate(const char *uri);
 /* Look up the local URI for an external URI in the store */
@@ -69,12 +83,24 @@ char *spindle_proxy_locate(const char *uri);
 /* Move a set of references from one proxy to another */
 int spindle_proxy_migrate(const char *from, const char *to, char **refs);
 /* Assert that two URIs are equivalent */
-int spindle_proxy_create(const char *uri1, const char *uri2);
+int spindle_proxy_create(const char *uri1, const char *uri2, struct spindle_strset_struct *changeset);
 /* Store a relationship between a proxy and a processed entity */
 int spindle_proxy_relate(const char *remote, const char *proxy);
 /* Obtain all of the outbound references from a proxy */
 char **spindle_proxy_refs(const char *uri);
 /* Destroy a list of references */
 void spindle_proxy_refs_destroy(char **refs);
+
+/* Re-build the cached data for a set of proxies */
+int spindle_cache_update_set(struct spindle_strset_struct *set);
+/* Re-build the cached data for the proxy entity identified by localname;
+ * if no references exist any more, the cached data will be removed.
+ */
+int spindle_cache_update(const char *localname);
+
+/* Determine the class of something */
+const char *spindle_class_match(librdf_model *model, struct spindle_strset_struct *classes);
+/* Update the classes of a proxy */
+int spindle_class_update(const char *localname, librdf_model *model);
 
 #endif /*!P_SPINDLE_H_*/
