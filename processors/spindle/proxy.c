@@ -191,7 +191,7 @@ spindle_proxy_migrate(const char *from, const char *to, char **refs)
 	len = 80 + strlen(spindle_root);
 	for(c = 0; refs[c]; c++)
 	{
-		len += strlen(refs[c]) +  slen + 16;
+		len += strlen(refs[c]) +  slen + 24;
 	}
 	qbuf = (char *) calloc(1, len + 1);
 	if(!qbuf)
@@ -266,7 +266,6 @@ spindle_proxy_refs(const char *uri)
 		return NULL;
 	}
 	free(qbuf);
-	twine_logf(LOG_DEBUG, PLUGIN_NAME ": <%s> =>\n", uri);
 	while((row = sparqlres_next(res)))
 	{
 		node = sparqlrow_binding(row, 0);
@@ -278,7 +277,6 @@ spindle_proxy_refs(const char *uri)
 				twine_logf(LOG_ERR, PLUGIN_NAME ": failed to obtain string form of URI\n");
 				continue;
 			}
-			twine_logf(LOG_DEBUG, PLUGIN_NAME ": + <%s>\n", str);
 			if(count + 1 >= size)
 			{
 				p = (char **) realloc(refs, sizeof(char *) * (size + SET_BLOCKSIZE));
