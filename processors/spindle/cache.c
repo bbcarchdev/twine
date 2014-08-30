@@ -42,6 +42,7 @@ spindle_cache_update_set(struct spindle_strset_struct *set)
 int
 spindle_cache_update(const char *localname)
 {
+	const char *classname;
 	char *buf;
 	size_t l;
 	int r;
@@ -92,7 +93,8 @@ spindle_cache_update(const char *localname)
 	librdf_model_context_remove_statements(model, ctxnode);
 	librdf_free_node(ctxnode);
 	
-	spindle_class_update(localname, model);
+	classname = spindle_class_update(localname, model);
+	spindle_predicate_update(localname, model, classname);
 	
 	librdf_free_model(model);
 

@@ -23,6 +23,8 @@
 
 #include "p_spindle.h"
 
+/* This won't scale without inference at point of update */
+
 struct classmatch_struct
 {
 	const char *uri;
@@ -65,6 +67,7 @@ static const char *physical_matches[] = {
 
 static const char *concept_matches[] = {
 	"http://www.w3.org/2004/02/skos/core#Concept",
+	"http://www.w3.org/2008/05/skos#Concept",
 	NULL,
 };
 
@@ -137,6 +140,10 @@ static struct classmatch_struct matches[] = {
 	{
 		"http://xmlns.com/foaf/0.1/Document",		
 		digital_matches,
+	},
+	{
+		NULL,
+		NULL
 	}
 };
 
@@ -171,7 +178,7 @@ spindle_class_match(librdf_model *model, struct spindle_strset_struct *classes)
 			}
 			if(!match)
 			{
-				for(c = 0; c < sizeof(matches) / sizeof(struct classmatch_struct); c++)
+				for(c = 0; matches[c].uri; c++)
 				{
 					for(d = 0; matches[c].match[d]; d++)
 					{
@@ -204,9 +211,10 @@ spindle_class_match(librdf_model *model, struct spindle_strset_struct *classes)
 }
 
 /* Update the classes of a proxy */
-int
+const char *
 spindle_class_update(const char *localname, librdf_model *model)
 {
+	const char *classname;
 	struct spindle_strset_struct *classes;
 	size_t c, len;
 	char *buf, *sp;
@@ -214,9 +222,9 @@ spindle_class_update(const char *localname, librdf_model *model)
 	classes = spindle_strset_create();
 	if(!classes)
 	{
-		return -1;
+		return NULL;
 	}
-	spindle_class_match(model, classes);
+	classname = spindle_class_match(model, classes);
 	len = strlen(localname) + strlen(spindle_root) + 100;
 	for(c = 0; c < classes->count; c++)
 	{
@@ -227,7 +235,7 @@ spindle_class_update(const char *localname, librdf_model *model)
 	{
 		twine_logf(LOG_CRIT, "failed to allocate SPARQL update buffer\n");
 		spindle_strset_destroy(classes);
-		return -1;
+		return NULL;
 	}
 	sp = buf;
 	sp += sprintf(sp, "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
@@ -244,9 +252,9 @@ spindle_class_update(const char *localname, librdf_model *model)
 	{
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to perform SPARQL update\n");
 		free(buf);
-		return -1;
+		return NULL;
 	}
 	free(buf);
 	
-	return 0;
+	return classname;
 }

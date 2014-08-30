@@ -55,6 +55,9 @@
  *
  *   Same-origin policies
  *
+ *   When a proxy is created or updated, proxies for entities referencing the
+ *   entities it's a proxy for should also be updated so that new in-bound
+ *   references can be properly proxied
  */
 
 #ifdef HAVE_CONFIG_H

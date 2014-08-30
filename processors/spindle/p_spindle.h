@@ -101,6 +101,9 @@ int spindle_cache_update(const char *localname);
 /* Determine the class of something */
 const char *spindle_class_match(librdf_model *model, struct spindle_strset_struct *classes);
 /* Update the classes of a proxy */
-int spindle_class_update(const char *localname, librdf_model *model);
+const char *spindle_class_update(const char *localname, librdf_model *model);
+
+/* Update the properties of a proxy */
+int spindle_predicate_update(const char *localname, librdf_model *model, const char *classname);
 
 #endif /*!P_SPINDLE_H_*/
