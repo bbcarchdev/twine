@@ -212,12 +212,13 @@ spindle_class_match(librdf_model *model, struct spindle_strset_struct *classes)
 
 /* Update the classes of a proxy */
 const char *
-spindle_class_update(const char *localname, librdf_model *model)
+spindle_class_update(const char *localname, librdf_model *model, librdf_model *proxymodel, librdf_node *graph)
 {
 	const char *classname;
 	struct spindle_strset_struct *classes;
-	size_t c, len;
-	char *buf, *sp;
+	size_t c;
+	librdf_node *node;
+	librdf_statement *base, *st;
 
 	classes = spindle_strset_create();
 	if(!classes)
@@ -225,36 +226,21 @@ spindle_class_update(const char *localname, librdf_model *model)
 		return NULL;
 	}
 	classname = spindle_class_match(model, classes);
-	len = strlen(localname) + strlen(spindle_root) + 100;
+	base = librdf_new_statement(spindle_world);
+	node = librdf_new_node_from_uri_string(spindle_world, (const unsigned char *) localname);
+	librdf_statement_set_subject(base, node);
+	node = librdf_new_node_from_uri_string(spindle_world, (const unsigned char *) "http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+	librdf_statement_set_predicate(base, node);
 	for(c = 0; c < classes->count; c++)
 	{
-		len += strlen(classes->strings[c]) + 5;
+		st = librdf_new_statement_from_statement(base);
+		node = librdf_new_node_from_uri_string(spindle_world, (const unsigned char *) classes->strings[c]);
+		librdf_statement_set_object(st, node);
+		librdf_model_context_add_statement(proxymodel, graph, st);
+		librdf_free_statement(st);
 	}
-	buf = (char *) calloc(1, len);
-	if(!buf)
-	{
-		twine_logf(LOG_CRIT, "failed to allocate SPARQL update buffer\n");
-		spindle_strset_destroy(classes);
-		return NULL;
-	}
-	sp = buf;
-	sp += sprintf(sp, "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
-				  "INSERT DATA {\n"
-				  "GRAPH <%s> {\n"
-				  "<%s> rdf:type ", spindle_root, localname);
-	for(c = 0; c < classes->count; c++)
-	{
-		sp += sprintf(sp, "<%s> %c ", classes->strings[c], (c + 1 == classes->count ? '.' : ','));
-	}
-	strcpy(sp, "} }");
+	librdf_free_statement(base);
 	spindle_strset_destroy(classes);
-	if(sparql_update(spindle_sparql, buf, strlen(buf)))
-	{
-		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to perform SPARQL update\n");
-		free(buf);
-		return NULL;
-	}
-	free(buf);
 	
 	return classname;
 }
