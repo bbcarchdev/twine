@@ -1,0 +1,17 @@
+Use varargs variants of libsparqlclient query mechanisms throughout.
+
+Class and property derivation should be described in RDF, and understand
+subclasses/subproperties.
+
+Sifting/splitting on de-assertion.
+
+Apply same-origin policies to assertions to reduce potential for pollution.
+
+White-listing and black-listing.
+
+When a proxy is created or updated, proxies for entities referencing the
+entities it's a proxy for should also be updated so that new in-bound
+references can be properly proxied.
+
+The proxy graph behaviour should be configurable -- i.e., whether to write
+all proxies into a single graph, or a graph-per-proxy.

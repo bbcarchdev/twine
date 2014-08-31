@@ -17,49 +17,6 @@
  *  limitations under the License.
  */
 
-/* Spindle is a co-reference aggregation engine which works as a
- * post-processing hook for Twine. When a graph is updated by a Twine
- * processor, Spindle examines the contents of the graph and looks for
- * owl:sameAs co-reference assertions. Where some are found, it generates
- * "proxy" entities within a named graph which connect together all of
- * the coreferences for a given source entity, and as more co-references are
- * discovered, they're also added to the proxy entity.
- *
- * For example, if graphs are processed which assert that <A> owl:sameAs <B>,
- * <B> owl:sameAs <C> and <C> owl:sameAs <D>, the end result is the following:
- *
- * <http://spindle.example.com/> {
- *
- *   <http://spindle.example.com/abc123#id>
- *     owl:sameAs <A>, <B>, <C>, <D> .
- *
- * }
- *
- * By collecting together the co-references in this fashion, it becomes
- * possible to deal with a unified view (stored as quads internally) of
- * a given entity described by multiple disparate graphs.
- *
- * In other words, Spindle constructs a topic-oriented index of all of the
- * entities processed by Twine.
- */
-
-/* TODO:
- *   Replace SPARQL query generation logic once supporting functionality
- *   has been added to libsparqlclient
- *
- *   Extraction of browse metadata for attaching to proxies
- *
- *   Class derivation should be described in RDF
- *
- *   Sifting/splitting on de-assertion
- *
- *   Same-origin policies
- *
- *   When a proxy is created or updated, proxies for entities referencing the
- *   entities it's a proxy for should also be updated so that new in-bound
- *   references can be properly proxied
- */
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif

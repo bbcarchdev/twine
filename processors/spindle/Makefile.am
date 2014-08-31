@@ -16,6 +16,8 @@
 ##  See the License for the specific language governing permissions and
 ##  limitations under the License.
 
+EXTRA_DIST = README TODO
+
 AM_CPPFLAGS = @AM_CPPFLAGS@ \
 	-I$(top_builddir)/libtwine -I$(top_srcdir)/libtwine \
 	-I$(top_builddir)/libsparqlclient -I$(top_srcdir)/libsparqlclient
