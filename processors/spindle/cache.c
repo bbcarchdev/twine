@@ -84,7 +84,7 @@ spindle_cache_update(SPINDLE *spindle, const char *localname)
 	librdf_statement_set_predicate(query, node);
 	node = librdf_new_node_from_node(data.self);
 	librdf_statement_set_object(query, node);
-	stream = librdf_model_find_statements_with_options(data.sourcedata, query, data.graph, NULL);
+	stream = librdf_model_find_statements_with_options(data.sourcedata, query, spindle->rootgraph, NULL);
 	while(!librdf_stream_end(stream))
 	{
 		st = librdf_stream_get_object(stream);
