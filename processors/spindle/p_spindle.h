@@ -104,6 +104,6 @@ const char *spindle_class_match(librdf_model *model, struct spindle_strset_struc
 const char *spindle_class_update(const char *localname, librdf_model *model);
 
 /* Update the properties of a proxy */
-int spindle_predicate_update(const char *localname, librdf_model *model, const char *classname);
+int spindle_prop_update(const char *localname, librdf_model *model, const char *classname);
 
 #endif /*!P_SPINDLE_H_*/

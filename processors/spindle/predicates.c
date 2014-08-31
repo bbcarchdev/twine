@@ -23,8 +23,6 @@
 
 #include "p_spindle.h"
 
-typedef int (*predicatefilter_fn)(librdf_node *in, librdf_node **out);
-
 struct predicatematch_struct
 {
 	int priority;
@@ -35,7 +33,6 @@ struct predicatematch_struct
 struct predicatemap_struct
 {
 	const char *target;
-	predicatefilter_fn filter;
 	struct predicatematch_struct *matches;
 	raptor_term_type expected;
 	const char *datatype;
@@ -48,13 +45,24 @@ struct literal_struct
 	int priority;
 };
 
-struct propertymatch_struct
+struct propmatch_struct
 {
 	struct predicatemap_struct *map;
 	int priority;
 	librdf_node *resource;
 	struct literal_struct *literals;
 	size_t nliterals;
+};
+
+struct propdata_struct
+{
+	const char *localname;
+	const char *classname;
+	librdf_node *context;
+	librdf_model *source;
+	librdf_model *proxymodel;
+	struct predicatemap_struct *maps;
+	struct propmatch_struct *matches;
 };
 
 static struct predicatematch_struct label_match[] = {
@@ -109,115 +117,203 @@ static struct predicatematch_struct narrower_match[] = {
 	{ -1, NULL, NULL }
 };
 
+static struct predicatematch_struct part_match[] = {
+	{ 0, "http://purl.org/dc/terms/isPartOf", NULL },
+	{ -1, NULL, NULL }
+};
 
 static struct predicatemap_struct predicatemap[] = {
 	{
 		"http://www.w3.org/2000/01/rdf-schema#label",
-		NULL,
 		label_match,
 		RAPTOR_TERM_TYPE_LITERAL,
 		NULL,
 	},
 	{
 		"http://purl.org/dc/terms/description",
-		NULL,
 		description_match,
 		RAPTOR_TERM_TYPE_LITERAL,
 		NULL,
 	},
 	{
 		"http://www.w3.org/2003/01/geo/wgs84_pos#lat",
-		NULL,
 		lat_match,
 		RAPTOR_TERM_TYPE_LITERAL,
 		"http://www.w3.org/2001/XMLSchema#decimal",
 	},
 	{
 		"http://www.w3.org/2003/01/geo/wgs84_pos#long",
-		NULL,
 		long_match,
 		RAPTOR_TERM_TYPE_LITERAL,
 		"http://www.w3.org/2001/XMLSchema#decimal"
 	},
 	{
 		"http://xmlns.com/foaf/0.1/depiction",
-		NULL,
 		depiction_match,
 		RAPTOR_TERM_TYPE_URI,
 		NULL
 	},
 	{
 		"http://www.w3.org/2004/02/skos/core#inScheme",
-		NULL,
 		inscheme_match,
 		RAPTOR_TERM_TYPE_URI,
 		NULL
 	},
 	{
 		"http://www.w3.org/2004/02/skos/core#broader",
-		NULL,
 		broader_match,
 		RAPTOR_TERM_TYPE_URI,
 		NULL
 	},
 	{
 		"http://www.w3.org/2004/02/skos/core#narrower",
-		NULL,
 		narrower_match,
 		RAPTOR_TERM_TYPE_URI,
 		NULL
 	},
 	{
 		"http://purl.org/dc/terms/subject",
-		NULL, 
 		subject_match,
 		RAPTOR_TERM_TYPE_URI,
 		NULL
 	},
+	{
+		"http://purl.org/dc/terms/isPartOf",
+		part_match,
+		RAPTOR_TERM_TYPE_URI,
+		NULL
+	},
 
-	{ NULL, NULL, NULL, RAPTOR_TERM_TYPE_UNKNOWN, NULL }
+	{ NULL, NULL, RAPTOR_TERM_TYPE_UNKNOWN, NULL }
 };
 
-static int spindle_predicate_test_(struct propertymatch_struct *matches, librdf_statement *st, const char *predicate, const char *classname);
+static int spindle_prop_init_(struct propdata_struct *data, const char *localname, librdf_model *model, const char *classname);
+static int spindle_prop_cleanup_(struct propdata_struct *data);
 
-static int spindle_predicate_candidate_(struct propertymatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, const char *classname);
+static int spindle_prop_loop_(struct propdata_struct *data);
+static int spindle_prop_test_(struct propdata_struct *data, librdf_statement *st, const char *predicate);
+static int spindle_prop_candidate_(struct propdata_struct *data, struct propmatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj);
+static int spindle_prop_candidate_uri_(struct propdata_struct *data, struct propmatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj);
+static int spindle_prop_candidate_literal_(struct propdata_struct *data, struct propmatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj);
+static int spindle_prop_candidate_lang_(struct propdata_struct *data, struct propmatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj, const char *lang);
 
-static int spindle_predicate_candidate_uri_(struct propertymatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, const char *classname, librdf_node *obj);
-
-static int spindle_predicate_candidate_literal_(struct propertymatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, const char *classname, librdf_node *obj);
-
-static int spindle_predicate_candidate_lang_(struct propertymatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, const char *classname, librdf_node *obj, const char *lang);
-
-static int spindle_predicate_apply_(librdf_model *model, const char *localname, struct propertymatch_struct *matches);
-
-static int spindle_predicate_destroy_(struct propertymatch_struct *matches);
+static int spindle_prop_apply_(struct propdata_struct *data);
 
 int
-spindle_predicate_update(const char *localname, librdf_model *model, const char *classname)
+spindle_prop_update(const char *localname, librdf_model *model, const char *classname)
 {
-	struct propertymatch_struct *matches;
+	struct propdata_struct data;
+	int r;
+
+	twine_logf(LOG_DEBUG, PLUGIN_NAME ": updating properties for <%s>\n", localname);
+	if(spindle_prop_init_(&data, localname, model, classname))
+	{
+		return -1;
+	}
+
+	r = spindle_prop_loop_(&data);
+	if(!r)
+	{
+		r = spindle_prop_apply_(&data);
+	}
+	if(!r)
+	{
+		r = sparql_insert_model(spindle_sparql, data.proxymodel);
+	}
+	spindle_prop_cleanup_(&data);
+
+	return r;
+}
+
+/* Initialise the property data structure */
+static int
+spindle_prop_init_(struct propdata_struct *data, const char *localname, librdf_model *model, const char *classname)
+{
+	size_t c;
+
+	memset(data, 0, sizeof(struct propdata_struct));
+	data->source = model;
+	data->localname = localname;
+	data->classname = classname;
+	data->proxymodel = twine_rdf_model_create();
+	if(!data->proxymodel)
+	{
+		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to create new model\n");
+		return -1;
+	}
+	data->context = librdf_new_node_from_uri_string(spindle_world, (const unsigned char *) spindle_root);
+	if(!data->context)
+	{
+		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to create node for <%s>\n", spindle_root);
+		librdf_free_model(data->proxymodel);
+		return -1;
+	}
+
+	data->maps = predicatemap;
+	data->matches = (struct propmatch_struct *) calloc(sizeof(predicatemap) / sizeof(struct predicatemap_struct), sizeof(struct propmatch_struct));
+	if(!data->matches)
+	{
+		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to allocate memory for prop matches\n");
+		librdf_free_model(data->proxymodel);
+		librdf_free_node(data->context);
+		return -1;
+	}
+	for(c = 0; predicatemap[c].target; c++)
+	{
+		data->matches[c].map = &(data->maps[c]);
+	}
+	return 0;
+}
+
+/* Clean up the resources used by a property data structure */
+static int
+spindle_prop_cleanup_(struct propdata_struct *data)
+{
+	size_t c, d;
+
+	if(data->matches)
+	{
+		for(c = 0; data->matches[c].map && data->matches[c].map->target; c++)
+		{
+			if(data->matches[c].resource)
+			{
+				librdf_free_node(data->matches[c].resource);
+			}
+			for(d = 0; d < data->matches[c].nliterals; d++)
+			{
+				if(data->matches[c].literals[d].node)
+				{
+					librdf_free_node(data->matches[c].literals[d].node);
+				}
+			}
+			free(data->matches[c].literals);
+		}
+		free(data->matches);
+	}
+	if(data->proxymodel)
+	{
+		librdf_free_model(data->proxymodel);
+	}
+	if(data->context)
+	{
+		librdf_free_node(data->context);
+	}
+	return 0;
+}
+
+/* Loop over a model and process any known predicates */
+static int
+spindle_prop_loop_(struct propdata_struct *data)
+{
 	librdf_statement *query, *st;
 	librdf_stream *stream;
 	librdf_node *pred;
 	librdf_uri *puri;
 	const char *pstr;
-	size_t c;
-	librdf_model *proxymodel;
 	int r;
 
-	twine_logf(LOG_DEBUG, PLUGIN_NAME ": updating properties for <%s>\n", localname);
-	matches = (struct propertymatch_struct *) calloc(sizeof(predicatemap) / sizeof(struct predicatemap_struct), sizeof(struct propertymatch_struct));
-	if(!matches)
-	{
-		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to allocate memory for property matches\n");
-		return -1;
-	}
-	for(c = 0; predicatemap[c].target; c++)
-	{
-		matches[c].map = &(predicatemap[c]);
-	}
 	query = librdf_new_statement(spindle_world);
-	stream = librdf_model_find_statements(model, query);
+	stream = librdf_model_find_statements(data->source, query);
 	while(!librdf_stream_end(stream))
 	{
 		st = librdf_stream_get_object(stream);	
@@ -226,69 +322,33 @@ spindle_predicate_update(const char *localname, librdf_model *model, const char 
 		   (puri = librdf_node_get_uri(pred)) &&
 		   (pstr = (const char *) librdf_uri_as_string(puri)))
 		{
-			spindle_predicate_test_(matches, st, pstr, classname);
+			r = spindle_prop_test_(data, st, pstr);
+			if(r < 0)
+			{
+				break;
+			}
 		}
 		librdf_stream_next(stream);
 	}
 	librdf_free_stream(stream);
 	librdf_free_statement(query);
-
-	proxymodel = twine_rdf_model_create();
-	r = spindle_predicate_apply_(proxymodel, localname, matches);
-	if(!r)
-	{
-		r = sparql_insert_model(spindle_sparql, proxymodel);
-	}
-	spindle_predicate_destroy_(matches);	
-	librdf_free_model(proxymodel);
-	return r;
+	return (r < 0 ? -1 : 0);
 }
 
+/* Apply scored matches to the proxy model ready for insertion */
 static int
-spindle_predicate_destroy_(struct propertymatch_struct *matches)
+spindle_prop_apply_(struct propdata_struct *data)
 {
 	size_t c, d;
-
-	for(c = 0; matches[c].map && matches[c].map->target; c++)
-	{
-		if(matches[c].resource)
-		{
-			librdf_free_node(matches[c].resource);
-		}
-		for(d = 0; d < matches[c].nliterals; d++)
-		{
-			if(matches[c].literals[d].node)
-			{
-				librdf_free_node(matches[c].literals[d].node);
-			}
-		}
-		free(matches[c].literals);
-	}
-	free(matches);
-	return 0;
-}
-		
-
-static int
-spindle_predicate_apply_(librdf_model *proxymodel, const char *localname, struct propertymatch_struct *matches)
-{
-	size_t c, d;
-	librdf_node *context, *node;
+	librdf_node *node;
 	librdf_statement *base, *pst, *lpst;
 	int r;
 
 	/* Generate a model containing the new data for the proxy */
-	context = librdf_new_node_from_uri_string(spindle_world, (const unsigned char *) spindle_root);
-	if(!context)
-	{
-		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to create node for <%s>\n", spindle_root);
-		return -1;
-	}
-	node = librdf_new_node_from_uri_string(spindle_world, (const unsigned char *) localname);
+	node = librdf_new_node_from_uri_string(spindle_world, (const unsigned char *) data->localname);
 	if(!node)
 	{
-		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to create node for <%s>\n", localname);
-		librdf_free_node(context);
+		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to create node for <%s>\n", data->localname);
 		return -1;
 	}
 
@@ -296,14 +356,13 @@ spindle_predicate_apply_(librdf_model *proxymodel, const char *localname, struct
 	if(!base)
 	{
 		twine_logf(LOG_CRIT, PLUGIN_NAME, ": failed to create statement\n");
-		librdf_free_node(context);
 		librdf_free_node(node);
 		return -1;
 	}
 	librdf_statement_set_subject(base, node);
 
 	r = 0;
-	for(c = 0; !r && matches[c].map && matches[c].map->target; c++)
+	for(c = 0; !r && data->matches[c].map && data->matches[c].map->target; c++)
 	{
 		pst = librdf_new_statement_from_statement(base);		
 		if(!pst)
@@ -312,21 +371,21 @@ spindle_predicate_apply_(librdf_model *proxymodel, const char *localname, struct
 			r = -1;
 			break;		
 		}
-		node = librdf_new_node_from_uri_string(spindle_world, (const unsigned char *) matches[c].map->target);
+		node = librdf_new_node_from_uri_string(spindle_world, (const unsigned char *) data->matches[c].map->target);
 		if(!node)
 		{
-			twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to create new node for <%s>\n", matches[c].map->target);
+			twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to create new node for <%s>\n", data->matches[c].map->target);
 			librdf_free_statement(pst);
 			r = -1;
 			break;
 		}
 		librdf_statement_set_predicate(pst, node);		
 
-		if(matches[c].resource)
+		if(data->matches[c].resource)
 		{
-			librdf_statement_set_object(pst, matches[c].resource);
-			matches[c].resource = NULL;
-			if(librdf_model_context_add_statement(proxymodel, context, pst))
+			librdf_statement_set_object(pst, data->matches[c].resource);
+			data->matches[c].resource = NULL;
+			if(librdf_model_context_add_statement(data->proxymodel, data->context, pst))
 			{
 				twine_logf(LOG_ERR, PLUGIN_NAME ": failed to add statement to model\n");
 				r = -1;
@@ -334,7 +393,7 @@ spindle_predicate_apply_(librdf_model *proxymodel, const char *localname, struct
 		}
 		else
 		{
-			for(d = 0; !r && d < matches[c].nliterals; d++)
+			for(d = 0; !r && d < data->matches[c].nliterals; d++)
 			{
 				lpst = librdf_new_statement_from_statement(pst);
 				if(!lpst)
@@ -344,9 +403,9 @@ spindle_predicate_apply_(librdf_model *proxymodel, const char *localname, struct
 					break;
 				}
 				/* TODO: datatype override */
-				librdf_statement_set_object(lpst, matches[c].literals[d].node);
-				matches[c].literals[d].node = NULL;
-				if(librdf_model_context_add_statement(proxymodel, context, lpst))
+				librdf_statement_set_object(lpst, data->matches[c].literals[d].node);
+				data->matches[c].literals[d].node = NULL;
+				if(librdf_model_context_add_statement(data->proxymodel, data->context, lpst))
 				{
 					twine_logf(LOG_ERR, PLUGIN_NAME ": failed to add statement to model\n");
 					r = -1;
@@ -357,27 +416,29 @@ spindle_predicate_apply_(librdf_model *proxymodel, const char *localname, struct
 		}
 	}
 	librdf_free_statement(base);
-	librdf_free_node(context);
 	return r;
-}	
+}
 
+/* Determine whether a given statement should be processed, and do so if so */
 static int
-spindle_predicate_test_(struct propertymatch_struct *matches, librdf_statement *st, const char *predicate, const char *classname)
+spindle_prop_test_(struct propdata_struct *data, librdf_statement *st, const char *predicate)
 {
 	size_t c, d;
+	librdf_node *obj;
 
-	for(c = 0; predicatemap[c].target; c++)
+	for(c = 0; data->maps[c].target; c++)
 	{
-		for(d = 0; predicatemap[c].matches[d].predicate; d++)
+		for(d = 0; data->maps[c].matches[d].predicate; d++)
 		{
-			if(predicatemap[c].matches[d].onlyfor &&
-			   strcmp(predicatemap[c].matches[d].onlyfor, classname))
+			if(data->maps[c].matches[d].onlyfor &&
+			   strcmp(data->maps[c].matches[d].onlyfor, data->classname))
 			{
 				continue;
 			}
-			if(!strcmp(predicate, predicatemap[c].matches[d].predicate))
+			if(!strcmp(predicate, data->maps[c].matches[d].predicate))
 			{
-				spindle_predicate_candidate_(&(matches[c]), &(predicatemap[c].matches[d]), st, classname);
+				obj = librdf_statement_get_object(st);
+				spindle_prop_candidate_(data, &(data->matches[c]), &(data->maps[c].matches[d]), st, obj);
 				break;
 			}
 		}
@@ -385,16 +446,12 @@ spindle_predicate_test_(struct propertymatch_struct *matches, librdf_statement *
 	return 0;
 }
 
+/* The statement is a candidate for caching by the proxy; if it's not already
+ * beaten by a high-priority alternative, store it
+ */
 static int
-spindle_predicate_candidate_(struct propertymatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, const char *classname)
+spindle_prop_candidate_(struct propdata_struct *data, struct propmatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj)
 {
-	librdf_node *obj;
-
-	if(criteria->onlyfor && strcmp(classname, criteria->onlyfor))
-	{
-		return 0;
-	}
-	obj = librdf_statement_get_object(st);
 	switch(match->map->expected)
 	{
 	case RAPTOR_TERM_TYPE_UNKNOWN:
@@ -405,13 +462,13 @@ spindle_predicate_candidate_(struct propertymatch_struct *match, struct predicat
 		{
 			break;
 		}
-		return spindle_predicate_candidate_uri_(match, criteria, st, classname, obj);
+		return spindle_prop_candidate_uri_(data, match, criteria, st, obj);
 	case RAPTOR_TERM_TYPE_LITERAL:
 		if(!librdf_node_is_literal(obj))
 		{
 			break;
 		}
-		return spindle_predicate_candidate_literal_(match, criteria, st, classname, obj);	
+		return spindle_prop_candidate_literal_(data, match, criteria, st, obj);
 	case RAPTOR_TERM_TYPE_BLANK:
 		break;
 		/* Not implemented */
@@ -420,26 +477,39 @@ spindle_predicate_candidate_(struct propertymatch_struct *match, struct predicat
 }
 
 static int
-spindle_predicate_candidate_uri_(struct propertymatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, const char *classname, librdf_node *obj)
+spindle_prop_candidate_uri_(struct propdata_struct *data, struct propmatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj)
 {
-	(void) classname;
-	(void) st;
+	librdf_node *node;
 
+	(void) st;
+	(void) data;
+
+	if(!criteria->priority)
+	{
+		/* TODO: Add the resource to the proxy model immediately */
+		return 0;
+	}
 	if(match->priority <= criteria->priority)
 	{
 		return 0;
+	}
+	node = librdf_new_node_from_node(obj);
+	if(!node)
+	{
+		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to duplicate node\n");
+		return -1;
 	}
 	if(match->resource)
 	{
 		librdf_free_node(match->resource);
 	}
-	match->resource = librdf_new_node_from_node(obj);
+	match->resource = node;
 	match->priority = criteria->priority;
 	return 1;
 }
 
 static int
-spindle_predicate_candidate_literal_(struct propertymatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, const char *classname, librdf_node *obj)
+spindle_prop_candidate_literal_(struct propdata_struct *data, struct propmatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj)
 {
 	char *lang;
 	librdf_uri *dturi;
@@ -449,7 +519,7 @@ spindle_predicate_candidate_literal_(struct propertymatch_struct *match, struct 
 	if(!match->map->datatype)
 	{
 		/* If there's no datatype specified, match per language */
-		return spindle_predicate_candidate_lang_(match, criteria, st, classname, obj, lang);
+		return spindle_prop_candidate_lang_(data, match, criteria, st, obj, lang);
 	}
 	if(match->priority <= criteria->priority)
 	{
@@ -484,13 +554,13 @@ spindle_predicate_candidate_literal_(struct propertymatch_struct *match, struct 
 }
 
 static int
-spindle_predicate_candidate_lang_(struct propertymatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, const char *classname, librdf_node *obj, const char *lang)
+spindle_prop_candidate_lang_(struct propdata_struct *data, struct propmatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj, const char *lang)
 {
 	struct literal_struct *entry, *p;
 	size_t c;
 
+	(void) data;
 	(void) st;
-	(void) classname;
 
 	entry = NULL;
 	for(c = 0; c < match->nliterals; c++)

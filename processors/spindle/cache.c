@@ -94,7 +94,7 @@ spindle_cache_update(const char *localname)
 	librdf_free_node(ctxnode);
 	
 	classname = spindle_class_update(localname, model);
-	spindle_predicate_update(localname, model, classname);
+	spindle_prop_update(localname, model, classname);
 	
 	librdf_free_model(model);
 
