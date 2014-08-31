@@ -98,7 +98,7 @@ twine_plugin_load_(const char *pathname)
 
 /* Public: register a MIME type */
 int
-twine_plugin_register(const char *mimetype, const char *description, twine_processor_fn fn)
+twine_plugin_register(const char *mimetype, const char *description, twine_processor_fn fn, void *data)
 {
 	struct twine_mime_struct *p;
 
@@ -131,13 +131,14 @@ twine_plugin_register(const char *mimetype, const char *description, twine_proce
 	}
 	twine_logf(LOG_INFO, "registered MIME type: '%s' (%s)\n", mimetype, description);
 	p->processor = fn;
+	p->data = data;
 	mimecount++;
 	return 0;
 }
 
 /* Register a post-processing module */
 int
-twine_postproc_register(const char *name, twine_postproc_fn fn)
+twine_postproc_register(const char *name, twine_postproc_fn fn, void *data)
 {
 	struct twine_postproc_struct *p;
 
@@ -155,6 +156,7 @@ twine_postproc_register(const char *name, twine_postproc_fn fn)
 	p = &(postprocs[ppcount]);
 	p->module = current;
 	p->fn = fn;
+	p->data = data;
 	p->name = strdup(name);
 	if(!p->name)
 	{
@@ -221,7 +223,7 @@ twine_plugin_process_(const char *mimetype, const char *message, size_t msglen)
 		if(!strcmp(mimetypes[l].mimetype, mimetype))
 		{
 			current = mimetypes[l].module;
-			r = mimetypes[l].processor(mimetype, message, msglen);
+			r = mimetypes[l].processor(mimetype, message, msglen, mimetypes[l].data);
 			current = prev;
 			return r;
 		}
@@ -254,7 +256,7 @@ twine_postproc_process_(librdf_model *newgraph, librdf_model *oldgraph, const ch
 	for(c = 0; c < ppcount; c++)
 	{
 		current = postprocs[c].module;
-		postprocs[c].fn(newgraph, oldgraph, graphuri);
+		postprocs[c].fn(newgraph, oldgraph, graphuri, postprocs[c].data);
 	}
 	current = prev;
 	postprocessing = 0;

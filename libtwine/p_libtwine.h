@@ -35,6 +35,7 @@ struct twine_mime_struct
 	char *desc;
 	twine_processor_fn processor;
 	void *module;
+	void *data;
 };
 
 struct twine_postproc_struct
@@ -42,6 +43,7 @@ struct twine_postproc_struct
 	twine_postproc_fn fn;
 	void *module;
 	char *name;
+	void *data;
 };
 
 extern twine_log_fn twine_logger_;
