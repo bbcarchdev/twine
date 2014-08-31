@@ -26,15 +26,15 @@
 
 #include "libtwine.h"
 
-static int process_rdf(const char *mime, const char *buf, size_t buflen);
+static int process_rdf(const char *mime, const char *buf, size_t buflen, void *data);
 
 /* Twine plug-in entry-point */
 int
 twine_plugin_init(void)
 {
 	twine_logf(LOG_DEBUG, "rdf plug-in: initialising\n");
-	twine_plugin_register("application/trig", "RDF TriG", process_rdf);
-	twine_plugin_register("application/nquads", "RDF N-Quads", process_rdf);
+	twine_plugin_register("application/trig", "RDF TriG", process_rdf, NULL);
+	twine_plugin_register("application/nquads", "RDF N-Quads", process_rdf, NULL);
 	return 0;
 }
 
@@ -46,13 +46,15 @@ twine_plugin_init(void)
  */
 
 static int
-process_rdf(const char *mime, const char *buf, size_t buflen)
+process_rdf(const char *mime, const char *buf, size_t buflen, void *data)
 {
 	librdf_model *model;
 	librdf_iterator *iter;
 	librdf_node *node;
 	librdf_uri *uri;
 	librdf_stream *stream;
+
+	(void) data;
 
 	model = twine_rdf_model_create();
 	if(!model)

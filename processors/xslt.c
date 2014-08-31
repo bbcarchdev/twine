@@ -47,7 +47,7 @@ struct xslt_mime_struct
 
 static struct xslt_mime_struct *first, *last;
 
-static int xslt_process(const char *mime, const char *buf, size_t buflen);
+static int xslt_process(const char *mime, const char *buf, size_t buflen, void *data);
 static int xslt_process_buf(const char *buf, size_t buflen, xsltStylesheetPtr stylesheet, const char *xpath);
 static int xslt_config_cb(const char *key, const char *value);
 static int xslt_mime_add(const char *mimetype);
@@ -88,7 +88,7 @@ twine_plugin_init(void)
 			continue;
 		}
 		c++;
-		twine_plugin_register(p->mimetype, p->desc, xslt_process);
+		twine_plugin_register(p->mimetype, p->desc, xslt_process, NULL);
 	}
 	if(!c)
 	{
@@ -244,9 +244,11 @@ xslt_mime_find(const char *mimetype)
  * and XPath expression above
  */
 static int
-xslt_process(const char *mime, const char *buf, size_t buflen)
+xslt_process(const char *mime, const char *buf, size_t buflen, void *data)
 {
 	struct xslt_mime_struct *p;
+
+	(void) data;
 
 	p = xslt_mime_find(mime);
 	if(!p)
