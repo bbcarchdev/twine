@@ -25,7 +25,7 @@
 
 /* Generate a new local URI for an external URI */
 char *
-spindle_proxy_generate(const char *uri)
+spindle_proxy_generate(SPINDLE *spindle, const char *uri)
 {
 	uuid_t uu;
 	char uubuf[32];
@@ -37,13 +37,13 @@ spindle_proxy_generate(const char *uri)
 	uuid_generate(uu);
 	uuid_unparse_lower(uu, uubuf);
 	
-	p = (char *) calloc(1, strlen(spindle_root) + 48);
+	p = (char *) calloc(1, strlen(spindle->root) + 48);
 	if(!p)
 	{
 		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to allocate buffer for local URI\n");
 		return NULL;
 	}
-	strcpy(p, spindle_root);
+	strcpy(p, spindle->root);
 	t = strchr(p, 0);
 	for(c = 0; uubuf[c]; c++)
 	{
@@ -65,7 +65,7 @@ spindle_proxy_generate(const char *uri)
 
 /* Look up the local URI for an external URI in the store */
 char *
-spindle_proxy_locate(const char *uri)
+spindle_proxy_locate(SPINDLE *spindle, const char *uri)
 {
 	SPARQLRES *res;
 	SPARQLROW *row;
@@ -77,17 +77,17 @@ spindle_proxy_locate(const char *uri)
 	/* TODO: if uri is within our namespace and is valid, return it as-is */
 	errno = 0;	
 	localname = NULL;
-	l = strlen(uri) + strlen(spindle_root) + 127;
+	l = strlen(uri) + strlen(spindle->root) + 127;
 	qbuf = (char *) calloc(1, l + 1);
 	if(!l)
 	{
 		return NULL;
 	}   
-	snprintf(qbuf, l, "SELECT DISTINCT ?o FROM <%s> WHERE { <%s> <http://www.w3.org/2002/07/owl#sameAs> ?o . }", spindle_root, uri);
-	res = sparql_query(spindle_sparql, qbuf, strlen(qbuf));
+	snprintf(qbuf, l, "SELECT DISTINCT ?o FROM <%s> WHERE { <%s> <http://www.w3.org/2002/07/owl#sameAs> ?o . }", spindle->root, uri);
+	res = sparql_query(spindle->sparql, qbuf, strlen(qbuf));
 	if(!res)
 	{
-		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to query for existence of <%s> in <%s>\n", uri, spindle_root);
+		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to query for existence of <%s> in <%s>\n", uri, spindle->root);
 		free(qbuf);
 		return NULL;
 	}
@@ -112,14 +112,14 @@ spindle_proxy_locate(const char *uri)
 
 /* Assert that two URIs are equivalent */
 int
-spindle_proxy_create(const char *uri1, const char *uri2, struct spindle_strset_struct *changeset)
+spindle_proxy_create(SPINDLE *spindle, const char *uri1, const char *uri2, struct spindle_strset_struct *changeset)
 {
 	char *u1, *u2, *uu;
 
-	u1 = spindle_proxy_locate(uri1);
+	u1 = spindle_proxy_locate(spindle, uri1);
 	if(uri2)
 	{
-		u2 = spindle_proxy_locate(uri2);
+		u2 = spindle_proxy_locate(spindle, uri2);
 	}
 	else
 	{
@@ -156,7 +156,7 @@ spindle_proxy_create(const char *uri1, const char *uri2, struct spindle_strset_s
 	uu = (u1 ? u1 : (u2 ? u2 : NULL));
 	if(!uu)
 	{
-		uu = spindle_proxy_generate(uri1);
+		uu = spindle_proxy_generate(spindle, uri1);
 		if(!uu)
 		{
 			return -1;
@@ -165,14 +165,14 @@ spindle_proxy_create(const char *uri1, const char *uri2, struct spindle_strset_s
 	/* If the first entity didn't previously have a local proxy, attach it */
 	if(!u1)
 	{
-		spindle_proxy_relate(uri1, uu);
+		spindle_proxy_relate(spindle, uri1, uu);
 	}
 	/* If the second entity didn't previously have a local proxy, attach it */
 	if(!u2)
 	{
 		if(uri2)
 		{
-			spindle_proxy_relate(uri2, uu);
+			spindle_proxy_relate(spindle, uri2, uu);
 		}
 	}
 	else if(strcmp(u2, uu))
@@ -182,7 +182,7 @@ spindle_proxy_create(const char *uri1, const char *uri2, struct spindle_strset_s
 		 * unified proxy.
 		 */
 		twine_logf(LOG_DEBUG, PLUGIN_NAME ": relocating references from <%s> to <%s>\n", u2, uu);
-		spindle_proxy_migrate(u2, uu, NULL);
+		spindle_proxy_migrate(spindle, u2, uu, NULL);
 		if(changeset)
 		{
 			spindle_strset_add(changeset, u2);
@@ -203,7 +203,7 @@ spindle_proxy_create(const char *uri1, const char *uri2, struct spindle_strset_s
 
 /* Move a set of references from one proxy to another */
 int
-spindle_proxy_migrate(const char *from, const char *to, char **refs)
+spindle_proxy_migrate(SPINDLE *spindle, const char *from, const char *to, char **refs)
 {
 	size_t c, slen, len;
 	int allocated;
@@ -216,7 +216,7 @@ spindle_proxy_migrate(const char *from, const char *to, char **refs)
 	else
 	{
 		allocated = 1;
-		refs = spindle_proxy_refs(from);
+		refs = spindle_proxy_refs(spindle, from);
 		if(!refs)
 		{
 			twine_logf(LOG_ERR, PLUGIN_NAME ": failed to obtain references from <%s>\n", from);
@@ -231,7 +231,7 @@ spindle_proxy_migrate(const char *from, const char *to, char **refs)
 	{
 		slen = strlen(to);
 	}
-	len = 80 + strlen(spindle_root);
+	len = 80 + strlen(spindle->root);
 	for(c = 0; refs[c]; c++)
 	{
 		len += strlen(refs[c]) +  slen + 24;
@@ -250,24 +250,24 @@ spindle_proxy_migrate(const char *from, const char *to, char **refs)
 	qp = qbuf;
 	qp += sprintf(qp, "PREFIX owl: <http://www.w3.org/2002/07/owl#>\n"
 				  "INSERT DATA {\n"
-				  "GRAPH <%s> {\n", spindle_root);
+				  "GRAPH <%s> {\n", spindle->root);
 	for(c = 0; refs[c]; c++)
 	{
 		qp += sprintf(qp, "<%s> owl:sameAs <%s> .\n", refs[c], to);
 	}
 	qp += sprintf(qp, "} }");
-	sparql_update(spindle_sparql, qbuf, strlen(qbuf));
+	sparql_update(spindle->sparql, qbuf, strlen(qbuf));
 	/* Generate a DELETE DATA for the old references */
 	qp = qbuf;
 	qp += sprintf(qp, "PREFIX owl: <http://www.w3.org/2002/07/owl#>\n"
 				  "DELETE DATA {\n"
-				  "GRAPH <%s> {\n", spindle_root);
+				  "GRAPH <%s> {\n", spindle->root);
 	for(c = 0; refs[c]; c++)
 	{
 		qp += sprintf(qp, "<%s> owl:sameAs <%s> .\n", refs[c], from);
 	}
 	qp += sprintf(qp, "} }");
-	sparql_update(spindle_sparql, qbuf, strlen(qbuf));
+	sparql_update(spindle->sparql, qbuf, strlen(qbuf));
 	free(qbuf);
 	if(allocated)
 	{
@@ -278,7 +278,7 @@ spindle_proxy_migrate(const char *from, const char *to, char **refs)
 
 /* Obtain all of the outbound references from a proxy */
 char **
-spindle_proxy_refs(const char *uri)
+spindle_proxy_refs(SPINDLE *spindle, const char *uri)
 {
 	char *qbuf;
 	char **refs, **p;
@@ -293,15 +293,15 @@ spindle_proxy_refs(const char *uri)
 	refs = NULL;
 	count = 0;
 	size = 0;
-	l = strlen(uri) + strlen(spindle_root) + 127;
+	l = strlen(uri) + strlen(spindle->root) + 127;
 	qbuf = (char *) calloc(1, l + 1);
 	if(!qbuf)
 	{
 		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to allocate SPARQL query string\n");
 		return NULL;
 	}
-	snprintf(qbuf, l, "SELECT DISTINCT ?s FROM <%s> WHERE { ?s <http://www.w3.org/2002/07/owl#sameAs> <%s> . }", spindle_root, uri);
-	res = sparql_query(spindle_sparql, qbuf, strlen(qbuf));
+	snprintf(qbuf, l, "SELECT DISTINCT ?s FROM <%s> WHERE { ?s <http://www.w3.org/2002/07/owl#sameAs> <%s> . }", spindle->root, uri);
+	res = sparql_query(spindle->sparql, qbuf, strlen(qbuf));
 	if(!res)
 	{
 		twine_logf(LOG_ERR, PLUGIN_NAME ": SPARQL query failed");
@@ -368,23 +368,23 @@ spindle_proxy_refs_destroy(char **refs)
 
 /* Store a relationship between a proxy and a processed entity */
 int
-spindle_proxy_relate(const char *remote, const char *local)
+spindle_proxy_relate(SPINDLE *spindle, const char *remote, const char *local)
 {
 	size_t l;
 	char *qbuf;
 	int r;
 
 	twine_logf(LOG_DEBUG, PLUGIN_NAME ": adding <%s> (remote) owl:sameAs <%s> (local)\n", remote, local);
-	l = strlen(spindle_root) + strlen(remote) + strlen(local) + 127;
+	l = strlen(spindle->root) + strlen(remote) + strlen(local) + 127;
 	qbuf = (char *) calloc(1, l + 1);
 	if(!qbuf)
 	{
 		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to allocate SPARQL query buffer\n");
 		return -1;
 	}
-	snprintf(qbuf, l, "PREFIX owl: <http://www.w3.org/2002/07/owl#>\nINSERT DATA {\nGRAPH <%s> {\n<%s> owl:sameAs <%s> . } }", spindle_root, remote, local);
+	snprintf(qbuf, l, "PREFIX owl: <http://www.w3.org/2002/07/owl#>\nINSERT DATA {\nGRAPH <%s> {\n<%s> owl:sameAs <%s> . } }", spindle->root, remote, local);
 	twine_logf(LOG_DEBUG, "%s\n", qbuf);
-	r = sparql_update(spindle_sparql, qbuf, strlen(qbuf));
+	r = sparql_update(spindle->sparql, qbuf, strlen(qbuf));
 	free(qbuf);
 	if(r)
 	{

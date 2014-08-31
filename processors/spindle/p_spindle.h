@@ -35,6 +35,19 @@
 /* The number of co-references allocated at a time when extending a set */
 #define SET_BLOCKSIZE                   4
 
+typedef struct spindle_context_struct SPINDLE;
+typedef struct spindle_cache_struct SPINDLECACHE;
+
+struct spindle_context_struct
+{
+	/* The librdf execution context from Twine */
+	librdf_world *world;
+	/* The URI of our root graph, and prefix for proxy entities */
+	char *root;
+	/* The SPARQL connection handle from Twine */
+	SPARQL *sparql;
+};
+
 struct spindle_coref_struct
 {
 	char *left;
@@ -55,15 +68,24 @@ struct spindle_strset_struct
 	size_t size;
 };
 
-/* The librdf execution context from Twine */
-librdf_world *spindle_world;
-/* The URI of our graph, and prefix for proxy entities */
-char *spindle_root;
-/* The SPARQL connection handle from Twine */
-SPARQL *spindle_sparql;
+struct spindle_cache_struct
+{
+	SPINDLE *spindle;
+	SPARQL *sparql;
+	const char *localname;
+	const char *classname;
+	librdf_model *sourcedata;
+	librdf_model *proxydata;
+	librdf_node *graph;
+	librdf_node *self;
+	librdf_node *sameas;
+};
+
+/* Post-process an updated graph */
+int spindle_process(librdf_model *newgraph, librdf_model *oldgraph, const char *graph, void *data);
 
 /* Extract a list of co-references from a librdf model */
-struct spindle_corefset_struct *spindle_coref_extract(librdf_model *model, const char *graphuri);
+struct spindle_corefset_struct *spindle_coref_extract(SPINDLE *spindle, librdf_model *model, const char *graphuri);
 /* Add a single co-reference to a set */
 int spindle_coref_add(struct spindle_corefset_struct *set, const char *l, const char *r);
 /* Free the resources used by a co-reference set */
@@ -76,34 +98,34 @@ int spindle_strset_add(struct spindle_strset_struct *set, const char *str);
 /* Free the resources used by a string set */
 int spindle_strset_destroy(struct spindle_strset_struct *set);
 
-/* Generate a new local URI for an external URI */
-char *spindle_proxy_generate(const char *uri);
-/* Look up the local URI for an external URI in the store */
-char *spindle_proxy_locate(const char *uri);
-/* Move a set of references from one proxy to another */
-int spindle_proxy_migrate(const char *from, const char *to, char **refs);
 /* Assert that two URIs are equivalent */
-int spindle_proxy_create(const char *uri1, const char *uri2, struct spindle_strset_struct *changeset);
+int spindle_proxy_create(SPINDLE *spindle, const char *uri1, const char *uri2, struct spindle_strset_struct *changeset);
+/* Generate a new local URI for an external URI */
+char *spindle_proxy_generate(SPINDLE *spindle, const char *uri);
+/* Look up the local URI for an external URI in the store */
+char *spindle_proxy_locate(SPINDLE *spindle, const char *uri);
+/* Move a set of references from one proxy to another */
+int spindle_proxy_migrate(SPINDLE *spindle, const char *from, const char *to, char **refs);
 /* Store a relationship between a proxy and a processed entity */
-int spindle_proxy_relate(const char *remote, const char *proxy);
+int spindle_proxy_relate(SPINDLE *spindle, const char *remote, const char *proxy);
 /* Obtain all of the outbound references from a proxy */
-char **spindle_proxy_refs(const char *uri);
+char **spindle_proxy_refs(SPINDLE *spindle, const char *uri);
 /* Destroy a list of references */
 void spindle_proxy_refs_destroy(char **refs);
 
 /* Re-build the cached data for a set of proxies */
-int spindle_cache_update_set(struct spindle_strset_struct *set);
+int spindle_cache_update_set(SPINDLE *spindle, struct spindle_strset_struct *set);
 /* Re-build the cached data for the proxy entity identified by localname;
  * if no references exist any more, the cached data will be removed.
  */
-int spindle_cache_update(const char *localname);
+int spindle_cache_update(SPINDLE *spindle, const char *localname);
 
-/* Determine the class of something */
-const char *spindle_class_match(librdf_model *model, struct spindle_strset_struct *classes);
-/* Update the classes of a proxy */
-const char *spindle_class_update(const char *localname, librdf_model *model, librdf_model *proxymodel, librdf_node *graph);
+/* Determine the class of something (storing in cache->classname) */
+int spindle_class_match(SPINDLECACHE *cache, struct spindle_strset_struct *classes);
+/* Update the classes of a proxy (updates cache->classname) */
+int spindle_class_update(SPINDLECACHE *cache);
 
 /* Update the properties of a proxy */
-int spindle_prop_update(const char *localname, librdf_model *model, const char *classname, librdf_model *proxymodel, librdf_node *graph);
+int spindle_prop_update(SPINDLECACHE *cache);
 
 #endif /*!P_SPINDLE_H_*/

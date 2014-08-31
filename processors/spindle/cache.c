@@ -23,27 +23,18 @@
 
 #include "p_spindle.h"
 
-struct cachedata_struct
-{
-	librdf_model *sourcedata;
-	librdf_model *proxydata;
-	librdf_node *graph;
-	librdf_node *self;
-	librdf_node *sameas;
-};
-
-static int spindle_cache_init_(struct cachedata_struct *data, const char *localname);
-static int spindle_cache_cleanup_(struct cachedata_struct *data);
+static int spindle_cache_init_(SPINDLECACHE *data, SPINDLE *spindle, const char *localname);
+static int spindle_cache_cleanup_(SPINDLECACHE *data);
 
 /* Re-build the cached data for a set of proxies */
 int
-spindle_cache_update_set(struct spindle_strset_struct *set)
+spindle_cache_update_set(SPINDLE *spindle, struct spindle_strset_struct *set)
 {
 	size_t c;
 
 	for(c = 0; c < set->count; c++)
 	{
-		spindle_cache_update(set->strings[c]);
+		spindle_cache_update(spindle, set->strings[c]);
 	}
 	return 0;
 }
@@ -52,13 +43,12 @@ spindle_cache_update_set(struct spindle_strset_struct *set)
  * if no references exist any more, the cached data will be removed.
  */
 int
-spindle_cache_update(const char *localname)
+spindle_cache_update(SPINDLE *spindle, const char *localname)
 {
-	struct cachedata_struct data;
-	const char *classname;
+	SPINDLECACHE data;
 	int r;
 
-	if(spindle_cache_init_(&data, localname))
+	if(spindle_cache_init_(&data, spindle, localname))
 	{
 		spindle_cache_cleanup_(&data);
 		return -1;
@@ -66,7 +56,7 @@ spindle_cache_update(const char *localname)
 	/* Find all of the triples related to all of the subjects linked to the
 	 * proxy.
 	 */
-	r = sparql_queryf_model(spindle_sparql, data.sourcedata,
+	r = sparql_queryf_model(spindle->sparql, data.sourcedata,
 							"SELECT ?s ?p ?o ?g\n"
 							" WHERE {\n"
 							"  GRAPH %V {\n"
@@ -88,16 +78,23 @@ spindle_cache_update(const char *localname)
 	/* Remove our own derived proxy data from the source model */
 	librdf_model_context_remove_statements(data.sourcedata, data.graph);
 	
-	/* Add the cache triples to the new proxy model */
-	classname = spindle_class_update(localname, data.sourcedata, data.proxydata, data.graph);
-	spindle_prop_update(localname, data.sourcedata, classname, data.proxydata, data.graph);
-
+	/* Add the cache triples to the new proxy model */	
+	if(spindle_class_update(&data) < 0)
+	{
+		spindle_cache_cleanup_(&data);
+		return -1;
+	}
+	if(spindle_prop_update(&data) < 0)
+	{
+		spindle_cache_cleanup_(&data);
+		return -1;
+	}	
 	/* Delete the old cache triples.
 	 * Note that our owl:sameAs statements take the form
 	 * <external> owl:sameAs <proxy>, so we can delete <proxy> ?p ?o with
 	 * impunity.
 	 */	
-	r = sparql_updatef(spindle_sparql,
+	r = sparql_updatef(spindle->sparql,
 					   "WITH %V\n"
 					   " DELETE { %V ?p ?o }\n"
 					   " WHERE { %V ?p ?o }",
@@ -109,29 +106,32 @@ spindle_cache_update(const char *localname)
 		return -1;
 	}
 	/* Insert the new proxy triples, if any */
-	r = sparql_insert_model(spindle_sparql, data.proxydata);
+	r = sparql_insert_model(spindle->sparql, data.proxydata);
 
 	spindle_cache_cleanup_(&data);
 	return r;
 }
 
 static int
-spindle_cache_init_(struct cachedata_struct *data, const char *localname)
+spindle_cache_init_(SPINDLECACHE *data, SPINDLE *spindle, const char *localname)
 {	
-	memset(data, 0, sizeof(struct cachedata_struct));
-	data->self = librdf_new_node_from_uri_string(spindle_world, (const unsigned char *) localname);
+	memset(data, 0, sizeof(SPINDLECACHE));
+	data->spindle = spindle;
+	data->sparql = spindle->sparql;
+	data->localname = localname;
+	data->self = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) localname);
 	if(!data->self)
 	{
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create node for <%s>\n", localname);
 		return -1;
 	}
-	data->graph = librdf_new_node_from_uri_string(spindle_world, (const unsigned char *) spindle_root);
+	data->graph = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) spindle->root);
 	if(!data->graph)
 	{
-		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create node for <%s>\n", spindle_root);
+		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create node for <%s>\n", spindle->root);
 		return -1;
 	}
-	data->sameas = librdf_new_node_from_uri_string(spindle_world, (const unsigned char *) "http://www.w3.org/2002/07/owl#sameAs");
+	data->sameas = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) "http://www.w3.org/2002/07/owl#sameAs");
 	if(!data->sameas)
 	{
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create node for owl:sameAs\n");
@@ -149,7 +149,7 @@ spindle_cache_init_(struct cachedata_struct *data, const char *localname)
 }
 
 static int
-spindle_cache_cleanup_(struct cachedata_struct *data)
+spindle_cache_cleanup_(SPINDLECACHE *data)
 {
 	if(data->proxydata)
 	{

@@ -56,6 +56,8 @@ struct propmatch_struct
 
 struct propdata_struct
 {
+	SPINDLE *spindle;
+	SPINDLECACHE *cache;
 	const char *localname;
 	const char *classname;
 	librdf_node *context;
@@ -187,7 +189,7 @@ static struct predicatemap_struct predicatemap[] = {
 	{ NULL, NULL, RAPTOR_TERM_TYPE_UNKNOWN, NULL }
 };
 
-static int spindle_prop_init_(struct propdata_struct *data, const char *localname, librdf_model *model, const char *classname, librdf_model *proxymodel, librdf_node *graph);
+static int spindle_prop_init_(struct propdata_struct *data, SPINDLECACHE *cache);
 static int spindle_prop_cleanup_(struct propdata_struct *data);
 
 static int spindle_prop_loop_(struct propdata_struct *data);
@@ -200,13 +202,13 @@ static int spindle_prop_candidate_lang_(struct propdata_struct *data, struct pro
 static int spindle_prop_apply_(struct propdata_struct *data);
 
 int
-spindle_prop_update(const char *localname, librdf_model *model, const char *classname, librdf_model *proxymodel, librdf_node *graph)
+spindle_prop_update(SPINDLECACHE *cache)
 {
 	struct propdata_struct data;
 	int r;
 
-	twine_logf(LOG_DEBUG, PLUGIN_NAME ": updating properties for <%s>\n", localname);
-	if(spindle_prop_init_(&data, localname, model, classname, proxymodel, graph))
+	twine_logf(LOG_DEBUG, PLUGIN_NAME ": updating properties for <%s>\n", cache->localname);
+	if(spindle_prop_init_(&data, cache))
 	{
 		return -1;
 	}
@@ -224,16 +226,18 @@ spindle_prop_update(const char *localname, librdf_model *model, const char *clas
 
 /* Initialise the property data structure */
 static int
-spindle_prop_init_(struct propdata_struct *data, const char *localname, librdf_model *model, const char *classname, librdf_model *proxymodel, librdf_node *graph)
+spindle_prop_init_(struct propdata_struct *data, SPINDLECACHE *cache)
 {
 	size_t c;
 
 	memset(data, 0, sizeof(struct propdata_struct));
-	data->source = model;
-	data->localname = localname;
-	data->classname = classname;
-	data->proxymodel = proxymodel;
-	data->context = graph;
+	data->spindle = cache->spindle;
+	data->cache = cache;
+	data->source = cache->sourcedata;
+	data->localname = cache->localname;
+	data->classname = cache->classname;
+	data->proxymodel = cache->proxydata;
+	data->context = cache->graph;
 	data->maps = predicatemap;
 	data->matches = (struct propmatch_struct *) calloc(sizeof(predicatemap) / sizeof(struct predicatemap_struct), sizeof(struct propmatch_struct));
 	if(!data->matches)
@@ -287,7 +291,7 @@ spindle_prop_loop_(struct propdata_struct *data)
 	const char *pstr;
 	int r;
 
-	query = librdf_new_statement(spindle_world);
+	query = librdf_new_statement(data->spindle->world);
 	stream = librdf_model_find_statements(data->source, query);
 	while(!librdf_stream_end(stream))
 	{
@@ -320,14 +324,14 @@ spindle_prop_apply_(struct propdata_struct *data)
 	int r;
 
 	/* Generate a model containing the new data for the proxy */
-	node = librdf_new_node_from_uri_string(spindle_world, (const unsigned char *) data->localname);
+	node = librdf_new_node_from_uri_string(data->spindle->world, (const unsigned char *) data->localname);
 	if(!node)
 	{
 		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to create node for <%s>\n", data->localname);
 		return -1;
 	}
 
-	base = librdf_new_statement(spindle_world);	
+	base = librdf_new_statement(data->spindle->world);	
 	if(!base)
 	{
 		twine_logf(LOG_CRIT, PLUGIN_NAME, ": failed to create statement\n");
@@ -346,7 +350,7 @@ spindle_prop_apply_(struct propdata_struct *data)
 			r = -1;
 			break;		
 		}
-		node = librdf_new_node_from_uri_string(spindle_world, (const unsigned char *) data->matches[c].map->target);
+		node = librdf_new_node_from_uri_string(data->spindle->world, (const unsigned char *) data->matches[c].map->target);
 		if(!node)
 		{
 			twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to create new node for <%s>\n", data->matches[c].map->target);

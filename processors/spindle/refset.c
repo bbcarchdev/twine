@@ -25,7 +25,7 @@
 
 /* Extract a list of co-references from a librdf model */
 struct spindle_corefset_struct *
-spindle_coref_extract(librdf_model *model, const char *graphuri)
+spindle_coref_extract(SPINDLE *spindle, librdf_model *model, const char *graphuri)
 {
 	struct spindle_corefset_struct *set;
 	librdf_statement *query, *st;
@@ -42,8 +42,8 @@ spindle_coref_extract(librdf_model *model, const char *graphuri)
 		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to allocate memory for new coreference set\n");
 		return NULL;
 	}
-	query = librdf_new_statement(spindle_world);
-	pred = librdf_new_node_from_uri_string(spindle_world, (const unsigned char *) "http://www.w3.org/2002/07/owl#sameAs");
+	query = librdf_new_statement(spindle->world);
+	pred = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) "http://www.w3.org/2002/07/owl#sameAs");
 	librdf_statement_set_predicate(query, pred);
 	/* pred is now owned by query */
 	pred = NULL;
@@ -70,7 +70,7 @@ spindle_coref_extract(librdf_model *model, const char *graphuri)
 	}
 	librdf_free_stream(stream);
 	librdf_free_statement(query);
-	query = librdf_new_statement(spindle_world);
+	query = librdf_new_statement(spindle->world);
 	stream = librdf_model_find_statements(model, query);
 	while(!librdf_stream_end(stream))
 	{

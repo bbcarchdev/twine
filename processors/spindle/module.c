@@ -23,92 +23,34 @@
 
 #include "p_spindle.h"
 
-librdf_world *spindle_world;
-char *spindle_root;
-SPARQL *spindle_sparql;
-
-static int spindle_process_(librdf_model *newgraph, librdf_model *oldgraph, const char *uri);
+static SPINDLE spindle;
 
 /* Twine plug-in entry-point */
 int
 twine_plugin_init(void)
 {
+	memset(&spindle, 0, sizeof(SPINDLE));
 	twine_logf(LOG_DEBUG, PLUGIN_NAME " plug-in: initialising\n");
-	twine_postproc_register(PLUGIN_NAME, spindle_process_);
-	spindle_world = twine_rdf_world();
-	if(!spindle_world)
+	spindle.world = twine_rdf_world();
+	if(!spindle.world)
 	{
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to obtain librdf world\n");
 		return -1;
 	}
-	spindle_root = twine_config_geta("spindle.graph", "http://localhost/");
-	if(!spindle_root)
+	spindle.root = twine_config_geta("spindle.graph", "http://localhost/");
+	if(!spindle.root)
 	{
 		return -1;
 	}
-	twine_logf(LOG_INFO, PLUGIN_NAME ": local graph prefix is <%s>\n", spindle_root);
-	spindle_sparql = twine_sparql_create();
-	if(!spindle_sparql)
+	twine_logf(LOG_INFO, PLUGIN_NAME ": local graph prefix is <%s>\n", spindle.root);
+	spindle.sparql = twine_sparql_create();
+	if(!spindle.sparql)
 	{
 		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to create SPARQL connection\n");
-		free(spindle_root);
-		spindle_root = NULL;
+		free(spindle.root);
+		spindle.root = NULL;
 		return -1;
 	}
+	twine_postproc_register(PLUGIN_NAME, spindle_process, &spindle);
 	return 0;
 }
-
-/* Post-processing hook, invoked by Twine operations */
-static int
-spindle_process_(librdf_model *newgraph, librdf_model *oldgraph, const char *graph)
-{
-	struct spindle_corefset_struct *oldset, *newset;
-	struct spindle_strset_struct *changes;
-	size_t c;
-
-	twine_logf(LOG_DEBUG, PLUGIN_NAME ": processing updated graph <%s>\n", graph);
-	changes = spindle_strset_create();
-	if(!changes)
-	{
-		return -1;
-	}
-	/* find all owl:sameAs refs where either side is same-origin as graph */
-	oldset = spindle_coref_extract(oldgraph, graph);
-	if(!oldset)
-	{
-		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to extract co-references from previous graph state\n");
-		return -1;
-	}
-	newset = spindle_coref_extract(newgraph, graph);
-	if(!newset)
-	{
-		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to extract co-references from new graph state\n");
-		return -1;
-	}
-	/* For each co-reference in the new graph, represent that within our
-	 * local proxy graph
-	 */
-	twine_logf(LOG_DEBUG, PLUGIN_NAME ": new graph contains %d coreferences\n", (int) newset->refcount);
-	for(c = 0; c < newset->refcount; c++)
-	{
-		if(spindle_proxy_create(newset->refs[c].left, newset->refs[c].right, changes))
-		{
-			twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create proxy entity\n");
-			spindle_coref_destroy(oldset);
-			spindle_coref_destroy(newset);
-			spindle_strset_destroy(changes);
-			return -1;
-		}
-	}
-	/* if oldgraph was provided, find all owl:sameAs refs in oldgraph which
-	 * don't appear in newgraph
-	 */
-	/* for each, invoke remove_coref() */
-	spindle_coref_destroy(oldset);
-	spindle_coref_destroy(newset);
-	/* Re-build the metadata for any related proxies */
-	spindle_cache_update_set(changes);
-	spindle_strset_destroy(changes);
-	return 0;
-}
-

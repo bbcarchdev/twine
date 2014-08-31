@@ -148,8 +148,8 @@ static struct classmatch_struct matches[] = {
 };
 
 /* Determine the class of something */
-const char *
-spindle_class_match(librdf_model *model, struct spindle_strset_struct *classes)
+int
+spindle_class_match(SPINDLECACHE *cache, struct spindle_strset_struct *classes)
 {
 	librdf_statement *query, *st;
 	librdf_node *node;
@@ -160,10 +160,10 @@ spindle_class_match(librdf_model *model, struct spindle_strset_struct *classes)
 	const char *match;
 
 	match = NULL;
-	node = librdf_new_node_from_uri_string(spindle_world, (const unsigned char *) "http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
-	query = librdf_new_statement(spindle_world);
+	node = librdf_new_node_from_uri_string(cache->spindle->world, (const unsigned char *) "http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+	query = librdf_new_statement(cache->spindle->world);
 	librdf_statement_set_predicate(query, node);
-	stream = librdf_model_find_statements(model, query);
+	stream = librdf_model_find_statements(cache->sourcedata, query);
 	while(!librdf_stream_end(stream))
 	{
 		st = librdf_stream_get_object(stream);
@@ -206,15 +206,17 @@ spindle_class_match(librdf_model *model, struct spindle_strset_struct *classes)
 	if(!match)
 	{
 		twine_logf(LOG_WARNING, PLUGIN_NAME ": no class match for object\n");
+		cache->classname = NULL;
+		return 0;
 	}
-	return match;
+	cache->classname = match;
+	return 1;
 }
 
 /* Update the classes of a proxy */
-const char *
-spindle_class_update(const char *localname, librdf_model *model, librdf_model *proxymodel, librdf_node *graph)
+int
+spindle_class_update(SPINDLECACHE *cache)
 {
-	const char *classname;
 	struct spindle_strset_struct *classes;
 	size_t c;
 	librdf_node *node;
@@ -223,24 +225,27 @@ spindle_class_update(const char *localname, librdf_model *model, librdf_model *p
 	classes = spindle_strset_create();
 	if(!classes)
 	{
-		return NULL;
+		return -1;
 	}
-	classname = spindle_class_match(model, classes);
-	base = librdf_new_statement(spindle_world);
-	node = librdf_new_node_from_uri_string(spindle_world, (const unsigned char *) localname);
+	if(spindle_class_match(cache, classes) < 0)
+	{
+		return -1;
+	}
+	base = librdf_new_statement(cache->spindle->world);
+	node = librdf_new_node_from_uri_string(cache->spindle->world, (const unsigned char *) cache->localname);
 	librdf_statement_set_subject(base, node);
-	node = librdf_new_node_from_uri_string(spindle_world, (const unsigned char *) "http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+	node = librdf_new_node_from_uri_string(cache->spindle->world, (const unsigned char *) "http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
 	librdf_statement_set_predicate(base, node);
 	for(c = 0; c < classes->count; c++)
 	{
 		st = librdf_new_statement_from_statement(base);
-		node = librdf_new_node_from_uri_string(spindle_world, (const unsigned char *) classes->strings[c]);
+		node = librdf_new_node_from_uri_string(cache->spindle->world, (const unsigned char *) classes->strings[c]);
 		librdf_statement_set_object(st, node);
-		librdf_model_context_add_statement(proxymodel, graph, st);
+		librdf_model_context_add_statement(cache->proxydata, cache->graph, st);
 		librdf_free_statement(st);
 	}
 	librdf_free_statement(base);
 	spindle_strset_destroy(classes);
 	
-	return classname;
+	return 0;
 }
