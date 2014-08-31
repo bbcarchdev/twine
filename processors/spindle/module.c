@@ -25,32 +25,88 @@
 
 static SPINDLE spindle;
 
+static int spindle_init_(SPINDLE *spindle);
+static int spindle_cleanup_(SPINDLE *spindle);
+
 /* Twine plug-in entry-point */
 int
 twine_plugin_init(void)
-{
-	memset(&spindle, 0, sizeof(SPINDLE));
+{	
 	twine_logf(LOG_DEBUG, PLUGIN_NAME " plug-in: initialising\n");
-	spindle.world = twine_rdf_world();
-	if(!spindle.world)
+	if(spindle_init_(&spindle))
 	{
-		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to obtain librdf world\n");
+		twine_logf(LOG_DEBUG, PLUGIN_NAME ": initialisation failed\n");
+		spindle_cleanup_(&spindle);
 		return -1;
 	}
-	spindle.root = twine_config_geta("spindle.graph", "http://localhost/");
-	if(!spindle.root)
-	{
-		return -1;
-	}
-	twine_logf(LOG_INFO, PLUGIN_NAME ": local graph prefix is <%s>\n", spindle.root);
-	spindle.sparql = twine_sparql_create();
-	if(!spindle.sparql)
-	{
-		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to create SPARQL connection\n");
-		free(spindle.root);
-		spindle.root = NULL;
-		return -1;
-	}
+	twine_logf(LOG_INFO, PLUGIN_NAME ": URI prefix is <%s>\n", spindle.root);
 	twine_postproc_register(PLUGIN_NAME, spindle_process, &spindle);
+	return 0;
+}
+
+static int
+spindle_init_(SPINDLE *spindle)
+{
+	memset(spindle, 0, sizeof(SPINDLE));
+	spindle->world = twine_rdf_world();
+	if(!spindle->world)
+	{
+		return -1;
+	}
+	spindle->multigraph = twine_config_get_bool("spindle:multigraph", 0);
+	spindle->root = twine_config_geta("spindle:graph", "http://localhost/");
+	if(!spindle->root)
+	{
+		return -1;
+	}
+	spindle->sparql = twine_sparql_create();
+	if(!spindle->sparql)
+	{
+		return -1;
+	}
+	spindle->sameas = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) "http://www.w3.org/2002/07/owl#sameAs");
+	if(!spindle->sameas)
+	{
+		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create node for owl:sameAs\n");
+		return -1;
+	}
+	spindle->rdftype = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) "http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+	if(!spindle->rdftype)
+	{
+		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create node for rdf:type\n");
+		return -1;
+	}
+	spindle->rootgraph = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) spindle->root);
+	if(!spindle->rootgraph)
+	{
+		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create node for <%s>\n", spindle->root);
+		return -1;
+	}	
+	return 0;
+}
+
+static int
+spindle_cleanup_(SPINDLE *spindle)
+{
+	if(spindle->sparql)
+	{
+		sparql_destroy(spindle->sparql);
+	}
+	if(spindle->root)
+	{
+		free(spindle->root);
+	}
+	if(spindle->sameas)
+	{
+		librdf_free_node(spindle->sameas);
+	}
+	if(spindle->rdftype)
+	{
+		librdf_free_node(spindle->rdftype);
+	}
+	if(spindle->rootgraph)
+	{
+		librdf_free_node(spindle->rootgraph);
+	}
 	return 0;
 }

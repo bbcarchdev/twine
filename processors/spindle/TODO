@@ -13,5 +13,3 @@ When a proxy is created or updated, proxies for entities referencing the
 entities it's a proxy for should also be updated so that new in-bound
 references can be properly proxied.
 
-The proxy graph behaviour should be configurable -- i.e., whether to write
-all proxies into a single graph, or a graph-per-proxy.

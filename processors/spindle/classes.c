@@ -234,7 +234,7 @@ spindle_class_update(SPINDLECACHE *cache)
 	base = librdf_new_statement(cache->spindle->world);
 	node = librdf_new_node_from_uri_string(cache->spindle->world, (const unsigned char *) cache->localname);
 	librdf_statement_set_subject(base, node);
-	node = librdf_new_node_from_uri_string(cache->spindle->world, (const unsigned char *) "http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+	node = librdf_new_node_from_node(cache->spindle->rdftype);
 	librdf_statement_set_predicate(base, node);
 	for(c = 0; c < classes->count; c++)
 	{

@@ -47,6 +47,9 @@ spindle_cache_update(SPINDLE *spindle, const char *localname)
 {
 	SPINDLECACHE data;
 	int r;
+	librdf_statement *query, *st;
+	librdf_node *node;
+	librdf_stream *stream;
 
 	if(spindle_cache_init_(&data, spindle, localname))
 	{
@@ -66,7 +69,7 @@ spindle_cache_update(SPINDLE *spindle, const char *localname)
 							"   ?s ?p ?o .\n"
 							"  }\n"
 							"}",
-							data.graph, data.sameas, data.self);
+							spindle->rootgraph, data.sameas, data.self);
 
 	if(r)
 	{
@@ -75,9 +78,29 @@ spindle_cache_update(SPINDLE *spindle, const char *localname)
 		return -1;
 	}   
 
+	/* Copy any of our own owl:sameAs references into the proxy graph */
+	query = librdf_new_statement(spindle->world);
+	node = librdf_new_node_from_node(data.sameas);
+	librdf_statement_set_predicate(query, node);
+	node = librdf_new_node_from_node(data.self);
+	librdf_statement_set_object(query, node);
+	stream = librdf_model_find_statements_with_options(data.sourcedata, query, data.graph, NULL);
+	while(!librdf_stream_end(stream))
+	{
+		st = librdf_stream_get_object(stream);
+		librdf_model_context_add_statement(data.proxydata, data.graph, st);
+		librdf_stream_next(stream);
+	}
+	librdf_free_stream(stream);
+	librdf_free_statement(query);
+
 	/* Remove our own derived proxy data from the source model */
 	librdf_model_context_remove_statements(data.sourcedata, data.graph);
-	
+	if(data.graph != spindle->rootgraph)
+	{
+		librdf_model_context_remove_statements(data.sourcedata, spindle->rootgraph);
+	}
+
 	/* Add the cache triples to the new proxy model */	
 	if(spindle_class_update(&data) < 0)
 	{
@@ -115,6 +138,8 @@ spindle_cache_update(SPINDLE *spindle, const char *localname)
 static int
 spindle_cache_init_(SPINDLECACHE *data, SPINDLE *spindle, const char *localname)
 {	
+	const char *t;
+
 	memset(data, 0, sizeof(SPINDLECACHE));
 	data->spindle = spindle;
 	data->sparql = spindle->sparql;
@@ -125,18 +150,20 @@ spindle_cache_init_(SPINDLECACHE *data, SPINDLE *spindle, const char *localname)
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create node for <%s>\n", localname);
 		return -1;
 	}
-	data->graph = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) spindle->root);
-	if(!data->graph)
+	if(spindle->multigraph)
 	{
-		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create node for <%s>\n", spindle->root);
-		return -1;
+		t = strchr(localname, '#');
+		if(!t)
+		{
+			t = strchr(localname, 0);
+		}
+		data->graph = librdf_new_node_from_counted_uri_string(spindle->world, (unsigned const char *) localname, t - localname);
 	}
-	data->sameas = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) "http://www.w3.org/2002/07/owl#sameAs");
-	if(!data->sameas)
+	else
 	{
-		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create node for owl:sameAs\n");
-		return -1;
+		data->graph = spindle->rootgraph;
 	}
+	data->sameas = spindle->sameas;
 	if(!(data->sourcedata = twine_rdf_model_create()))
 	{
 		return -1;
@@ -159,17 +186,13 @@ spindle_cache_cleanup_(SPINDLECACHE *data)
 	{
 		librdf_free_model(data->sourcedata);
 	}
-	if(data->graph)
+	if(data->graph && data->graph != data->spindle->rootgraph)
 	{
 		librdf_free_node(data->graph);
 	}
 	if(data->self)
 	{
 		librdf_free_node(data->self);
-	}
-	if(data->sameas)
-	{
-		librdf_free_node(data->sameas);
 	}
 	return 0;
 }

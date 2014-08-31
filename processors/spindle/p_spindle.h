@@ -46,6 +46,14 @@ struct spindle_context_struct
 	char *root;
 	/* The SPARQL connection handle from Twine */
 	SPARQL *sparql;
+	/* rdf:type */
+	librdf_node *rdftype;
+	/* owl:sameAs */
+	librdf_node *sameas;
+	/* The root URI as a librdf_node */
+	librdf_node *rootgraph;
+	/* Whether to store each proxy in its own graph */
+	int multigraph;
 };
 
 struct spindle_coref_struct
