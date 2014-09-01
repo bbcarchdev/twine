@@ -74,6 +74,17 @@ twine_rdf_model_create(void)
 	return model;
 }
 
+/* Destroy a model */
+int
+twine_rdf_model_destroy(librdf_model *model)
+{
+	if(model)
+	{
+		librdf_free_model(model);
+	}
+	return 0;
+}
+
 /* Parse a buffer of a particular MIME type into a model */
 int
 twine_rdf_model_parse(librdf_model *model, const char *mime, const char *buf, size_t buflen)
@@ -158,6 +169,17 @@ twine_rdf_st_clone(librdf_statement *src)
 	return st;
 }
 
+/* Destroy a statement */
+int
+twine_rdf_st_destroy(librdf_statement *statement)
+{
+	if(statement)
+	{
+		librdf_free_statement(statement);
+	}
+	return 0;
+}
+
 /* Clone a node */
 librdf_node *
 twine_rdf_node_clone(librdf_node *node)
@@ -186,6 +208,17 @@ twine_rdf_node_createuri(const char *uri)
 		return NULL;
 	}
 	return p;
+}
+
+/* Destroy a node */
+int
+twine_rdf_node_destroy(librdf_node *node)
+{
+	if(node)
+	{
+		librdf_free_node(node);
+	}
+	return 0;
 }
 
 /* Log events from librdf */

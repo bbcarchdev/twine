@@ -57,6 +57,9 @@ librdf_world *twine_rdf_world(void);
 /* Convenience API for creating a new librdf model */
 librdf_model *twine_rdf_model_create(void);
 
+/* Destroy a model */
+int twine_rdf_model_destroy(librdf_model *model);
+
 /* Parse a buffer into a librdf model */
 int twine_rdf_model_parse(librdf_model *model, const char *mime, const char *buf, size_t buflen);
 
@@ -66,11 +69,17 @@ librdf_statement *twine_rdf_st_create(void);
 /* Duplicate a statement */
 librdf_statement *twine_rdf_st_clone(librdf_statement *src);
 
+/* Destroy a statement */
+int twine_rdf_st_destroy(librdf_statement *statement);
+
 /* Clone a node */
 librdf_node *twine_rdf_node_clone(librdf_node *node);
 
 /* Create a new URI node */
 librdf_node *twine_rdf_node_createuri(const char *uri);
+
+/* Destroy a node */
+int twine_rdf_node_destroy(librdf_node *node);
 
 /* Create a SPARQL connection */
 SPARQL *twine_sparql_create(void);
