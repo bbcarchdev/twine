@@ -1,0 +1,94 @@
+## THIS FILE IS NOT CURRENTLY USED
+##
+## This file is part of Spindle, a co-reference aggregation engine
+##
+##  Author: Mo McRoberts
+##
+##  Copyright (c) 2014 BBC
+##
+##  Licensed under the Apache License, Version 2.0 (the "License");
+##  you may not use this file except in compliance with the License.
+##  You may obtain a copy of the License at
+##
+##      http://www.apache.org/licenses/LICENSE-2.0
+##
+##  Unless required by applicable law or agreed to in writing, software
+##  distributed under the License is distributed on an "AS IS" BASIS,
+##  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+##  See the License for the specific language governing permissions and
+##  limitations under the License.
+
+# This file expresses the superclass and superproperty relationships
+# which are used by Spindle when generating cache data for proxies.
+
+# This graph is not imported into the quad-store used by Spindle, but held
+# in-memory and its contents used by the proxy generation logic.
+
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix skos08: <http://www.w3.org/2008/05/skos#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix dcmitype: <http://purl.org/dc/dcmitype/> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+@prefix gn: <http://www.geonames.org/ontology#> .
+@prefix crm: <http://www.cidoc-crm.org/cidoc-crm/> .
+@prefix ecrm: <http://erlangen-crm.org/current/> .
+@prefix frbr: <http://purl.org/vocab/frbr/core#> .
+@prefix spindle: <http://bbcarchdev.github.io/ns/spindle#> .
+
+foaf:Person
+		a spindle:Class ;
+		rdfs:label "Person"@en .
+
+foaf:Group
+		a spindle:Class ;
+		rdfs:label "Group"@en .
+
+foaf:Organization spindle:expressedAs foaf:Group .
+
+foaf:Agent
+		a spindle:Class ;
+		rdfs:label "Agent"@en .
+
+dct:Agent spindle:expressedAs foaf:Agent .
+
+geo:SpatialThing
+		a spindle:Class ;
+		rdfs:label "Place"@en .
+
+dct:Location spindle:expressedAs geo:SpatialThing .
+gn:Feature spindle:expressedAs geo:SpatialThing .
+
+crm:E18_Physical_Thing
+		a spindle:Class ;
+		rdfs:label "Physical thing"@en .
+
+crm:E22_Man-Made_Object spindle:expressedAs crm:E18_Physical_Thing .
+ecrm:E18_Physical_Thing spindle:expressedAs crm:E18_Physical_Thing .
+ecrm:E22_Man-Made_Object spindle:expressedAs crm:E18_Physical_Thing .
+dcmitype:PhysicalObject spindle:expressedAs crm:E18_Physical_Thing .
+dct:PhysicalResource spindle:expressedAs crm:E18_Physical_Thing .
+
+skos:Concept
+		a spindle:Class ;
+		rdfs:label "Concept"@en .
+
+skos08:Concept spindle:expressedAs skos:Concept .
+
+dcmitype:Collection
+		a spindle:Class ;
+		rdfs:label "Collection"@en .
+
+frbr:Work
+		a spindle:Class ;
+		rdfs:label "Creative work"@en .
+
+foaf:Document
+		a spindle:Class ;
+		rdfs:label "Digital object"@en .
+
+foaf:Image spindle:expressedAs foaf:Document .
