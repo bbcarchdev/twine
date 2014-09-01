@@ -128,6 +128,66 @@ twine_rdf_model_parse(librdf_model *model, const char *mime, const char *buf, si
 	return r;
 }
 
+/* Create a new statement */
+librdf_statement *
+twine_rdf_st_create(void)
+{
+	librdf_statement *st;
+
+	st = librdf_new_statement(twine_world);
+	if(!st)
+	{
+		twine_logf(LOG_ERR, "failed to create new statement\n");
+		return NULL;
+	}
+	return st;
+}
+
+/* Duplicate a statement */
+librdf_statement *
+twine_rdf_st_clone(librdf_statement *src)
+{
+	librdf_statement *st;
+
+	st = librdf_new_statement_from_statement(src);
+	if(!st)
+	{
+		twine_logf(LOG_ERR, "failed to clone statement\n");
+		return NULL;
+	}
+	return st;
+}
+
+/* Clone a node */
+librdf_node *
+twine_rdf_node_clone(librdf_node *node)
+{
+	librdf_node *p;
+
+	p = librdf_new_node_from_node(node);
+	if(!p)
+	{
+		twine_logf(LOG_ERR, "failed to clone node\n");
+		return NULL;
+	}
+	return p;
+}
+
+/* Create a new URI node */
+librdf_node *
+twine_rdf_node_createuri(const char *uri)
+{
+	librdf_node *p;
+
+	p = librdf_new_node_from_uri_string(twine_world, (const unsigned char *) uri);
+	if(!p)
+	{
+		twine_logf(LOG_ERR, "failed to create new node from <%s>\n", uri);
+		return NULL;
+	}
+	return p;
+}
+
 /* Log events from librdf */
 static int
 twine_librdf_logger(void *data, librdf_log_message *message)
@@ -157,7 +217,7 @@ twine_librdf_logger(void *data, librdf_log_message *message)
 		level = LOG_NOTICE;
 		break;
 	}
-	twine_logf(level, "%s\n", librdf_log_message_message(message));
+	twine_logf(level, "RDF: %s\n", librdf_log_message_message(message));
 	return 0;
 }
 
