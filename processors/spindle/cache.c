@@ -60,7 +60,7 @@ spindle_cache_update(SPINDLE *spindle, const char *localname)
 	 * proxy.
 	 */
 	r = sparql_queryf_model(spindle->sparql, data.sourcedata,
-							"SELECT ?s ?p ?o ?g\n"
+							"SELECT DISTINCT ?s ?p ?o ?g\n"
 							" WHERE {\n"
 							"  GRAPH %V {\n"
 							"   ?s %V %V .\n"

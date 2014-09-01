@@ -23,6 +23,10 @@
 
 #include "p_spindle.h"
 
+/* A single predicate which should be matched; optionally matching is restricted
+ * to members of a particular class (the class must be defined in classes.c)
+ * Priority values are 0 for 'always add', or 1..n, where 1 is highest-priority.
+ */
 struct predicatematch_struct
 {
 	int priority;
@@ -30,6 +34,18 @@ struct predicatematch_struct
 	const char *onlyfor;
 };
 
+/* Mapping data for a predicate. 'target' is the predicate which should be
+ * used in the proxy data. If 'expected' is RAPTOR_TERM_TYPE_LITERAL, then
+ * 'datatype' can optionally specify a datatype which literals must conform
+ * to (candidate literals must either have no datatype and language, or
+ * be of the specified datatype).
+ *
+ * If 'expected' is RAPTOR_TERM_TYPE_URI and proxyonly is nonzero, then
+ * only those candidate properties whose objects have existing proxy
+ * objects within the store will be used (and the triple stored in the
+ * proxy will point to the corresponding proxy instead of the original
+ * URI).
+ */
 struct predicatemap_struct
 {
 	const char *target;
@@ -39,6 +55,7 @@ struct predicatemap_struct
 	int proxyonly;
 };
 
+/* A single entry in a list of multi-lingual literals */
 struct literal_struct
 {
 	const char *lang;
@@ -46,6 +63,18 @@ struct literal_struct
 	int priority;
 };
 
+/* The matching state for a single property; 'map' points to the predicate
+ * mapping data (defined above).
+ *
+ * If the mapping specifies that a non-datatyped literal is expected then the
+ * current state is maintained in the 'literals' list, which will contain
+ * one entry per language, including if applicable an entry where lang==NULL.
+ *
+ * Otherwise, 'resource' will be a clone of the the object of the relevant
+ * candidate triple with the highest priority, and 'priority' will be the
+ * corresponding priority value from the predicate-matching structure.
+ *
+ */
 struct propmatch_struct
 {
 	struct predicatemap_struct *map;
@@ -55,6 +84,7 @@ struct propmatch_struct
 	size_t nliterals;
 };
 
+/* Current property matching state data */
 struct propdata_struct
 {
 	SPINDLE *spindle;
@@ -103,6 +133,8 @@ static struct predicatematch_struct depiction_match[] = {
 };
 
 static struct predicatematch_struct subject_match[] = {
+	{ 0, "http://xmlns.com/foaf/0.1/topic", NULL },
+	{ 0, "http://xmlns.com/foaf/0.1/primaryTopic", NULL },
 	{ 0, "http://purl.org/dc/terms/subject", NULL },
 	{ 0, "http://purl.org/dc/elements/1.1/subject", NULL },
 	{ -1, NULL, NULL }
@@ -183,7 +215,7 @@ static struct predicatemap_struct predicatemap[] = {
 		1
 	},
 	{
-		"http://purl.org/dc/terms/subject",
+		"http://xmlns.com/foaf/0.1/topic",
 		subject_match,
 		RAPTOR_TERM_TYPE_URI,
 		NULL,
@@ -493,12 +525,12 @@ spindle_prop_candidate_uri_(struct propdata_struct *data, struct propmatch_struc
 		}
 		free(uri);
 	}
-
+   
+	/* If the priority is zero, the triple is added to the proxy model
+	 * immediately.
+	 */
 	if(!criteria->priority)
 	{
-		/* If the priority is zero, the triple is added to the proxy model
-		 * immediately.
-		 */
 		newst = twine_rdf_st_create();
 		if(!newst)		   
 		{
@@ -513,7 +545,7 @@ spindle_prop_candidate_uri_(struct propdata_struct *data, struct propmatch_struc
 			return -1;
 		}
 		librdf_statement_set_subject(newst, node);
-		node = twine_rdf_node_createuri(criteria->predicate);
+		node = twine_rdf_node_createuri(match->map->target);
 		if(!node)
 		{
 			twine_rdf_node_destroy(newobj);
@@ -538,7 +570,7 @@ spindle_prop_candidate_uri_(struct propdata_struct *data, struct propmatch_struc
 		}
 		librdf_model_context_add_statement(data->proxymodel, data->context, newst);
 		twine_rdf_st_destroy(newst);
-		return 0;
+		return 1;
 	}
 	if(newobj)
 	{
