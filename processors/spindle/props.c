@@ -36,6 +36,7 @@ struct predicatemap_struct
 	struct predicatematch_struct *matches;
 	raptor_term_type expected;
 	const char *datatype;
+	int proxyonly;
 };
 
 struct literal_struct
@@ -130,63 +131,73 @@ static struct predicatemap_struct predicatemap[] = {
 		label_match,
 		RAPTOR_TERM_TYPE_LITERAL,
 		NULL,
+		-1,
 	},
 	{
 		"http://purl.org/dc/terms/description",
 		description_match,
 		RAPTOR_TERM_TYPE_LITERAL,
 		NULL,
+		-1,
 	},
 	{
 		"http://www.w3.org/2003/01/geo/wgs84_pos#lat",
 		lat_match,
 		RAPTOR_TERM_TYPE_LITERAL,
 		"http://www.w3.org/2001/XMLSchema#decimal",
+		-1,
 	},
 	{
 		"http://www.w3.org/2003/01/geo/wgs84_pos#long",
 		long_match,
 		RAPTOR_TERM_TYPE_LITERAL,
-		"http://www.w3.org/2001/XMLSchema#decimal"
+		"http://www.w3.org/2001/XMLSchema#decimal",
+		-1,
 	},
 	{
 		"http://xmlns.com/foaf/0.1/depiction",
 		depiction_match,
 		RAPTOR_TERM_TYPE_URI,
-		NULL
+		NULL,
+		0
 	},
 	{
 		"http://www.w3.org/2004/02/skos/core#inScheme",
 		inscheme_match,
 		RAPTOR_TERM_TYPE_URI,
-		NULL
+		NULL,
+		1
 	},
 	{
 		"http://www.w3.org/2004/02/skos/core#broader",
 		broader_match,
 		RAPTOR_TERM_TYPE_URI,
-		NULL
+		NULL,
+		1
 	},
 	{
 		"http://www.w3.org/2004/02/skos/core#narrower",
 		narrower_match,
 		RAPTOR_TERM_TYPE_URI,
-		NULL
+		NULL,
+		1
 	},
 	{
 		"http://purl.org/dc/terms/subject",
 		subject_match,
 		RAPTOR_TERM_TYPE_URI,
-		NULL
+		NULL,
+		1
 	},
 	{
 		"http://purl.org/dc/terms/isPartOf",
 		part_match,
 		RAPTOR_TERM_TYPE_URI,
-		NULL
+		NULL,
+		1
 	},
 
-	{ NULL, NULL, RAPTOR_TERM_TYPE_UNKNOWN, NULL }
+	{ NULL, NULL, RAPTOR_TERM_TYPE_UNKNOWN, NULL, -1 }
 };
 
 static int spindle_prop_init_(struct propdata_struct *data, SPINDLECACHE *cache);
@@ -324,17 +335,12 @@ spindle_prop_apply_(struct propdata_struct *data)
 	int r;
 
 	/* Generate a model containing the new data for the proxy */
-	node = librdf_new_node_from_uri_string(data->spindle->world, (const unsigned char *) data->localname);
-	if(!node)
-	{
-		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to create node for <%s>\n", data->localname);
-		return -1;
-	}
+	node = twine_rdf_node_clone(data->cache->self);
+	if(!node) return -1;
 
-	base = librdf_new_statement(data->spindle->world);	
+	base = twine_rdf_st_create();
 	if(!base)
 	{
-		twine_logf(LOG_CRIT, PLUGIN_NAME, ": failed to create statement\n");
 		librdf_free_node(node);
 		return -1;
 	}
@@ -343,17 +349,15 @@ spindle_prop_apply_(struct propdata_struct *data)
 	r = 0;
 	for(c = 0; !r && data->matches[c].map && data->matches[c].map->target; c++)
 	{
-		pst = librdf_new_statement_from_statement(base);		
+		pst = twine_rdf_st_clone(base);
 		if(!pst)
 		{
-			twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to clone statement\n");
 			r = -1;
 			break;		
 		}
-		node = librdf_new_node_from_uri_string(data->spindle->world, (const unsigned char *) data->matches[c].map->target);
+		node = twine_rdf_node_createuri(data->matches[c].map->target);
 		if(!node)
 		{
-			twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to create new node for <%s>\n", data->matches[c].map->target);
 			librdf_free_statement(pst);
 			r = -1;
 			break;
@@ -374,10 +378,9 @@ spindle_prop_apply_(struct propdata_struct *data)
 		{
 			for(d = 0; !r && d < data->matches[c].nliterals; d++)
 			{
-				lpst = librdf_new_statement_from_statement(pst);
+				lpst = twine_rdf_st_clone(pst);
 				if(!lpst)
 				{
-					twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to clone statement\n");
 					r = -1;
 					break;
 				}
@@ -458,30 +461,99 @@ spindle_prop_candidate_(struct propdata_struct *data, struct propmatch_struct *m
 static int
 spindle_prop_candidate_uri_(struct propdata_struct *data, struct propmatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj)
 {
-	librdf_node *node;
+	librdf_node *node, *newobj;
+	librdf_statement *newst;
+	char *uri;
 
 	(void) st;
-	(void) data;
+
+	if(criteria->priority && match->priority <= criteria->priority)
+	{
+		/* We already have a better match for the property */
+		return 0;
+	}	
+	/* Some resource properties, such as depiction, are used as-is;
+	 * others are only used if there's a proxy corresponding to the
+	 * object URI.
+	 */	
+	newobj = NULL;
+	if(match->map->proxyonly)
+	{
+		uri = spindle_proxy_locate(data->spindle, (const char *) librdf_uri_as_string(librdf_node_get_uri(obj)));
+		if(!uri || !strcmp(uri, data->localname))
+		{
+			free(uri);
+			return 0;
+		}
+		newobj = twine_rdf_node_createuri(uri);
+		if(!newobj)
+		{
+			free(uri);
+			return -1;
+		}
+		free(uri);
+	}
 
 	if(!criteria->priority)
 	{
-		/* TODO: Add the resource to the proxy model immediately */
+		/* If the priority is zero, the triple is added to the proxy model
+		 * immediately.
+		 */
+		newst = twine_rdf_st_create();
+		if(!newst)		   
+		{
+			twine_rdf_node_destroy(newobj);
+			return -1;
+		}
+		node = twine_rdf_node_clone(data->cache->self);
+		if(!node)
+		{
+			twine_rdf_node_destroy(newobj);
+			twine_rdf_st_destroy(newst);
+			return -1;
+		}
+		librdf_statement_set_subject(newst, node);
+		node = twine_rdf_node_createuri(criteria->predicate);
+		if(!node)
+		{
+			twine_rdf_node_destroy(newobj);
+			twine_rdf_st_destroy(newst);
+			return -1;
+		}
+		librdf_statement_set_predicate(newst, node);
+		if(newobj)
+		{
+			librdf_statement_set_object(newst, newobj);
+			newobj = NULL;
+		}
+		else
+		{
+			node = twine_rdf_node_clone(obj);
+			if(!node)
+			{
+				twine_rdf_st_destroy(newst);
+				return -1;
+			}
+			librdf_statement_set_object(newst, node);
+		}
+		librdf_model_context_add_statement(data->proxymodel, data->context, newst);
+		twine_rdf_st_destroy(newst);
 		return 0;
 	}
-	if(match->priority <= criteria->priority)
+	if(newobj)
 	{
-		return 0;
+		node = newobj;
+		newobj = NULL;
 	}
-	node = librdf_new_node_from_node(obj);
-	if(!node)
+	else
 	{
-		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to duplicate node\n");
-		return -1;
+		node = twine_rdf_node_clone(obj);
+		if(!node)
+		{
+			return -1;
+		}
 	}
-	if(match->resource)
-	{
-		librdf_free_node(match->resource);
-	}
+	twine_rdf_node_destroy(match->resource);
 	match->resource = node;
 	match->priority = criteria->priority;
 	return 1;
@@ -492,6 +564,7 @@ spindle_prop_candidate_literal_(struct propdata_struct *data, struct propmatch_s
 {
 	char *lang;
 	librdf_uri *dturi;
+	librdf_node *node;
 	const char *dtstr;
 
 	lang = librdf_node_get_literal_value_language(obj);
@@ -521,11 +594,13 @@ spindle_prop_candidate_literal_(struct propdata_struct *data, struct propmatch_s
 	}
 	if(!dtstr || !strcmp(dtstr, match->map->datatype))
 	{
-		if(match->resource)
+		node = twine_rdf_node_clone(obj);
+		if(!node)
 		{
-			librdf_free_node(match->resource);
+			return -1;
 		}
-		match->resource = librdf_new_node_from_node(obj);
+		twine_rdf_node_destroy(match->resource);
+		match->resource = node;
 		match->priority = criteria->priority;
 		return 1;
 	}
@@ -537,6 +612,7 @@ spindle_prop_candidate_lang_(struct propdata_struct *data, struct propmatch_stru
 {
 	struct literal_struct *entry, *p;
 	size_t c;
+	librdf_node *node;
 
 	(void) data;
 	(void) st;
@@ -570,11 +646,13 @@ spindle_prop_candidate_lang_(struct propdata_struct *data, struct propmatch_stru
 		entry->lang = lang;
 		match->nliterals++;		
 	}
-	if(entry->node)
+	node = twine_rdf_node_clone(obj);
+	if(!node)
 	{
-		librdf_free_node(entry->node);
+		return -1;
 	}
-	entry->node = librdf_new_node_from_node(obj);
+	twine_rdf_node_destroy(entry->node);
+	entry->node = node;
 	entry->priority = criteria->priority;
 	return 1;
 }

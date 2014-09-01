@@ -49,7 +49,7 @@ spindle_cache_update(SPINDLE *spindle, const char *localname)
 	int r;
 	librdf_statement *query, *st;
 	librdf_node *node;
-	librdf_stream *stream;
+	librdf_stream *stream, *qstream;
 
 	if(spindle_cache_init_(&data, spindle, localname))
 	{
@@ -79,20 +79,60 @@ spindle_cache_update(SPINDLE *spindle, const char *localname)
 	}   
 
 	/* Copy any of our own owl:sameAs references into the proxy graph */
-	query = librdf_new_statement(spindle->world);
-	node = librdf_new_node_from_node(data.sameas);
+	query = twine_rdf_st_create();
+	if(!query)
+	{
+		return -1;
+		spindle_cache_cleanup_(&data);
+	}
+	node = twine_rdf_node_clone(data.sameas);
+	if(!node)
+	{
+		twine_rdf_st_destroy(query);
+		spindle_cache_cleanup_(&data);
+		return -1;
+	}
 	librdf_statement_set_predicate(query, node);
-	node = librdf_new_node_from_node(data.self);
+	node = twine_rdf_node_clone(data.self);
+	if(!node)
+	{
+		twine_rdf_st_destroy(query);
+		spindle_cache_cleanup_(&data);
+		return -1;
+	}
 	librdf_statement_set_object(query, node);
 	stream = librdf_model_find_statements_with_options(data.sourcedata, query, spindle->rootgraph, NULL);
+	if(!stream)
+	{
+		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to query model\n");
+		twine_rdf_st_destroy(query);
+		spindle_cache_cleanup_(&data);
+		return -1;
+	}
 	while(!librdf_stream_end(stream))
 	{
 		st = librdf_stream_get_object(stream);
+		qstream = librdf_model_find_statements_with_options(data.proxydata, st, data.graph, NULL);
+		if(!qstream)
+		{
+			twine_logf(LOG_ERR, PLUGIN_NAME ": failed to query model\n");
+			librdf_free_stream(stream);
+			twine_rdf_st_destroy(query);
+			spindle_cache_cleanup_(&data);
+			return -1;
+		}
+		if(!librdf_stream_end(qstream))
+		{
+			librdf_free_stream(qstream);
+			librdf_stream_next(stream);
+			continue;
+		}
+		librdf_free_stream(qstream);
 		librdf_model_context_add_statement(data.proxydata, data.graph, st);
 		librdf_stream_next(stream);
 	}
 	librdf_free_stream(stream);
-	librdf_free_statement(query);
+	twine_rdf_st_destroy(query);
 
 	/* Remove our own derived proxy data from the source model */
 	librdf_model_context_remove_statements(data.sourcedata, data.graph);
