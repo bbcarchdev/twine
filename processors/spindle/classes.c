@@ -33,12 +33,15 @@ struct classmatch_struct
 
 static const char *person_matches[] =  {
 	"http://xmlns.com/foaf/0.1/Person",
+	"http://www.tate.org.uk/ontologies/collection#Artist",
+	"http://purl.org/ontology/po/Person",
 	NULL
 };
 
 static const char *group_matches[] = {
 	"http://xmlns.com/foaf/0.1/Group",
 	"http://xmlns.com/foaf/0.1/Organization",
+	"http://purl.org/ontology/po/Broadcaster",
 	NULL
 };
 
@@ -68,6 +71,7 @@ static const char *physical_matches[] = {
 static const char *concept_matches[] = {
 	"http://www.w3.org/2004/02/skos/core#Concept",
 	"http://www.w3.org/2008/05/skos#Concept",
+	"http://www.tate.org.uk/ontologies/collection#Subject",
 	NULL,
 };
 
@@ -78,6 +82,15 @@ static const char *collection_matches[] = {
 
 static const char *work_matches[] = {
 	"http://purl.org/vocab/frbr/core#Work",
+	"http://purl.org/ontology/po/Clip",
+	"http://purl.org/ontology/po/Episode",
+	"http://purl.org/ontology/po/Clip",
+	"http://purl.org/ontology/po/OriginalVersion",
+	"http://purl.org/ontology/po/Programme",
+	"http://purl.org/ontology/po/Brand",
+	"http://purl.org/ontology/po/Series",
+	"http://purl.org/ontology/po/ProgrammeItem",
+	"http://www.tate.org.uk/ontologies/collection#Artwork",
 	NULL,
 };
 
@@ -87,43 +100,52 @@ static const char *digital_matches[] = {
 	NULL,
 };
 
+static const char *event_matches[] = {
+	"http://purl.org/NET/c4dm/event.owl#Event",
+	"http://www.tate.org.uk/ontologies/collection#Birth",
+	"http://www.tate.org.uk/ontologies/collection#Death",
+	"http://purl.org/dc/terms/PeriodOfTime",
+	"http://purl.org/ontology/po/Broadcast",
+	NULL,
+};
+
 static struct classmatch_struct matches[] = {
 	/* People */
 	{
 		"http://xmlns.com/foaf/0.1/Person",
 		person_matches,
 	},
-	
+
 	/* Organisations and groups */
 	{
 		"http://xmlns.com/foaf/0.1/Group",
 		group_matches,
 	},
-	
+
 	/* Any other kind of agent */
 	{
 		"http://xmlns.com/foaf/0.1/Agent",
 		agent_matches,
 	},
-	
+
 	/* Locations/spatial regions */
 	{
 		"http://www.w3.org/2003/01/geo/wgs84_pos#SpatialThing",
 		location_matches,
 	},
-	
+
+	/* Events */
+	{
+		"http://purl.org/NET/c4dm/event.owl#Event",
+		event_matches,
+	},
+
 	/* Physical objects */
 	{
 		"http://www.cidoc-crm.org/cidoc-crm/E18_Physical_Thing",
 		physical_matches,
 	},
 
-	/* Concepts */
-	{
-		"http://www.w3.org/2004/02/skos/core#Concept",
-		concept_matches,
-	},
-	
 	/* Collections */
 	{
 		"http://purl.org/dc/dcmitype/Collection",
@@ -138,9 +160,16 @@ static struct classmatch_struct matches[] = {
 	
 	/* Digital objects */
 	{
-		"http://xmlns.com/foaf/0.1/Document",		
+		"http://xmlns.com/foaf/0.1/Document",
 		digital_matches,
 	},
+
+	/* Concepts (should always be last) */
+	{
+		"http://www.w3.org/2004/02/skos/core#Concept",
+		concept_matches,
+	},
+
 	{
 		NULL,
 		NULL
