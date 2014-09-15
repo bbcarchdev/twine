@@ -105,6 +105,8 @@ static struct predicatematch_struct label_match[] = {
 	{ 30, "http://xmlns.com/foaf/0.1/name", "http://xmlns.com/foaf/0.1/Group" },
 	{ 30, "http://xmlns.com/foaf/0.1/name", "http://xmlns.com/foaf/0.1/Agent" },
 	{ 30, "http://www.geonames.org/ontology#name", "http://www.w3.org/2003/01/geo/wgs84_pos#SpatialThing" },
+	{ 30, "http://www.tate.org.uk/ontologies/collection#fc", "http://xmlns.com/foaf/0.1/Person" },
+	{ 35, "http://www.tate.org.uk/ontologies/collection#mda", "http://xmlns.com/foaf/0.1/Person" },
 	{ 35, "http://www.geonames.org/ontology#alternateName", "http://www.w3.org/2003/01/geo/wgs84_pos#SpatialThing" },
 	{ 40, "http://purl.org/dc/terms/title", NULL },
 	{ 41, "http://purl.org/dc/elements/1.1/title", NULL },
@@ -129,6 +131,7 @@ static struct predicatematch_struct long_match[] = {
 
 static struct predicatematch_struct depiction_match[] = {
 	{ 0, "http://xmlns.com/foaf/0.1/depiction", NULL },
+	{ 0, "http://www.tate.org.uk/ontologies/collection#thumbnailUrl", NULL },
 	{ -1, NULL, NULL }
 };
 
@@ -141,19 +144,38 @@ static struct predicatematch_struct subject_match[] = {
 };
 
 static struct predicatematch_struct inscheme_match[] = {
+	{ 0, "http://www.w3.org/2004/02/skos/core#inScheme", NULL },
+	{ 0, "http://www.w3.org/2008/05/skos#inScheme", NULL },
 	{ -1, NULL, NULL }
 };
 
 static struct predicatematch_struct broader_match[] = {
+	{ 0, "http://www.w3.org/2004/02/skos/core#broader", NULL },
+	{ 0, "http://www.w3.org/2008/05/skos#broader", NULL },
+	{ 0, "http://www.tate.org.uk/ontologies/collection#parentSubject", NULL },
 	{ -1, NULL, NULL }
 };
 
 static struct predicatematch_struct narrower_match[] = {
+	{ 0, "http://www.w3.org/2004/02/skos/core#narrower", NULL },
+	{ 0, "http://www.w3.org/2008/05/skos#narrower", NULL },
+	{ -1, NULL, NULL }
+};
+
+static struct predicatematch_struct locatedin_match[] = {
+	{ 0, "http://www.geonames.org/ontology#locatedIn", NULL },
+	{ 0, "http://www.tate.org.uk/ontologies/collection#place", "http://www.geonames.org/ontology#Feature" },
 	{ -1, NULL, NULL }
 };
 
 static struct predicatematch_struct part_match[] = {
 	{ 0, "http://purl.org/dc/terms/isPartOf", NULL },
+	{ -1, NULL, NULL }
+};
+
+static struct predicatematch_struct place_match[] = {
+	{ 0, "http://purl.org/NET/c4dm/event.owl#place", "http://purl.org/NET/c4dm/event.owl#Event" },
+	{ 0, "http://www.tate.org.uk/ontologies/collection#place", "http://purl.org/NET/c4dm/event.owl#Event" },
 	{ -1, NULL, NULL }
 };
 
@@ -224,6 +246,20 @@ static struct predicatemap_struct predicatemap[] = {
 	{
 		"http://purl.org/dc/terms/isPartOf",
 		part_match,
+		RAPTOR_TERM_TYPE_URI,
+		NULL,
+		1
+	},
+	{
+		"http://www.geonames.org/ontology#locatedIn",
+		locatedin_match,
+		RAPTOR_TERM_TYPE_URI,
+		NULL,
+		1
+	},
+	{
+		"http://purl.org/NET/c4dm/event.owl#place",
+		place_match,
 		RAPTOR_TERM_TYPE_URI,
 		NULL,
 		1
@@ -445,7 +481,7 @@ spindle_prop_test_(struct propdata_struct *data, librdf_statement *st, const cha
 		for(d = 0; data->maps[c].matches[d].predicate; d++)
 		{
 			if(data->maps[c].matches[d].onlyfor &&
-			   strcmp(data->maps[c].matches[d].onlyfor, data->classname))
+			   (!data->classname || strcmp(data->maps[c].matches[d].onlyfor, data->classname)))
 			{
 				continue;
 			}
