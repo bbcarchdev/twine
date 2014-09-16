@@ -82,6 +82,18 @@ spindle_init_(SPINDLE *spindle)
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create node for <%s>\n", spindle->root);
 		return -1;
 	}	
+	spindle->modified = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) "http://purl.org/dc/terms/modified");
+	if(!spindle->modified)
+	{
+		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create node for dct:modified\n");
+		return -1;
+	}
+	spindle->xsd_dateTime = librdf_new_uri(spindle->world, (const unsigned char *) "http://www.w3.org/2001/XMLSchema#dateTime");
+	if(!spindle->xsd_dateTime)
+	{
+		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create URI for xsd:dateTime\n");
+		return -1;
+	}
 	return 0;
 }
 
@@ -107,6 +119,14 @@ spindle_cleanup_(SPINDLE *spindle)
 	if(spindle->rootgraph)
 	{
 		librdf_free_node(spindle->rootgraph);
+	}
+	if(spindle->modified)
+	{
+		librdf_free_node(spindle->modified);
+	}
+	if(spindle->xsd_dateTime)
+	{
+		librdf_free_uri(spindle->xsd_dateTime);
 	}
 	return 0;
 }

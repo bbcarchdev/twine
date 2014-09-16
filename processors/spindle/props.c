@@ -122,10 +122,12 @@ static struct predicatematch_struct description_match[] = {
 };
 
 static struct predicatematch_struct lat_match[] = {
+	{ 50, "http://www.w3.org/2003/01/geo/wgs84_pos#lat", "http://www.w3.org/2003/01/geo/wgs84_pos#SpatialThing" },
 	{ -1, NULL, NULL }
 };
 
 static struct predicatematch_struct long_match[] = {
+	{ 50, "http://www.w3.org/2003/01/geo/wgs84_pos#long", "http://www.w3.org/2003/01/geo/wgs84_pos#SpatialThing" },
 	{ -1, NULL, NULL }
 };
 
@@ -295,7 +297,7 @@ static struct predicatemap_struct predicatemap[] = {
 
 static int spindle_prop_init_(struct propdata_struct *data, SPINDLECACHE *cache);
 static int spindle_prop_cleanup_(struct propdata_struct *data);
-
+static int spindle_prop_modified_(struct propdata_struct *data);
 static int spindle_prop_loop_(struct propdata_struct *data);
 static int spindle_prop_test_(struct propdata_struct *data, librdf_statement *st, const char *predicate);
 static int spindle_prop_candidate_(struct propdata_struct *data, struct propmatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj);
@@ -322,6 +324,8 @@ spindle_prop_update(SPINDLECACHE *cache)
 	{
 		r = spindle_prop_apply_(&data);
 	}
+
+	spindle_prop_modified_(&data);
 
 	spindle_prop_cleanup_(&data);
 
@@ -381,6 +385,48 @@ spindle_prop_cleanup_(struct propdata_struct *data)
 		}
 		free(data->matches);
 	}
+	return 0;
+}
+
+/* Add a dct:modified triple to the proxy data */
+static int 
+spindle_prop_modified_(struct propdata_struct *data)
+{
+	librdf_node *obj;
+	librdf_statement *st;
+	char tbuf[64];
+	time_t t;
+	struct tm now;
+
+	t = time(NULL);
+	gmtime_r(&t, &now);
+	strftime(tbuf, sizeof(tbuf) - 1, "%Y-%m-%dT%H:%M:%SZ", &now);
+	st = twine_rdf_st_create();
+	if(!st) return -1;
+	obj = twine_rdf_node_clone(data->cache->self);
+	if(!obj)
+	{
+		twine_rdf_st_destroy(st);
+		return -1;
+	}
+	librdf_statement_set_subject(st, obj);
+	obj = twine_rdf_node_clone(data->spindle->modified);
+	if(!obj)
+	{
+		twine_rdf_st_destroy(st);
+		return -1;
+	}
+	librdf_statement_set_predicate(st, obj);
+	obj = librdf_new_node_from_typed_literal(data->spindle->world, (const unsigned char *) tbuf, NULL, data->spindle->xsd_dateTime);
+	if(!obj)
+	{
+		twine_logf(LOG_CRIT, "failed to create new node for \"%s\"^^xsd:dateTime\n");
+		twine_rdf_st_destroy(st);
+		return -1;
+	}
+	librdf_statement_set_object(st, obj);
+	librdf_model_context_add_statement(data->proxymodel, data->context, st);
+	twine_rdf_st_destroy(st);
 	return 0;
 }
 
@@ -477,7 +523,6 @@ spindle_prop_apply_(struct propdata_struct *data)
 					r = -1;
 					break;
 				}
-				/* TODO: datatype override */
 				librdf_statement_set_object(lpst, data->matches[c].literals[d].node);
 				data->matches[c].literals[d].node = NULL;
 				if(librdf_model_context_add_statement(data->proxymodel, data->context, lpst))
@@ -653,10 +698,32 @@ spindle_prop_candidate_uri_(struct propdata_struct *data, struct propmatch_struc
 }
 
 static int
+spindle_dt_is_int(const char *dtstr)
+{
+	if(!strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#integer") ||
+	   !strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#long") ||
+	   !strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#short") ||
+	   !strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#byte") ||
+	   !strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#int") ||
+	   !strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#nonPositiveInteger") ||
+	   !strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#nonNegativeInteger") ||
+	   !strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#negativeInteger") ||
+	   !strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#positiveInteger") ||
+	   !strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#unsignedLong") ||
+	   !strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#unsignedInt") ||
+	   !strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#unsignedShort") ||
+	   !strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#unsignedByte"))
+	{
+		return 1;
+	}
+	return 0;
+}
+
+static int
 spindle_prop_candidate_literal_(struct propdata_struct *data, struct propmatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj)
 {
 	char *lang;
-	librdf_uri *dturi;
+	librdf_uri *dturi, *uri;
 	librdf_node *node;
 	const char *dtstr;
 
@@ -666,7 +733,7 @@ spindle_prop_candidate_literal_(struct propdata_struct *data, struct propmatch_s
 		/* If there's no datatype specified, match per language */
 		return spindle_prop_candidate_lang_(data, match, criteria, st, obj, lang);
 	}
-	if(match->priority <= criteria->priority)
+	if(match->priority && match->priority <= criteria->priority)
 	{
 		return 0;
 	}
@@ -676,7 +743,7 @@ spindle_prop_candidate_literal_(struct propdata_struct *data, struct propmatch_s
 	if((dturi = librdf_node_get_literal_value_datatype_uri(obj)))
 	{
 		dtstr = (const char *) librdf_uri_as_string(dturi);
-	}
+	}	
 	else if(lang)
 	{
 		return 0;
@@ -685,11 +752,28 @@ spindle_prop_candidate_literal_(struct propdata_struct *data, struct propmatch_s
 	{
 		dtstr = NULL;
 	}
+	if(dtstr)
+	{
+		/* Coerce specific types */
+		if(!strcmp(match->map->datatype, "http://www.w3.org/2001/XMLSchema#decimal"))
+		{
+			if(spindle_dt_is_int(dtstr))
+			{
+				dtstr = match->map->datatype;
+			}
+		}
+	}
 	if(!dtstr || !strcmp(dtstr, match->map->datatype))
 	{
-		node = twine_rdf_node_clone(obj);
+		uri = librdf_new_uri(data->spindle->world, (const unsigned char *) dtstr);
+		node = librdf_new_node_from_typed_literal(data->spindle->world,
+												  librdf_node_get_literal_value(obj),
+												  NULL,
+												  uri);
+		librdf_free_uri(uri);
 		if(!node)
 		{
+			twine_logf(LOG_ERR, "failed to create new node for typed literal\n");
 			return -1;
 		}
 		twine_rdf_node_destroy(match->resource);
@@ -737,7 +821,7 @@ spindle_prop_candidate_lang_(struct propdata_struct *data, struct propmatch_stru
 		entry = &(match->literals[match->nliterals]);
 		memset(entry, 0, sizeof(struct literal_struct));
 		entry->lang = lang;
-		match->nliterals++;		
+		match->nliterals++;
 	}
 	node = twine_rdf_node_clone(obj);
 	if(!node)

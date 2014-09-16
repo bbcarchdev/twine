@@ -50,6 +50,10 @@ struct spindle_context_struct
 	librdf_node *rdftype;
 	/* owl:sameAs */
 	librdf_node *sameas;
+	/* dct:modified */
+	librdf_node *modified;
+	/* xsd:dateTime */
+	librdf_uri *xsd_dateTime;
 	/* The root URI as a librdf_node */
 	librdf_node *rootgraph;
 	/* Whether to store each proxy in its own graph */
