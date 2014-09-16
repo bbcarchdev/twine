@@ -26,10 +26,13 @@ LIBS = $(top_builddir)/libtwine/libtwine.la
 
 moduledir = $(libdir)/twine
 
-module_LTLIBRARIES = rdf.la xslt.la
+module_LTLIBRARIES = rdf.la xslt.la geonames.la
 
 rdf_la_SOURCES = rdf.c
 rdf_la_LDFLAGS = -no-undefined -module -avoid-version
+
+geonames_la_SOURCES = geonames.c
+geonames_la_LDFLAGS = -no-undefined -module -avoid-version
 
 xslt_la_SOURCES = xslt.c
 xslt_la_LIBADD = \

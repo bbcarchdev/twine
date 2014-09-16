@@ -1,0 +1,131 @@
+/* Twine: RDF (quad) processing
+ *
+ * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
+ *
+ * Copyright (c) 2014 BBC
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "libtwine.h"
+
+#define PLUGIN_NAME                     "geonames"
+
+static int process_geonames(const char *mime, const char *buf, size_t buflen, void *data);
+
+static char *
+strnchr(const char *src, int ch, size_t max)
+{
+	const char *t;
+
+	for(t = src; (size_t) (t - src) < max; t++)
+	{
+		if(!*t)
+		{
+			break;
+		}
+		if(*t == ch)
+		{
+			return (char *) t;
+		}
+	}
+	return NULL;
+}
+
+/* Twine plug-in entry-point */
+int
+twine_plugin_init(void)
+{
+	twine_logf(LOG_DEBUG, PLUGIN_NAME "plug-in: initialising\n");
+	twine_plugin_register("text/x-geonames-dump", "Geonames dump", process_geonames, NULL);
+	return 0;
+}
+
+/* Process a Geonames RDF dump into quads and import it.
+ *
+ * A Geonames dump consists of sequences of two lines. The first line is the
+ * primary topic, the second is the RDF/XML which describes it. The graph name
+ * is the primary topic, with 'about.rdf' appended to it.
+ */
+
+static int
+process_geonames(const char *mime, const char *buf, size_t buflen, void *data)
+{
+	char *graph;
+	char *t, *p, *rdfxml, *topic;
+	size_t remaining;
+	librdf_model *model;
+	librdf_stream *stream;
+
+	(void) mime;
+	(void) data;
+
+	t = (char *) buf;
+	while((size_t) (t - buf) < buflen)
+	{
+		topic = t;
+		remaining = buflen - (t - buf);
+		p = strnchr(topic, '\n', remaining);
+		if(!p)
+		{
+			break;
+		}
+		graph = (char *) calloc(1, p - topic + 16);
+		if(!graph)
+		{
+			twine_logf(LOG_CRIT, "failed to allocate buffer for graph name\n");
+			return -1;
+		}
+		strncpy(graph, topic, p - topic);
+		strcpy(&(graph[p - topic]), "about.rdf");
+		fprintf(stderr, "graph = <%s>\n", graph);
+		rdfxml = p + 1;
+		remaining = buflen - (rdfxml - buf);
+		t = strnchr(rdfxml, '\n', remaining);
+		if(!t)
+		{
+			free(graph);
+			break;
+		}
+		model = twine_rdf_model_create();
+		if(twine_rdf_model_parse(model, "application/rdf+xml", rdfxml, t - rdfxml))
+		{
+			twine_logf(LOG_ERR, "failed to parse string into model\n");
+			free(graph);
+			librdf_free_model(model);
+			return -1;
+		}
+		stream = librdf_model_as_stream(model);
+		if(twine_sparql_put_stream(graph, stream))
+		{
+			twine_logf(LOG_ERR, "failed to update graph <%s>\n", graph);
+			free(graph);
+			librdf_free_stream(stream);
+			librdf_free_model(model);
+			return -1;
+		}
+		librdf_free_stream(stream);		
+		t++;
+		free(graph);
+	}
+	return 0;
+}
+
