@@ -765,7 +765,11 @@ spindle_prop_candidate_literal_(struct propdata_struct *data, struct propmatch_s
 	}
 	if(!dtstr || !strcmp(dtstr, match->map->datatype))
 	{
-		uri = librdf_new_uri(data->spindle->world, (const unsigned char *) dtstr);
+		uri = librdf_new_uri(data->spindle->world, (const unsigned char *) match->map->datatype);
+		if(!uri)
+		{
+			twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create new URI for <%s>\n", match->map->datatype);
+		}
 		node = librdf_new_node_from_typed_literal(data->spindle->world,
 												  librdf_node_get_literal_value(obj),
 												  NULL,
@@ -773,7 +777,7 @@ spindle_prop_candidate_literal_(struct propdata_struct *data, struct propmatch_s
 		librdf_free_uri(uri);
 		if(!node)
 		{
-			twine_logf(LOG_ERR, "failed to create new node for typed literal\n");
+			twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create new node for typed literal\n");
 			return -1;
 		}
 		twine_rdf_node_destroy(match->resource);
