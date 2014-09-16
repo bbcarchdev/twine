@@ -102,6 +102,8 @@ twine_sparql_put(const char *uri, const char *triples, size_t length)
 	char *qbuf;
 	size_t l;
 
+	oldgraph = NULL;
+	newgraph = NULL;
 	pp = twine_postproc_registered_();
 	conn = twine_sparql_create();
 	if(!conn)
@@ -110,7 +112,7 @@ twine_sparql_put(const char *uri, const char *triples, size_t length)
 	}
 	if(pp)
 	{
-		/* Obtain 'old' graph */
+		/* Obtain 'old' graph if there are any postprocessors registered */
 		l = strlen(uri) + 60;
 		qbuf = (char *) calloc(1, l + 1);
 		if(!qbuf)
@@ -139,6 +141,7 @@ twine_sparql_put(const char *uri, const char *triples, size_t length)
 	sparql_destroy(conn);
 	if(!r && pp)
 	{
+		/* Parse the triples if there are any postprocessors */
 		newgraph = twine_rdf_model_create();
 		if(!twine_rdf_model_parse(newgraph, "application/n-triples", triples, length))
 		{
