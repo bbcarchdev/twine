@@ -131,6 +131,7 @@ static struct predicatematch_struct long_match[] = {
 
 static struct predicatematch_struct depiction_match[] = {
 	{ 0, "http://xmlns.com/foaf/0.1/depiction", NULL },
+	{ 0, "http://xmlns.com/foaf/0.1/thumbnail", NULL },
 	{ 0, "http://www.tate.org.uk/ontologies/collection#thumbnailUrl", NULL },
 	{ -1, NULL, NULL }
 };
@@ -164,7 +165,13 @@ static struct predicatematch_struct narrower_match[] = {
 
 static struct predicatematch_struct locatedin_match[] = {
 	{ 0, "http://www.geonames.org/ontology#locatedIn", NULL },
-	{ 0, "http://www.tate.org.uk/ontologies/collection#place", "http://www.geonames.org/ontology#Feature" },
+	{ 0, "http://www.tate.org.uk/ontologies/collection#place", "http://purl.org/vocab/frbr/core#Work" },
+	{ 0, "http://www.geonames.org/ontology#parentCountry", NULL },
+	{ 0, "http://www.geonames.org/ontology#parentFeature", NULL },
+	{ 0, "http://www.geonames.org/ontology#parentADM1", NULL },
+	{ 0, "http://www.geonames.org/ontology#parentADM2", NULL },
+	{ 0, "http://www.geonames.org/ontology#parentADM3", NULL },
+	{ 0, "http://www.geonames.org/ontology#parentADM4", NULL },
 	{ -1, NULL, NULL }
 };
 
@@ -176,6 +183,18 @@ static struct predicatematch_struct part_match[] = {
 static struct predicatematch_struct place_match[] = {
 	{ 0, "http://purl.org/NET/c4dm/event.owl#place", "http://purl.org/NET/c4dm/event.owl#Event" },
 	{ 0, "http://www.tate.org.uk/ontologies/collection#place", "http://purl.org/NET/c4dm/event.owl#Event" },
+	{ -1, NULL, NULL }
+};
+
+static struct predicatematch_struct page_match[] = {
+	{ 0, "http://xmlns.com/foaf/0.1/page", NULL },
+	{ 0, "http://xmlns.com/foaf/0.1/homepage", NULL },
+	{ 0, "http://xmlns.com/foaf/0.1/weblog", NULL },
+	{ 0, "http://www.geonames.org/ontology#wikipediaArticle", NULL },
+	{ 0, "http://xmlns.com/foaf/0.1/workInfoHomepage", NULL },
+	{ 0, "http://xmlns.com/foaf/0.1/workplaceHomepage", NULL },
+	{ 0, "http://xmlns.com/foaf/0.1/schoolHomepage", NULL },
+	{ 0, "http://xmlns.com/foaf/0.1/isPrimaryTopicOf", NULL },
 	{ -1, NULL, NULL }
 };
 
@@ -264,7 +283,13 @@ static struct predicatemap_struct predicatemap[] = {
 		NULL,
 		1
 	},
-
+	{
+		"http://xmlns.com/foaf/0.1/page",
+		page_match,
+		RAPTOR_TERM_TYPE_URI,
+		NULL,
+		0
+	},
 	{ NULL, NULL, RAPTOR_TERM_TYPE_UNKNOWN, NULL, -1 }
 };
 
