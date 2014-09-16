@@ -28,6 +28,9 @@ static int writerd_init(int argc, char **argv);
 static int writerd_process_args(int argc, char **argv);
 static int writerd_plugin_config_cb(const char *key, const char *value);
 static void writerd_signal(int sig);
+static int writerd_import(const char *type);
+
+static const char *bulk_import = NULL;
 
 int
 main(int argc, char **argv)
@@ -38,6 +41,10 @@ main(int argc, char **argv)
 	if(writerd_init(argc, argv))
 	{
 		return 1;
+	}
+	if(bulk_import)
+	{
+		return (writerd_import(bulk_import) ? 1 : 0);
 	}
 	detach = config_get_bool(TWINE_APP_NAME ":detach", 1);
 	signal(SIGHUP, SIG_IGN);
@@ -57,7 +64,7 @@ main(int argc, char **argv)
 	signal(SIGTTIN, SIG_IGN);
 	signal(SIGTTOU, SIG_IGN);
 	signal(SIGCHLD, SIG_IGN);
-	signal(SIGTERM, writerd_signal);
+	signal(SIGTERM, writerd_signal);	
 	if(detach)
 	{
 		child = utils_daemon(TWINE_APP_NAME ":pidfile", LOCALSTATEDIR "/run/twine-writerd.pid");
@@ -122,10 +129,13 @@ writerd_init(int argc, char **argv)
 	{
 		return -1;
 	}
-	/* Set up the AMQP interface */
-	if(utils_proton_init_recv(TWINE_APP_NAME ":amqp-uri"))
+	if(!bulk_import)
 	{
-		return -1;
+		/* Set up the AMQP interface */
+		if(utils_proton_init_recv(TWINE_APP_NAME ":amqp-uri"))
+		{
+			return -1;
+		}
 	}
 	/* Load plug-ins */
 	config_get_all(TWINE_APP_NAME, "module", writerd_plugin_config_cb);
@@ -141,7 +151,9 @@ writerd_usage(void)
 			"  -h                   Print this notice and exit\n"
 			"  -f                   Don't detach and run in the background\n"
 			"  -d                   Enable debug output to standard error\n"
-			"  -c FILE              Specify path to configuration file\n\n",
+			"  -c FILE              Specify path to configuration file\n"
+			"  -t TYPE              Perform a bulk import from stdin of TYPE\n"
+			"\n",			
 			utils_progname);
 }
 
@@ -150,7 +162,7 @@ writerd_process_args(int argc, char **argv)
 {
 	int c;
 
-	while((c = getopt(argc, argv, "hfc:d")) != -1)
+	while((c = getopt(argc, argv, "hfc:dt:")) != -1)
 	{
 		switch(c)
 		{
@@ -167,6 +179,16 @@ writerd_process_args(int argc, char **argv)
 			config_set("log:level", "debug");
 			config_set("log:stderr", "1");
 			config_set("sparql:debug", "1");
+			config_set(TWINE_APP_NAME ":detach", "0");
+			break;
+		case 't':
+			if(bulk_import)
+			{
+				fprintf(stderr, "%s: cannot specify multiple import formats ('%s' versus '%s')\n", utils_progname, bulk_import, optarg);
+				return -1;
+			}
+			bulk_import = optarg;
+			config_set("log:stderr", "1");
 			config_set(TWINE_APP_NAME ":detach", "0");
 			break;
 		default:
@@ -198,4 +220,55 @@ writerd_signal(int signo)
 	(void) signo;
 	
 	writerd_exit();
+}
+
+static int
+writerd_import(const char *type)
+{
+	char *buffer, *p;
+	size_t buflen, bufsize;
+	ssize_t r;
+
+	if(!twine_plugin_supported(type))
+	{
+		twine_logf(LOG_ERR, "no registered plug-in supports the MIME type '%s'\n", type);
+		return -1;
+	}
+	twine_logf(LOG_NOTICE, "performing bulk import of '%s' from standard input\n", type);
+	/* Read stdin into the buffer, extending as needed */
+	buffer = NULL;
+	bufsize = 0;
+	buflen = 0;
+	while(!feof(stdin))
+	{
+		if(bufsize - buflen < 1024)
+		{
+			p = (char *) realloc(buffer, bufsize + 1024);
+			if(!p)
+			{
+				twine_logf(LOG_CRIT, "failed to reallocate buffer from %u bytes to %u bytes\n", (unsigned) bufsize, (unsigned) bufsize + 1024);
+				return -1;
+			}
+			buffer = p;
+			bufsize += 1024;
+		}
+		r = fread(&(buffer[buflen]), 1, 1023, stdin);
+		if(r < 0)
+		{
+			twine_logf(LOG_CRIT, "error reading from standard input: %s\n", strerror(errno));
+			free(buffer);
+			return -1;
+		}
+		buffer[r] = 0;
+		buflen += r;
+	}
+	if(twine_plugin_process_(type, buffer, buflen))
+	{
+		twine_logf(LOG_ERR, "failed to process input as '%s'\n", type);
+		free(buffer);
+		return -1;
+	}
+	twine_logf(LOG_NOTICE, "successfully imported data as '%s'\n", type);
+	free(buffer);
+	return 0;
 }
