@@ -232,6 +232,21 @@ twine_plugin_process_(const char *mimetype, const char *message, size_t msglen)
 	return -1;
 }
 
+/* Check whether a MIME type is supported by any plugin */
+int
+twine_plugin_supported(const char *mimetype)
+{
+	size_t l;
+	for(l = 0; l < mimecount; l++)
+	{
+		if(!strcmp(mimetypes[l].mimetype, mimetype))
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
 /* Internal: return nonzero if any postprocessors have been registered */
 int
 twine_postproc_registered_(void)

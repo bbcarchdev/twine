@@ -48,6 +48,9 @@ int twine_plugin_init(void);
 /* Register a processor callback for a given MIME type */
 int twine_plugin_register(const char *mimetype, const char *description, twine_processor_fn fn, void *data);
 
+/* Check whether a MIME type is supported by any registered processor */
+int twine_plugin_supported(const char *mimetype);
+
 /* Register a post-processor */
 int twine_postproc_register(const char *name, twine_postproc_fn fn, void *data);
 
