@@ -234,7 +234,11 @@ spindle_class_match(SPINDLECACHE *cache, struct spindle_strset_struct *classes)
 	librdf_free_statement(query);
 	if(!match)
 	{
-		twine_logf(LOG_WARNING, PLUGIN_NAME ": no class match for object\n");
+		twine_logf(LOG_WARNING, PLUGIN_NAME ": no class match for object <%s>\n", cache->localname);
+		for(c = 0; c < classes->count; c++)
+		{
+			twine_logf(LOG_INFO, PLUGIN_NAME ": <%s>\n", classes->strings[c]);
+		}
 		cache->classname = NULL;
 		return 0;
 	}
