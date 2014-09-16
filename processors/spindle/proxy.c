@@ -23,12 +23,15 @@
 
 #include "p_spindle.h"
 
+/* 36 characters plus trailing NUL byte */
+#define UUID_BUFFER_SIZE                37
+
 /* Generate a new local URI for an external URI */
 char *
 spindle_proxy_generate(SPINDLE *spindle, const char *uri)
 {
 	uuid_t uu;
-	char uubuf[32];
+	char uubuf[UUID_BUFFER_SIZE];
 	char *p, *t;
 	size_t c;
 
@@ -70,6 +73,7 @@ spindle_proxy_locate(SPINDLE *spindle, const char *uri)
 	SPARQLRES *res;
 	SPARQLROW *row;
 	char *qbuf, *localname;
+	const char *uristr;
 	size_t l;
 	librdf_node *node;
 	librdf_uri *ruri;
@@ -96,13 +100,15 @@ spindle_proxy_locate(SPINDLE *spindle, const char *uri)
 	if(row)
 	{
 		node = sparqlrow_binding(row, 0);
-		if(node && librdf_node_is_resource(node))
-		{
-			ruri = librdf_node_get_uri(node);
-			localname = strdup((const char *) librdf_uri_as_string(ruri));
+		if(node &&
+		   librdf_node_is_resource(node) &&
+		   (ruri = librdf_node_get_uri(node)) &&
+		   (uristr = (const char *) librdf_uri_as_string(ruri)))
+		{			
+			localname = strdup((const char *) uristr);
 			if(!localname)
 			{
-				twine_logf(LOG_ERR, PLUGIN_NAME ": failed to duplicate URI string\n");				
+				twine_logf(LOG_ERR, PLUGIN_NAME ": failed to duplicate URI string\n");
 			}
 		}
 	}
@@ -115,11 +121,11 @@ int
 spindle_proxy_create(SPINDLE *spindle, const char *uri1, const char *uri2, struct spindle_strset_struct *changeset)
 {
 	char *u1, *u2, *uu;
-
+	
 	u1 = spindle_proxy_locate(spindle, uri1);
 	if(uri2)
-	{
-		u2 = spindle_proxy_locate(spindle, uri2);
+	{		
+		u2 = spindle_proxy_locate(spindle, uri2);		
 	}
 	else
 	{
@@ -162,9 +168,18 @@ spindle_proxy_create(SPINDLE *spindle, const char *uri1, const char *uri2, struc
 			return -1;
 		}
 	}
+	if(uri2)
+	{
+		twine_logf(LOG_INFO, "<%s> => (<%s>, <%s>)\n", uu, uri1, uri2);
+	}
+	else
+	{
+		twine_logf(LOG_INFO, "<%s> => (<%s>)\n", uu, uri1);
+	}
 	/* If the first entity didn't previously have a local proxy, attach it */
 	if(!u1)
 	{
+		twine_logf(LOG_DEBUG, PLUGIN_NAME ": relating %s to %s\n", uri1, uu);
 		spindle_proxy_relate(spindle, uri1, uu);
 	}
 	/* If the second entity didn't previously have a local proxy, attach it */
@@ -172,6 +187,7 @@ spindle_proxy_create(SPINDLE *spindle, const char *uri1, const char *uri2, struc
 	{
 		if(uri2)
 		{
+			twine_logf(LOG_DEBUG, PLUGIN_NAME ": relating %s to %s\n", uri1, uu);
 			spindle_proxy_relate(spindle, uri2, uu);
 		}
 	}
@@ -181,7 +197,7 @@ spindle_proxy_create(SPINDLE *spindle, const char *uri1, const char *uri2, struc
 		 * the one we've chosen, migrate its references over, leaving a single
 		 * unified proxy.
 		 */
-		twine_logf(LOG_DEBUG, PLUGIN_NAME ": relocating references from <%s> to <%s>\n", u2, uu);
+		twine_logf(LOG_INFO, PLUGIN_NAME ": relocating references from <%s> to <%s>\n", u2, uu);
 		spindle_proxy_migrate(spindle, u2, uu, NULL);
 		if(changeset)
 		{
@@ -196,7 +212,7 @@ spindle_proxy_create(SPINDLE *spindle, const char *uri1, const char *uri2, struc
 	free(u2);
 	if(uu != u1 && uu != u2)
 	{
-		free(u2);
+		free(uu);
 	}
 	return 0;
 }
