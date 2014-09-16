@@ -270,7 +270,18 @@ spindle_class_update(SPINDLECACHE *cache)
 		st = librdf_new_statement_from_statement(base);
 		node = librdf_new_node_from_uri_string(cache->spindle->world, (const unsigned char *) classes->strings[c]);
 		librdf_statement_set_object(st, node);
-		librdf_model_context_add_statement(cache->proxydata, cache->graph, st);
+		if(librdf_model_context_add_statement(cache->proxydata, cache->graph, st))
+		{
+			twine_logf(LOG_ERR, PLUGIN_NAME ": failed to add rdf:type <%s> statement to model\n", classes->strings[c]);
+			librdf_free_statement(st);
+			librdf_free_statement(base);
+			spindle_strset_destroy(classes);
+			return -1;
+		}
+		if(cache->spindle->multigraph && cache->classname && !strcmp(cache->classname, classes->strings[c]))
+		{
+			librdf_model_context_add_statement(cache->proxydata, cache->spindle->rootgraph, st);
+		}
 		librdf_free_statement(st);
 	}
 	librdf_free_statement(base);

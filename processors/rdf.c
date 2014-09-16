@@ -62,7 +62,7 @@ process_rdf(const char *mime, const char *buf, size_t buflen, void *data)
 		twine_logf(LOG_ERR, "failed to create new RDF model\n");
 		return -1;
 	}
-
+	twine_logf(LOG_DEBUG, "parsing buffer into model as '%s'\n", mime);
 	if(twine_rdf_model_parse(model, mime, buf, buflen))
 	{
 		twine_logf(LOG_ERR, "failed to parse string into model\n");
@@ -85,8 +85,10 @@ process_rdf(const char *mime, const char *buf, size_t buflen, void *data)
 		{
 			uri = librdf_node_get_uri(node);
 			stream = librdf_model_context_as_stream(model, node);
-			twine_sparql_put_stream((const char *) librdf_uri_as_string(uri), stream);
-			/* XXX error-checking */
+			if(twine_sparql_put_stream((const char *) librdf_uri_as_string(uri), stream))
+			{
+				twine_logf(LOG_ERR, "failed to update graph <%s>\n", (const char *) librdf_uri_as_string(uri));
+			}
 			librdf_free_stream(stream);
 		}
 		librdf_iterator_next(iter);

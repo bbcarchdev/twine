@@ -128,7 +128,14 @@ spindle_cache_update(SPINDLE *spindle, const char *localname)
 			continue;
 		}
 		librdf_free_stream(qstream);
-		librdf_model_context_add_statement(data.proxydata, data.graph, st);
+		if(librdf_model_context_add_statement(data.proxydata, data.graph, st))
+		{
+			twine_logf(LOG_ERR, PLUGIN_NAME ": failed to add statement to proxy model\n");
+			librdf_free_stream(stream);
+			twine_rdf_st_destroy(query);
+			spindle_cache_cleanup_(&data);
+			return -1;
+		}
 		librdf_stream_next(stream);
 	}
 	librdf_free_stream(stream);
