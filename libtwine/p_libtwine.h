@@ -38,6 +38,15 @@ struct twine_mime_struct
 	void *data;
 };
 
+struct twine_bulk_struct
+{
+	char *mimetype;
+	char *desc;
+	twine_bulk_fn processor;
+	void *module;
+	void *data;
+};
+
 struct twine_postproc_struct
 {
 	twine_postproc_fn fn;

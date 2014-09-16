@@ -27,13 +27,17 @@
 #define POSTPROC_BLOCKSIZE              4
 #define PLUGINDIR                       LIBDIR "/twine/"
 
+static void *current;
+static int postprocessing;
+
 static struct twine_mime_struct *mimetypes;
 static size_t mimecount, mimesize;
-static void *current;
+
+static struct twine_bulk_struct *bulktypes;
+static size_t bulkcount, bulksize;
 
 static struct twine_postproc_struct *postprocs;
 static size_t ppcount, ppsize;
-static int postprocessing;
 
 /* Internal: load a plug-in and invoke its initialiser callback */
 
@@ -135,6 +139,45 @@ twine_plugin_register(const char *mimetype, const char *description, twine_proce
 	mimecount++;
 	return 0;
 }
+/* Public: register a bulk processor for a MIME type */
+int
+twine_bulk_register(const char *mimetype, const char *description, twine_bulk_fn fn, void *data)
+{
+	struct twine_bulk_struct *p;
+
+	if(!current)
+	{
+		twine_logf(LOG_ERR, "attempt to register MIME type '%s' outside of plug-in initialisation\n", mimetype);
+		return -1;
+	}
+	if(bulkcount >= bulksize)
+	{
+		p = (struct twine_bulk_struct *) realloc(bulktypes, sizeof(struct twine_bulk_struct) * (bulksize + MIMETYPE_BLOCKSIZE));
+		if(!p)
+		{
+			twine_logf(LOG_CRIT, "failed to allocate memory to register MIME type '%s'\n", mimetype);
+			return -1;
+		}
+		bulktypes = p;
+		bulksize += MIMETYPE_BLOCKSIZE;
+	}
+	p = &(bulktypes[bulkcount]);
+	p->module = current;
+	p->mimetype = strdup(mimetype);
+	p->desc = strdup(description);
+	if(!p->mimetype || !p->desc)
+	{
+		free(p->mimetype);
+		free(p->desc);
+		twine_logf(LOG_CRIT, "failed to allocate memory to register MIME type '%s'\n", mimetype);
+		return -1;
+	}
+	twine_logf(LOG_INFO, "registered MIME type: '%s' (%s)\n", mimetype, description);
+	p->processor = fn;
+	p->data = data;
+	bulkcount++;
+	return 0;
+}
 
 /* Register a post-processing module */
 int
@@ -232,7 +275,7 @@ twine_plugin_process_(const char *mimetype, const char *message, size_t msglen)
 	return -1;
 }
 
-/* Check whether a MIME type is supported by any plugin */
+/* Check whether a MIME type is supported by any processor plugin */
 int
 twine_plugin_supported(const char *mimetype)
 {
@@ -244,6 +287,120 @@ twine_plugin_supported(const char *mimetype)
 			return 1;
 		}
 	}
+	return 0;
+}
+
+/* Check whether a MIME type is supported by any bulk processor plugin */
+int
+twine_bulk_supported(const char *mimetype)
+{
+	size_t l;
+
+	for(l = 0; l < bulkcount; l++)
+	{
+		if(!strcmp(bulktypes[l].mimetype, mimetype))
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
+/* Perform a bulk import from a file */
+int twine_bulk_import(const char *mimetype, FILE *file)
+{
+	struct twine_bulk_struct *importer;
+	void *prev;
+	char *buffer;
+	const char *p;
+	size_t l, bufsize, buflen;
+	ssize_t r;
+	
+	prev = current;
+	importer = NULL;
+	for(l = 0; l < bulkcount; l++)
+	{
+		if(!strcmp(bulktypes[l].mimetype, mimetype))
+		{
+			importer = &(bulktypes[l]);
+			break;
+		}
+	}
+	if(!importer)
+	{
+		twine_logf(LOG_ERR, "no bulk importer registered for '%s'\n", mimetype);
+		return -1;
+	}
+	buffer = NULL;
+	bufsize = 0;
+	buflen = 0;
+	current = importer->module;
+	while(!feof(file))
+	{
+		if(bufsize - buflen < 1024)
+		{
+			p = (char *) realloc(buffer, bufsize + 1024);
+			if(!p)
+			{
+				twine_logf(LOG_CRIT, "failed to reallocate buffer from %u bytes to %u bytes\n", (unsigned) bufsize, (unsigned) bufsize + 1024);
+				free(buffer);
+				current = prev;
+				return -1;
+			}
+			buffer = (char *) p;
+			bufsize += 1024;
+		}
+		r = fread(&(buffer[buflen]), 1, 1023, file);
+		if(r < 0)
+		{
+			twine_logf(LOG_CRIT, "I/O error during bulk import: %s\n", strerror(errno));
+			free(buffer);
+			current = prev;
+			return -1;
+		}
+		buflen += r;
+		buffer[buflen] = 0;
+		if(!buflen)
+		{
+			/* Nothing new was read */
+			continue;
+		}
+		p = importer->processor(importer->mimetype, buffer, buflen, importer->data);
+		if(!p)
+		{
+			twine_logf(LOG_ERR, "bulk importer failed\n");
+			free(buffer);
+			current = prev;
+			return -1;			
+		}
+		if(p == buffer)
+		{
+			continue;
+		}
+		if(p < buffer || p > buffer + buflen)
+		{
+			twine_logf(LOG_ERR, "bulk importer returned a buffer pointer out of bounds\n");
+			free(buffer);
+			current = prev;
+			return -1;
+		}
+		l = buflen - (p - buffer);
+		memmove(buffer, p, l);
+		buflen = l;
+	}
+	if(buflen)
+	{
+		p = importer->processor(importer->mimetype, buffer, buflen, importer->data);
+		if(!p)
+		{
+			twine_logf(LOG_ERR, "bulk importer failed\n");
+			free(buffer);
+			current = prev;
+			return -1;			
+		}
+	}
+	current = prev;
+	free(buffer);
 	return 0;
 }
 

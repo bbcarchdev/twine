@@ -34,7 +34,21 @@ extern "C" {
  * This callback is invoked when a message of the MIME type registered
  * for this plug-in is received.
  */
-typedef int (*twine_processor_fn)(const char *uri, const char *data, size_t length, void *userdata);
+typedef int (*twine_processor_fn)(const char *mimetype, const char *data, size_t length, void *userdata);
+
+
+/* A Twine bulk processor callback
+ *
+ * This process is invoked (in preference to any ordinary processor) in order
+ * to ingest data as part of a bulk import process.
+ *
+ * The function should return NULL to indicate an error has occurred,
+ * or a pointer to the current 'start of next data element' (which might be
+ * the trailing null byte) if all ingestable data in the buffer so far has
+ * been processed.
+ *
+ */
+typedef const char *(*twine_bulk_fn)(const char *mimetype, const char *data, size_t length, void *userdata);
 
 /* A Twine post-processing callback
  *
@@ -48,8 +62,15 @@ int twine_plugin_init(void);
 /* Register a processor callback for a given MIME type */
 int twine_plugin_register(const char *mimetype, const char *description, twine_processor_fn fn, void *data);
 
+/* Register a bulk processor callback for a given MIME type */
+int twine_bulk_register(const char *mimetype, const char *description, twine_bulk_fn fn, void *data);
+
 /* Check whether a MIME type is supported by any registered processor */
 int twine_plugin_supported(const char *mimetype);
+int twine_bulk_supported(const char *mimetype);
+
+/* Perform a bulk import from a file */
+int twine_bulk_import(const char *mimetype, FILE *file);
 
 /* Register a post-processor */
 int twine_postproc_register(const char *name, twine_postproc_fn fn, void *data);
