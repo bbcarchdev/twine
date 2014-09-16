@@ -29,7 +29,7 @@
 
 #define PLUGIN_NAME                     "geonames"
 
-static int process_geonames(const char *mime, const char *buf, size_t buflen, void *data);
+static const char *bulk_geonames(const char *mime, const char *buf, size_t buflen, void *data);
 
 static char *
 strnchr(const char *src, int ch, size_t max)
@@ -55,7 +55,7 @@ int
 twine_plugin_init(void)
 {
 	twine_logf(LOG_DEBUG, PLUGIN_NAME "plug-in: initialising\n");
-	twine_plugin_register("text/x-geonames-dump", "Geonames dump", process_geonames, NULL);
+	twine_bulk_register("text/x-geonames-dump", "Geonames dump", bulk_geonames, NULL);
 	return 0;
 }
 
@@ -66,11 +66,11 @@ twine_plugin_init(void)
  * is the primary topic, with 'about.rdf' appended to it.
  */
 
-static int
-process_geonames(const char *mime, const char *buf, size_t buflen, void *data)
+static const char *
+bulk_geonames(const char *mime, const char *buf, size_t buflen, void *data)
 {
 	char *graph;
-	char *t, *p, *rdfxml, *topic;
+	const char *t, *p, *rdfxml, *topic;
 	size_t remaining;
 	librdf_model *model;
 	librdf_stream *stream;
@@ -86,24 +86,23 @@ process_geonames(const char *mime, const char *buf, size_t buflen, void *data)
 		p = strnchr(topic, '\n', remaining);
 		if(!p)
 		{
-			break;
+			return topic;
 		}
 		graph = (char *) calloc(1, p - topic + 16);
 		if(!graph)
 		{
 			twine_logf(LOG_CRIT, "failed to allocate buffer for graph name\n");
-			return -1;
+			return NULL;
 		}
 		strncpy(graph, topic, p - topic);
 		strcpy(&(graph[p - topic]), "about.rdf");
-		fprintf(stderr, "graph = <%s>\n", graph);
 		rdfxml = p + 1;
 		remaining = buflen - (rdfxml - buf);
 		t = strnchr(rdfxml, '\n', remaining);
 		if(!t)
 		{
 			free(graph);
-			break;
+			return topic;
 		}
 		model = twine_rdf_model_create();
 		if(twine_rdf_model_parse(model, "application/rdf+xml", rdfxml, t - rdfxml))
@@ -111,21 +110,21 @@ process_geonames(const char *mime, const char *buf, size_t buflen, void *data)
 			twine_logf(LOG_ERR, "failed to parse string into model\n");
 			free(graph);
 			librdf_free_model(model);
-			return -1;
+			return NULL;
 		}
 		stream = librdf_model_as_stream(model);
+		twine_logf(LOG_INFO, PLUGIN_NAME ": importing <%s>\n", graph);
 		if(twine_sparql_put_stream(graph, stream))
 		{
 			twine_logf(LOG_ERR, "failed to update graph <%s>\n", graph);
 			free(graph);
 			librdf_free_stream(stream);
 			librdf_free_model(model);
-			return -1;
+			return NULL;
 		}
 		librdf_free_stream(stream);		
 		t++;
 		free(graph);
 	}
-	return 0;
+	return t;
 }
-
