@@ -73,6 +73,7 @@ spindle_cache_update(SPINDLE *spindle, const char *localname, struct spindle_str
 		spindle_cache_cleanup_(&data);
 		return -1;
 	}
+	twine_logf(LOG_INFO, PLUGIN_NAME ": updating <%s>\n", localname);
 	/* Find all of the triples related to all of the subjects linked to the
 	 * proxy.
 	 */
