@@ -135,6 +135,10 @@ twine_rdf_model_parse(librdf_model *model, const char *mime, const char *buf, si
 		return -1;
 	}
 	r = librdf_parser_parse_counted_string_into_model(parser, (const unsigned char *) buf, buflen, base, model);
+	if(r)
+	{
+		twine_logf(LOG_DEBUG, "failed to parse buffer as %s (%s)\n", mime, name);
+	}
 	librdf_free_parser(parser);
 	return r;
 }
