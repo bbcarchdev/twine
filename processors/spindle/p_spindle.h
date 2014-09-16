@@ -126,7 +126,7 @@ int spindle_cache_update_set(SPINDLE *spindle, struct spindle_strset_struct *set
 /* Re-build the cached data for the proxy entity identified by localname;
  * if no references exist any more, the cached data will be removed.
  */
-int spindle_cache_update(SPINDLE *spindle, const char *localname);
+int spindle_cache_update(SPINDLE *spindle, const char *localname, struct spindle_strset_struct *set);
 
 /* Determine the class of something (storing in cache->classname) */
 int spindle_class_match(SPINDLECACHE *cache, struct spindle_strset_struct *classes);

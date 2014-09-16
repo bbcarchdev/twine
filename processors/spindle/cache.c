@@ -29,12 +29,23 @@ static int spindle_cache_cleanup_(SPINDLECACHE *data);
 /* Re-build the cached data for a set of proxies */
 int
 spindle_cache_update_set(SPINDLE *spindle, struct spindle_strset_struct *set)
-{
-	size_t c;
+{ 
+	size_t c, origcount;
 
+	/* Keep track of how many things were in the original set, so that we
+	 * don't recursively re-cache a huge amount
+	 */
+	origcount = set->count;
 	for(c = 0; c < set->count; c++)
 	{
-		spindle_cache_update(spindle, set->strings[c]);
+		if(c >= origcount)
+		{
+			spindle_cache_update(spindle, set->strings[c], NULL);
+		}
+		else
+		{
+			spindle_cache_update(spindle, set->strings[c], set);
+		}
 	}
 	return 0;
 }
@@ -43,13 +54,19 @@ spindle_cache_update_set(SPINDLE *spindle, struct spindle_strset_struct *set)
  * if no references exist any more, the cached data will be removed.
  */
 int
-spindle_cache_update(SPINDLE *spindle, const char *localname)
+spindle_cache_update(SPINDLE *spindle, const char *localname, struct spindle_strset_struct *set)
 {
 	SPINDLECACHE data;
 	int r;
+	size_t c;
+	struct spindle_strset_struct *subjects;
 	librdf_statement *query, *st;
 	librdf_node *node;
+	librdf_uri *uri;	
 	librdf_stream *stream, *qstream;
+	const char *uristr;
+	SPARQLRES *res;
+	SPARQLROW *row;
 
 	if(spindle_cache_init_(&data, spindle, localname))
 	{
@@ -101,6 +118,7 @@ spindle_cache_update(SPINDLE *spindle, const char *localname)
 		return -1;
 	}
 	librdf_statement_set_object(query, node);
+	/* Create a stream querying for (?s owl:sameAs <self>) in the root graph */
 	stream = librdf_model_find_statements_with_options(data.sourcedata, query, spindle->rootgraph, NULL);
 	if(!stream)
 	{
@@ -112,6 +130,9 @@ spindle_cache_update(SPINDLE *spindle, const char *localname)
 	while(!librdf_stream_end(stream))
 	{
 		st = librdf_stream_get_object(stream);
+		/* Check if the owl:sameAs statement is already present in the proxy
+		 * data graph
+		 */
 		qstream = librdf_model_find_statements_with_options(data.proxydata, st, data.graph, NULL);
 		if(!qstream)
 		{
@@ -123,11 +144,13 @@ spindle_cache_update(SPINDLE *spindle, const char *localname)
 		}
 		if(!librdf_stream_end(qstream))
 		{
+			/* If so, skip to the next item */
 			librdf_free_stream(qstream);
 			librdf_stream_next(stream);
 			continue;
 		}
 		librdf_free_stream(qstream);
+		/* Add the owl:sameAs statement to the proxy data graph */
 		if(librdf_model_context_add_statement(data.proxydata, data.graph, st))
 		{
 			twine_logf(LOG_ERR, PLUGIN_NAME ": failed to add statement to proxy model\n");
@@ -147,8 +170,62 @@ spindle_cache_update(SPINDLE *spindle, const char *localname)
 	{
 		librdf_model_context_remove_statements(data.sourcedata, spindle->rootgraph);
 	}
-
-	/* Add the cache triples to the new proxy model */	
+	/* For anything which is the subject of one of the triples in the source
+	 * dataset, find any triples whose object is that thing and add the
+	 * subjects to the set if they're not already present.
+	 */
+	if(set)
+	{
+		subjects = spindle_strset_create();
+		stream = librdf_model_as_stream(data.sourcedata);
+		while(!librdf_stream_end(stream))
+		{
+			st = librdf_stream_get_object(stream);
+			node = librdf_statement_get_subject(st);
+			if(librdf_node_is_resource(node) &&
+			   (uri = librdf_node_get_uri(node)) &&
+			   (uristr = (const char *) librdf_uri_as_string(uri)))
+			{
+				spindle_strset_add(subjects, uristr);
+			}
+			librdf_stream_next(stream);
+		}
+		librdf_free_stream(stream);
+		
+		for(c = 0; c < subjects->count; c++)
+		{
+			res = sparql_queryf(spindle->sparql,
+								"SELECT ?local, ?s WHERE {\n"
+								" GRAPH %V {\n"
+								"  ?s <http://www.w3.org/2002/07/owl#sameAs> ?local .\n"
+								" }\n"
+								" GRAPH ?g {\n"
+								"   ?s ?p <%s> .\n"
+								" }\n"
+								"}",
+								spindle->rootgraph, subjects->strings[c]);
+			if(!res)
+			{
+				twine_logf(LOG_ERR, "SPARQL query for inbound references failed\n");
+				spindle_strset_destroy(subjects);
+				spindle_cache_cleanup_(&data);
+				return -1;
+			}
+			while((row = sparqlres_next(res)))
+			{
+				node = sparqlrow_binding(row, 0);
+				if(node && librdf_node_is_resource(node) &&
+				   (uri = librdf_node_get_uri(node)) &&
+				   (uristr = (const char *) librdf_uri_as_string(uri)))
+				{
+					spindle_strset_add(set, uristr);
+				}				
+			}
+			sparqlres_destroy(res);
+		}
+		spindle_strset_destroy(subjects);
+	}
+	/* Add the cache triples to the new proxy model */
 	if(spindle_class_update(&data) < 0)
 	{
 		spindle_cache_cleanup_(&data);
