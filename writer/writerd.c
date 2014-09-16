@@ -229,6 +229,10 @@ writerd_import(const char *type)
 	size_t buflen, bufsize;
 	ssize_t r;
 
+	if(twine_bulk_supported(type))
+	{
+		return twine_bulk_import(type, stdin);
+	}
 	if(!twine_plugin_supported(type))
 	{
 		twine_logf(LOG_ERR, "no registered plug-in supports the MIME type '%s'\n", type);
@@ -247,6 +251,7 @@ writerd_import(const char *type)
 			if(!p)
 			{
 				twine_logf(LOG_CRIT, "failed to reallocate buffer from %u bytes to %u bytes\n", (unsigned) bufsize, (unsigned) bufsize + 1024);
+				free(buffer);
 				return -1;
 			}
 			buffer = p;
