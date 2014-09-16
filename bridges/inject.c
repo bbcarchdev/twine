@@ -112,8 +112,14 @@ main(int argc, char **argv)
 			bufsize += 1024;
 		}
 		r = fread(&(buffer[buflen]), 1, 1023, stdin);
-		buffer[r] = 0;
-		buflen += r;
+		if(r < 0)
+		{
+			log_printf(LOG_CRIT, "error reading from standard input: %s\n", strerror(errno));
+			free(buffer);
+			return -1;
+		}
+		buflen += r;	   
+		buffer[buflen] = 0;
 	}
 	/* Wrap the buffer in a AMQP message and send it */
 	uri = utils_proton_uri();

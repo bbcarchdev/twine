@@ -259,8 +259,8 @@ writerd_import(const char *type)
 			free(buffer);
 			return -1;
 		}
-		buffer[r] = 0;
 		buflen += r;
+		buffer[buflen] = 0;
 	}
 	if(twine_plugin_process_(type, buffer, buflen))
 	{
