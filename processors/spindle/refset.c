@@ -23,6 +23,25 @@
 
 #include "p_spindle.h"
 
+struct coref_match_struct
+{
+	const char *predicate;
+	int (*callback)(struct spindle_corefset_struct *set, const char *subject, const char *object);
+};
+
+static int match_sameas(struct spindle_corefset_struct *set, const char *subject, const char *object);
+static int match_wikipedia(struct spindle_corefset_struct *set, const char *subject, const char *object);
+
+static struct coref_match_struct matches[] = 
+{
+	{ "http://www.w3.org/2002/07/owl#sameAs", match_sameas },
+	{ "http://www.bbc.co.uk/ontologies/coreconcepts/sameAs", match_sameas },
+	{ "http://www.geonames.org/ontology#wikipediaArticle", match_wikipedia },
+	{ "http://www.xmlns.com/foaf/0.1/isPrimaryTopicOf", match_wikipedia },
+	{ "http://www.bbc.co.uk/ontologies/coreconcepts/sameAs", match_wikipedia },
+	{ NULL, NULL }
+};
+
 /* Extract a list of co-references from a librdf model */
 struct spindle_corefset_struct *
 spindle_coref_extract(SPINDLE *spindle, librdf_model *model, const char *graphuri)
@@ -33,7 +52,8 @@ spindle_coref_extract(SPINDLE *spindle, librdf_model *model, const char *graphur
 	librdf_node *subj, *obj, *pred;
 	librdf_uri *uri;
 	unsigned char *l, *r;
-	
+	size_t c;
+
 	(void) graphuri;
 
 	set = (struct spindle_corefset_struct *) calloc(1, sizeof(struct spindle_corefset_struct));
@@ -42,34 +62,38 @@ spindle_coref_extract(SPINDLE *spindle, librdf_model *model, const char *graphur
 		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to allocate memory for new coreference set\n");
 		return NULL;
 	}
-	query = librdf_new_statement(spindle->world);
-	pred = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) "http://www.w3.org/2002/07/owl#sameAs");
-	librdf_statement_set_predicate(query, pred);
-	/* pred is now owned by query */
-	pred = NULL;
-	stream = librdf_model_find_statements(model, query);
-	while(!librdf_stream_end(stream))
+	for(c = 0; matches[c].predicate; c++)
 	{
-		st = librdf_stream_get_object(stream);
-		subj = librdf_statement_get_subject(st);
-		obj = librdf_statement_get_object(st);
-		if(librdf_node_is_resource(subj) && librdf_node_is_resource(obj))
+		query = librdf_new_statement(spindle->world);
+		pred = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) matches[c].predicate);
+		librdf_statement_set_predicate(query, pred);
+		/* pred is now owned by query */
+		pred = NULL;
+		stream = librdf_model_find_statements(model, query);
+		while(!librdf_stream_end(stream))
 		{
-			uri = librdf_node_get_uri(subj);
-			l = librdf_uri_as_string(uri);
-			uri = librdf_node_get_uri(obj);
-			r = librdf_uri_as_string(uri);
-			if(spindle_coref_add(set, (const char *) l, (const char *) r))
+			st = librdf_stream_get_object(stream);
+			subj = librdf_statement_get_subject(st);
+			obj = librdf_statement_get_object(st);
+			if(librdf_node_is_resource(subj) && librdf_node_is_resource(obj))
 			{
-				spindle_coref_destroy(set);
-				set = NULL;
-				break;
+				uri = librdf_node_get_uri(subj);
+				l = librdf_uri_as_string(uri);
+				uri = librdf_node_get_uri(obj);
+				r = librdf_uri_as_string(uri);
+				if(matches[c].callback(set, (const char *) l, (const char *) r))
+				{
+					spindle_coref_destroy(set);
+					set = NULL;
+					break;
+				}
 			}
-		}			
-		librdf_stream_next(stream);
+			librdf_stream_next(stream);
+		}
+		librdf_free_stream(stream);
+		librdf_free_statement(query);
 	}
-	librdf_free_stream(stream);
-	librdf_free_statement(query);
+	/* Find all of the subjects */
 	query = librdf_new_statement(spindle->world);
 	stream = librdf_model_find_statements(model, query);
 	while(!librdf_stream_end(stream))
@@ -154,3 +178,37 @@ spindle_coref_destroy(struct spindle_corefset_struct *set)
 	return 0;
 }
 
+/* Callback invoked when owl:sameAs references are found */
+static int match_sameas(struct spindle_corefset_struct *set, const char *subject, const char *object)
+{
+	if(spindle_coref_add(set, subject, object))
+	{
+		return -1;
+	}
+	return 0;		   	
+}
+
+static int match_wikipedia(struct spindle_corefset_struct *set, const char *subject, const char *object)
+{
+	char *buf;
+
+	if(strncmp(object, "http://en.wikipedia.org/wiki/", 29))
+	{
+		return 0;
+	}
+	object += 29;
+	buf = (char *) malloc(strlen(object) + 29);
+	if(!buf)
+	{
+		return -1;
+	}
+	strcpy(buf, "http://dbpedia.org/resource/");
+	strcat(buf, object);
+	if(spindle_coref_add(set, subject, buf))
+	{
+		free(buf);
+		return -1;
+	}
+	free(buf);
+	return 0;
+}
