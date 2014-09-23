@@ -33,7 +33,6 @@ struct classmatch_struct
 
 static const char *person_matches[] =  {
 	"http://xmlns.com/foaf/0.1/Person",
-	"http://www.tate.org.uk/ontologies/collection#Artist",
 	"http://purl.org/ontology/po/Person",
 	NULL
 };
@@ -48,6 +47,7 @@ static const char *group_matches[] = {
 static const char *agent_matches[] = {
 	"http://xmlns.com/foaf/0.1/Agent",
 	"http://purl.org/dc/terms/Agent",
+	"http://www.tate.org.uk/ontologies/collection#Artist",
 	NULL,
 };
 
