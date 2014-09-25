@@ -1,0 +1,20 @@
+Source: twine
+Section: misc
+Priority: optional
+Maintainer: Mo McRoberts <mo.mcroberts@bbc.co.uk>
+Build-Depends: debhelper (>= 8.0.0), autoconf, automake, libtool, libcurl4-gnutls-dev, librdf0-dev, liburi-dev, libsparqlclient-dev, libltdl-dev, libqpid-proton-dev, libxml2-dev, libxslt1-dev, uuid-dev
+
+Package: libtwine
+Architecture: any
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Description: Linked Data workflow engine (module API)
+
+Package: twine
+Architecture: any
+Depends: ${misc:Depends}, ${shlibs:Depends}, libtwine
+Description: Linked Data workflow engine
+
+Package: libtwine-dev
+Architecture: any
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Description: Linked Data workflow engine (module API development files)

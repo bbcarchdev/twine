@@ -1,0 +1,13 @@
+etc/twine.conf
+etc/init.d/twine-writer
+usr/bin/twine-inject
+usr/sbin/twine-writerd
+usr/lib/twine/xslt.so
+usr/lib/twine/rdf.so
+usr/lib/twine/spindle.so
+usr/lib/twine/geonames.so
+usr/share/doc/twine/twine.conf
+usr/share/doc/twine/example-xml.xsl
+usr/share/man/man1/twine-inject.1
+usr/share/man/man5/twine.conf.5
+usr/share/man/man8/twine-writerd.8

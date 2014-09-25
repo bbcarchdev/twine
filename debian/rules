@@ -1,0 +1,11 @@
+#! /usr/bin/make -f
+# -*- makefile -*-
+
+%:
+	dh $@
+
+configure config.sub config.guess aclocal.m4 ltmain.sh Makefile.in: configure.ac Makefile.am
+	autoreconf -i
+
+override_dh_auto_configure: configure
+	dh_auto_configure -- --without-included-libsparqlclient
