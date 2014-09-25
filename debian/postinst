@@ -1,0 +1,8 @@
+#! /bin/sh
+
+set -e
+
+update-rc.d twine-writer defaults >/dev/null
+
+invoke-rc.d twine-writer restart
+

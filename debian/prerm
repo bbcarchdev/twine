@@ -1,0 +1,13 @@
+#! /bin/sh
+
+set -e
+
+case "$1" in
+	remove|remove-in-favour|deconfigure-in-favour)
+		invoke-rc.d twine-writer stop
+		update-rc.d twine-writer disable
+		;;
+	upgrade|failed-upgrade)
+		;;
+esac
+
