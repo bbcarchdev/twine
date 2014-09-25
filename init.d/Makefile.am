@@ -24,3 +24,6 @@ init_SCRIPTS = twine-writer
 
 install-data-local:
 	${MKDIR_P} ${DESTDIR}${localstatedir}/run
+	${MKDIR_P} ${DESTDIR}${sysconfdir}/default
+	${INSTALL} -m 644 defaults ${DESTDIR}${sysconfdir}/default/twine-writer
+

@@ -17,23 +17,39 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 DESC="Twine writer daemon"
+ME=twine-writer
 NAME=twine-writerd
 DAEMON="@SBINDIR@/$NAME"
 DAEMON_ARGS=""
 PIDFILE="@LOCALSTATEDIR@/run/$NAME.pid"
+START=no
 
 [ -x "$DAEMON" ] || exit 0
 
-[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+[ -r /etc/default/$ME ] && . /etc/default/$ME
 
 [ -d /lib/init ] && [ -r /lib/init/vars.sh ] && . /lib/init/vars.sh
 
 . /lib/lsb/init-functions
 
+is_true()
+{
+	if [ x"$1" = x"yes" -o x"$1" = x"YES" -o x"$1" = x"y" ] ; then
+		return 0
+	else
+		return 1
+	fi
+}
+
 do_start()
 {
-	start-stop-daemon --start --quiet --pidfile "$PIDFILE" --exec "$DAEMON" --test >/dev/null || return 1
-	start-stop-daemon --start --quiet --pidfile "$PIDFILE" --exec "$DAEMON" -- $DAEMON_ARGS || return 2
+
+	if is_true "$START" ; then
+		start-stop-daemon --start --quiet --pidfile "$PIDFILE" --exec "$DAEMON" --test >/dev/null || return 1
+		start-stop-daemon --start --quiet --pidfile "$PIDFILE" --exec "$DAEMON" -- $DAEMON_ARGS || return 2
+	else
+		log_daemon_msg "$DESC is not configured to start; edit /etc/default/$ME to enable" "$NAME"
+	fi
 }
 
 do_stop()
