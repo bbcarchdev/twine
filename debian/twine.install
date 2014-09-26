@@ -1,5 +1,6 @@
 etc/twine.conf
 etc/init.d/twine-writer
+etc/default/twine-writer
 usr/bin/twine-inject
 usr/sbin/twine-writerd
 usr/lib/twine/xslt.so
