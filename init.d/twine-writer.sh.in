@@ -17,18 +17,29 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 DESC="Twine writer daemon"
+ME=twine-writer
 NAME=twine-writerd
 DAEMON="@SBINDIR@/$NAME"
 DAEMON_ARGS=""
 PIDFILE="@LOCALSTATEDIR@/run/$NAME.pid"
+START=no
 
 [ -x "$DAEMON" ] || exit 0
 
-[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+[ -r /etc/default/$ME ] && . /etc/default/$ME
 
 [ -d /lib/init ] && [ -r /lib/init/vars.sh ] && . /lib/init/vars.sh
 
 . /lib/lsb/init-functions
+
+is_true()
+{
+	if [ x"$1" = x"yes" -o x"$1" = x"YES" -o x"$1" = x"y" ] ; then
+		return 0
+	else
+		return 1
+	fi
+}
 
 do_start()
 {
@@ -47,6 +58,10 @@ do_stop()
 
 case "$1" in
 	start)
+		if ! is_true "$START" ; then
+			[ "$VERBOSE" != no ] && log_warning_msg "$DESC is not configured to start"
+			exit 0
+		fi
 		[ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
 		do_start
 		case "$?" in
@@ -71,6 +86,11 @@ case "$1" in
 		esac
 		;;
 	restart|force-reload)
+		if ! is_true "$START" ; then
+			[ "$VERBOSE" != no ] && log_warning_msg "$DESC is not configured to start"
+			do_stop
+			exit 0
+		fi
 		log_daemon_msg "Restarting $DESC" $NAME
 		do_stop
 		case "$?" in

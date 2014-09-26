@@ -7,3 +7,4 @@ usr/share/man/man5
 usr/share/man/man8
 etc
 etc/init.d
+etc/default
