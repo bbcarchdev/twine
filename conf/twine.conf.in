@@ -9,6 +9,12 @@ pidfile=@LOCALSTATEDIR@/run/twine-writerd.pid
 ;; Loadable modules for Twine processors
 module=rdf.so
 module=xslt.so
+module=geonames.so
+
+;; The Spindle module is a post-processor which generates co-reference proxy
+;; objects within a specific set of internal graph. Because it alters the way
+;; that data is processed, it's not enabled by default.
+; module=spindle.so
 
 ;; Configuration specifically for the inject tool (twine-inject)
 [inject]
