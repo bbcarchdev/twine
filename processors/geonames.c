@@ -29,7 +29,7 @@
 
 #define PLUGIN_NAME                     "geonames"
 
-static const char *bulk_geonames(const char *mime, const char *buf, size_t buflen, void *data);
+static const unsigned char *bulk_geonames(const char *mime, const unsigned char *buf, size_t buflen, void *data);
 
 static char *
 strnchr(const char *src, int ch, size_t max)
@@ -66,11 +66,12 @@ twine_plugin_init(void)
  * is the primary topic, with 'about.rdf' appended to it.
  */
 
-static const char *
-bulk_geonames(const char *mime, const char *buf, size_t buflen, void *data)
+static const unsigned char *
+bulk_geonames(const char *mime, const unsigned char *buf, size_t buflen, void *data)
 {
 	char *graph;
-	const char *t, *p, *rdfxml, *topic;
+	const char *rdfxml, *topic;
+	const unsigned char *t, *p;
 	size_t remaining;
 	librdf_model *model;
 	librdf_stream *stream;
@@ -78,34 +79,34 @@ bulk_geonames(const char *mime, const char *buf, size_t buflen, void *data)
 	(void) mime;
 	(void) data;
 
-	t = (char *) buf;
+	t = (unsigned char *) buf;
 	while((size_t) (t - buf) < buflen)
 	{
-		topic = t;
+		topic = (const char *) t;
 		remaining = buflen - (t - buf);
-		p = strnchr(topic, '\n', remaining);
+		p = (const unsigned char *) strnchr(topic, '\n', remaining);
 		if(!p)
 		{
-			return topic;
+			return (const unsigned char *) topic;
 		}
-		graph = (char *) calloc(1, p - topic + 16);
+		graph = (char *) calloc(1, (const char *) p - topic + 16);
 		if(!graph)
 		{
 			twine_logf(LOG_CRIT, "failed to allocate buffer for graph name\n");
 			return NULL;
 		}
-		strncpy(graph, topic, p - topic);
-		strcpy(&(graph[p - topic]), "about.rdf");
-		rdfxml = p + 1;
-		remaining = buflen - (rdfxml - buf);
-		t = strnchr(rdfxml, '\n', remaining);
+		strncpy(graph, topic, (const char *) p - topic);
+		strcpy(&(graph[(const char *) p - topic]), "about.rdf");
+		rdfxml = (const char *) p + 1;
+		remaining = buflen - (rdfxml - (const char *) buf);
+		t = (const unsigned char *) strnchr(rdfxml, '\n', remaining);
 		if(!t)
 		{
 			free(graph);
-			return topic;
+			return (const unsigned char *) topic;
 		}
 		model = twine_rdf_model_create();
-		if(twine_rdf_model_parse(model, "application/rdf+xml", rdfxml, t - rdfxml))
+		if(twine_rdf_model_parse(model, "application/rdf+xml", rdfxml, (const char *) t - rdfxml))
 		{
 			twine_logf(LOG_ERR, "failed to parse string into model\n");
 			free(graph);
