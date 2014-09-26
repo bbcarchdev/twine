@@ -28,6 +28,7 @@
 
 #include "libsupport.h"
 #include "libutils.h"
+#include "libmq.h"
 
 #define TWINE_APP_NAME                  "inject"
 
@@ -36,14 +37,13 @@ static void usage(void);
 int
 main(int argc, char **argv)
 {
-	pn_messenger_t *messenger;
-	pn_message_t *msg;
-	pn_data_t *body;
-	const char *mime;
+	MQ *messenger;
+	MQMESSAGE *msg;
+	const char *mime, *subj;
 	char *buffer, *p, *subject;
-	size_t bufsize, buflen, r;
+	size_t bufsize, buflen;
+	ssize_t r;
 	int c;
-	const char *uri;
 
 	if(utils_init(argc, argv, 0))
 	{
@@ -54,7 +54,8 @@ main(int argc, char **argv)
 		return 1;
 	}
 	mime = NULL;
-	while((c = getopt(argc, argv, "hdc:t:")) != -1)
+	subj = NULL;
+	while((c = getopt(argc, argv, "hdc:t:s:")) != -1)
 	{
 		switch(c)
 		{
@@ -69,6 +70,9 @@ main(int argc, char **argv)
 			break;
 		case 't':
 			mime = optarg;
+			break;
+		case 's':
+			subj = optarg;
 			break;
 		default:
 			usage();
@@ -85,11 +89,11 @@ main(int argc, char **argv)
 	{
 		return 1;
 	}
-	if(utils_proton_init_send(TWINE_APP_NAME ":amqp-uri"))
+	if(utils_mq_init_send(TWINE_APP_NAME ":mq"))
 	{
 		return 1;
 	}	
-	messenger = utils_proton_messenger();
+	messenger = utils_mq_messenger();
 	if(!messenger)
 	{
 		return 1;
@@ -122,31 +126,35 @@ main(int argc, char **argv)
 		buffer[buflen] = 0;
 	}
 	/* Wrap the buffer in a AMQP message and send it */
-	uri = utils_proton_uri();
-	msg = pn_message();
-	subject = config_geta("inject:subject", NULL);
-	if(!subject)
+	msg = mq_message_create(messenger);
+	if(subj)
 	{
-		subject = config_geta("amqp:subject", NULL);
+		subject = NULL;
 	}
-	pn_message_set_address(msg, uri);
-	pn_message_set_subject(msg, subject);
-	pn_message_set_content_type(msg, mime);
-	log_printf(LOG_DEBUG, "sending %s message '%s' to <%s>\n", mime, subject, uri);
-	body = pn_message_body(msg);
-	pn_data_put_binary(body, pn_bytes(buflen, buffer));
-	pn_messenger_put(messenger, msg);
+	else
+	{
+		subject = config_geta("inject:subject", NULL);
+		if(!subject)
+		{
+			subject = config_geta("amqp:subject", NULL);
+		}
+		subj = subject;
+	}
+	mq_message_set_subject(msg, subj);
+	mq_message_set_type(msg, mime);
+	log_printf(LOG_DEBUG, "sending %s message '%s' to <%s>\n", mime, subj, utils_mq_uri());
+	mq_message_add_bytes(msg, (unsigned char *) buffer, buflen);
+	mq_message_send(msg);
 
 	/* Deliver any messages in the local queue */
-	pn_messenger_send(messenger, -1);
+	mq_deliver(messenger);
 
 	/* Clean up and exit */
-	pn_message_free(msg);
+	mq_message_free(msg);
 	free(subject);
 	free(buffer);
 
-	/* XXX twine_proton_cleanup() */
-	pn_messenger_stop(messenger);
+	mq_disconnect(messenger);
 	
 	return 0;
 }
@@ -155,10 +163,12 @@ static void
 usage(void)
 {
 	fprintf(stderr, "Usage: %s [OPTIONS] -t MIME-TYPE < FILE\n"
-		   "\n"
-		   "OPTIONS is one or more of:\n\n"
-		   "  -h                   Print this notice and exit\n"
-		   "  -d                   Enable debug output\n"
-		   "  -c FILE              Specify path to configuration file\n\n",
+			"\n"
+			"OPTIONS is one or more of:\n\n"
+			"  -h                   Print this notice and exit\n"
+			"  -d                   Enable debug output\n"
+			"  -c FILE              Specify path to configuration file\n"
+			"  -s SUBJECT           Specify a subject for the message\n"
+			"\n",
 			utils_progname);
 }

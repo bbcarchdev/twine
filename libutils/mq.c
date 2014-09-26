@@ -52,6 +52,30 @@ utils_mq_init_recv(const char *confkey)
 	return 0;
 }
 
+int
+utils_mq_init_send(const char *confkey)
+{
+	int r;
+
+	if((r = utils_mq_init(confkey)))
+	{
+		return r;
+	}
+	messenger = mq_connect_send(mq_uri, NULL, NULL);
+	if(!messenger)
+	{
+		log_printf(LOG_CRIT, "failed to create message queue client for <%s>\n", mq_uri);
+		return -1;
+	}
+	if(mq_error(messenger))
+	{
+		log_printf(LOG_CRIT, "failed to establish message queue receiver: %s\n", mq_errmsg(messenger));
+		mq_disconnect(messenger);
+		return -1;
+	}
+	return 0;
+}
+
 const char *
 utils_mq_uri(void)
 {

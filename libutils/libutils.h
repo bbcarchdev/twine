@@ -42,6 +42,7 @@ pid_t utils_daemon(const char *configkey, const char *pidfile);
 
 /* Interface with libmq */
 int utils_mq_init_recv(const char *confkey);
+int utils_mq_init_send(const char *confkey);
 const char *utils_mq_uri(void);
 MQ *utils_mq_messenger(void);
 
