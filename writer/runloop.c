@@ -56,36 +56,37 @@ writerd_runloop(void)
 		msg = mq_next(messenger);
 		if(writerd_should_exit)
 		{
+			if(msg)
+			{
+				mq_message_reject(msg);
+			}
 			break;
 		}
 		if(!msg)
 		{
-			log_printf(LOG_CRIT, "%s\n", mq_errmsg(messenger));
+			log_printf(LOG_CRIT, "failed to receive message: %s\n", mq_errmsg(messenger));
 			return -1;
 		}
-		while(!writerd_should_exit)
+		mime = mq_message_type(msg);
+		subject = mq_message_subject(msg);
+		body = mq_message_body(msg);
+		len = mq_message_len(msg);
+		if(!mime)
+		{				
+			log_printf(LOG_ERR, "rejecting message with no content type\n");
+			mq_message_reject(msg);
+			continue;
+		}		 
+		log_printf(LOG_DEBUG, "received a %s '%s' message via %s\n", mime, mq_message_subject(msg), mq_message_address(msg));
+		if(twine_plugin_process_(mime, body, len, subject))
 		{
-			mime = mq_message_type(msg);
-			subject = mq_message_subject(msg);
-			body = mq_message_body(msg);
-			len = mq_message_len(msg);
-			if(!mime)
-			{				
-				log_printf(LOG_ERR, "rejecting message with no content type\n");
-				mq_message_reject(msg);
-				continue;
-			}		 
-			log_printf(LOG_DEBUG, "received a %s '%s' message via %s\n", mime, mq_message_subject(msg), mq_message_address(msg));
-			if(twine_plugin_process_(mime, body, len, subject))
-			{
-				log_printf(LOG_ERR, "processing of a %s '%s' message via %s failed\n", mime, mq_message_subject(msg), mq_message_address(msg));
-				mq_message_reject(msg);
-			}
-			else
-			{
-				log_printf(LOG_INFO, "processing of a %s '%s' message via %s completed successfully\n", mime, mq_message_subject(msg), mq_message_address(msg));
-				mq_message_accept(msg);
-			}
+			log_printf(LOG_ERR, "processing of a %s '%s' message via %s failed\n", mime, mq_message_subject(msg), mq_message_address(msg));
+			mq_message_reject(msg);
+		}
+		else
+		{
+			log_printf(LOG_INFO, "processing of a %s '%s' message via %s completed successfully\n", mime, mq_message_subject(msg), mq_message_address(msg));
+			mq_message_accept(msg);
 		}
 	}
 	log_printf(LOG_NOTICE, "shutting down\n");
