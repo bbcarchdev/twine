@@ -20,7 +20,8 @@ AM_CPPFLAGS = @AM_CPPFLAGS@ \
 	-I$(top_builddir)/libsupport -I$(top_srcdir)/libsupport \
 	-I$(top_builddir)/libutils -I$(top_srcdir)/libutils \
 	-I$(top_builddir)/libtwine -I$(top_srcdir)/libtwine \
-	-I$(top_builddir)/libsparqlclient -I$(top_srcdir)/libsparqlclient
+	-I$(top_builddir)/libsparqlclient -I$(top_srcdir)/libsparqlclient \
+	-I$(top_builddir)/libmq -I$(top_srcdir)/libmq
 
 sbin_PROGRAMS = twine-writerd
 
@@ -30,7 +31,8 @@ twine_writerd_SOURCES = writer/p_writerd.h \
 twine_writerd_LDADD = \
 	$(top_builddir)/libutils/libutils.la \
 	$(top_builddir)/libsupport/libsupport.la \
-	$(top_builddir)/libtwine/libtwine.la
+	$(top_builddir)/libtwine/libtwine.la \
+	$(top_builddir)/libmq/libmq.la
 
 EXTRA_DIST = twine-writerd.xml
 

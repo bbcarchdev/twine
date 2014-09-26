@@ -28,6 +28,7 @@
 # include <curl/curl.h>
 
 # include "libsupport.h"
+# include "libmq.h"
 # include "libutils.h"
 # include "libtwine-internal.h"
 

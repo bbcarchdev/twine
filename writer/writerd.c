@@ -132,7 +132,7 @@ writerd_init(int argc, char **argv)
 	if(!bulk_import)
 	{
 		/* Set up the AMQP interface */
-		if(utils_proton_init_recv(TWINE_APP_NAME ":amqp-uri"))
+		if(utils_mq_init_recv(TWINE_APP_NAME ":mq"))
 		{
 			return -1;
 		}
@@ -225,7 +225,7 @@ writerd_signal(int signo)
 static int
 writerd_import(const char *type)
 {
-	char *buffer, *p;
+	unsigned char *buffer, *p;
 	size_t buflen, bufsize;
 	ssize_t r;
 
@@ -247,7 +247,7 @@ writerd_import(const char *type)
 	{
 		if(bufsize - buflen < 1024)
 		{
-			p = (char *) realloc(buffer, bufsize + 1024);
+			p = (unsigned char *) realloc(buffer, bufsize + 1024);
 			if(!p)
 			{
 				twine_logf(LOG_CRIT, "failed to reallocate buffer from %u bytes to %u bytes\n", (unsigned) bufsize, (unsigned) bufsize + 1024);
@@ -267,7 +267,7 @@ writerd_import(const char *type)
 		buflen += r;
 		buffer[buflen] = 0;
 	}
-	if(twine_plugin_process_(type, buffer, buflen))
+	if(twine_plugin_process_(type, buffer, buflen, NULL))
 	{
 		twine_logf(LOG_ERR, "failed to process input as '%s'\n", type);
 		free(buffer);

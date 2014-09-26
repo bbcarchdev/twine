@@ -40,6 +40,7 @@ utils_config_defaults(void)
 		config_set_default("log:syslog", "0");
 		config_set_default("log:stderr", "1");
 	}
-	config_set_default("amqp:uri", DEFAULT_AMQP_URI);
+	config_set_default("amqp:uri", DEFAULT_MQ_URI);
+	config_set_default("mq:uri", DEFAULT_MQ_URI);
 	return 0;
 }

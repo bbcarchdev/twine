@@ -1,7 +1,7 @@
 ;; Configuration specifically for the writer daemon (twine-writerd)
 [writerd]
-;; If twine-writerd should use a specific AMQP URI, specify it here
-;amqp-uri=amqp://localhost/custom-inbound
+;; If twine-writerd should use a specific message queue URI, specify it here
+;mq=amqp://localhost/custom-inbound
 
 ;; The location of the writer PID file
 pidfile=@LOCALSTATEDIR@/run/twine-writerd.pid
@@ -12,12 +12,12 @@ module=xslt.so
 
 ;; Configuration specifically for the inject tool (twine-inject)
 [inject]
-;; If twine-inject should use a specific AMQP URI, specify it here
-;amqp-uri=amqp://localhost/custom-outbound
+;; If twine-inject should use a specific message queue URI, specify it here
+;mq=amqp://localhost/custom-outbound
 
-;; AMQP defaults
-[amqp]
-;; Default AMQP URI -- overridden by specific amqp-uri values where supplied
+;; Messagw queue defaults
+[mq]
+;; Default message queue URI -- overridden by specific mq values where supplied
 uri=amqp://localhost/amq.direct
 
 ;; SPARQL server configuration 
@@ -26,6 +26,8 @@ uri=amqp://localhost/amq.direct
 update=http://localhost/update/
 ;; The URI to the RESTful endpoint (supporting PUT for graphs)
 data=http://localhost/data/
+;; The URI to the query endpoint
+query=http://localhost/sparql/
 
 ;; Logging options for daemons
 [log]

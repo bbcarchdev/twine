@@ -254,11 +254,13 @@ twine_plugin_unregister_all_(void *handle)
 
 /* Internal: forward a message to a plug-in for processing */
 int
-twine_plugin_process_(const char *mimetype, const char *message, size_t msglen)
+twine_plugin_process_(const char *mimetype, const unsigned char *message, size_t msglen, const char *subject)
 {
 	size_t l;
 	void *prev;
 	int r;
+
+	(void) subject;
 
 	prev = current;
 	for(l = 0; l < mimecount; l++)
@@ -311,8 +313,8 @@ int twine_bulk_import(const char *mimetype, FILE *file)
 {
 	struct twine_bulk_struct *importer;
 	void *prev;
-	char *buffer;
-	const char *p;
+	unsigned char *buffer;
+	const unsigned char *p;
 	size_t l, bufsize, buflen;
 	ssize_t r;
 	
@@ -339,7 +341,7 @@ int twine_bulk_import(const char *mimetype, FILE *file)
 	{
 		if(bufsize - buflen < 1024)
 		{
-			p = (char *) realloc(buffer, bufsize + 1024);
+			p = (unsigned char *) realloc(buffer, bufsize + 1024);
 			if(!p)
 			{
 				twine_logf(LOG_CRIT, "failed to reallocate buffer from %u bytes to %u bytes\n", (unsigned) bufsize, (unsigned) bufsize + 1024);
@@ -347,7 +349,7 @@ int twine_bulk_import(const char *mimetype, FILE *file)
 				current = prev;
 				return -1;
 			}
-			buffer = (char *) p;
+			buffer = (unsigned char *) p;
 			bufsize += 1024;
 		}
 		r = fread(&(buffer[buflen]), 1, 1023, file);

@@ -18,7 +18,8 @@
 
 AM_CPPFLAGS = @AM_CPPFLAGS@ \
 	-I$(top_builddir)/libsupport -I$(top_srcdir)/libsupport \
-	-I$(top_builddir)/libutils -I$(top_srcdir)/libutils
+	-I$(top_builddir)/libutils -I$(top_srcdir)/libutils \
+	-I$(top_builddir)/libmq -I$(top_srcdir)/libmq
 
 bin_PROGRAMS = twine-inject
 
@@ -26,7 +27,8 @@ twine_inject_SOURCES = inject.c
 
 twine_inject_LDADD = \
 	$(top_builddir)/libutils/libutils.la \
-	$(top_builddir)/libsupport/libsupport.la
+	$(top_builddir)/libsupport/libsupport.la \
+	$(top_builddir)/libmq/libmq.la
 
 EXTRA_DIST = twine-inject.xml
 

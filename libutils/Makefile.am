@@ -25,11 +25,12 @@
 ##     utils_proton_*                   libsupport, libqpid-proton
 
 AM_CPPFLAGS = @AM_CPPFLAGS@ \
-	-I$(top_builddir)/libsupport -I$(top_srcdir)/libsupport
+	-I$(top_builddir)/libsupport -I$(top_srcdir)/libsupport \
+	-I$(top_builddir)/libmq -I$(top_srcdir)/libmq
 
 noinst_LTLIBRARIES = libutils.la
 
 libutils_la_SOURCES = p_libutils.h libutils.h \
-	init.c config.c proton.c urlencode.c daemon.c
+	init.c config.c proton.c urlencode.c daemon.c mq.c
 
 libutils_la_LDFLAGS = -static

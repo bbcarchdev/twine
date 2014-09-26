@@ -125,6 +125,36 @@ mq_message_type(MQMESSAGE *message)
 	return NULL;
 }
 
+/* Return the subject of a message */
+const char *
+mq_message_subject(MQMESSAGE *message)
+{
+	RESET_ERROR(message->connection);
+	switch(message->connection->type)
+	{
+#ifdef WITH_LIBQPID_PROTON
+	case MQT_PROTON:
+		return mq_proton_message_subject_(&(message->connection->d.proton), &(message->d.proton));
+#endif
+	}
+	return NULL;
+}
+
+/* Return the address of a message */
+const char *
+mq_message_address(MQMESSAGE *message)
+{
+	RESET_ERROR(message->connection);
+	switch(message->connection->type)
+	{
+#ifdef WITH_LIBQPID_PROTON
+	case MQT_PROTON:
+		return mq_proton_message_address_(&(message->connection->d.proton), &(message->d.proton));
+#endif
+	}
+	return NULL;
+}
+
 /* Return the message body */
 const unsigned char *
 mq_message_body(MQMESSAGE *message)

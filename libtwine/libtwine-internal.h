@@ -37,7 +37,7 @@ int twine_init_(twine_log_fn logger);
 int twine_config_init_(struct twine_configfn_struct *fns);
 int twine_sparql_defaults_(const char *query_uri, const char *update_uri, const char *data_uri, int verbose);
 int twine_plugin_load_(const char *pathname);
-int twine_plugin_process_(const char *mimetype, const char *message, size_t msglen);
+int twine_plugin_process_(const char *mimetype, const unsigned char *message, size_t msglen, const char *subject);
 int twine_plugin_unregister_all_(void *handle);
 int twine_postproc_registered_(void);
 int twine_postproc_process_(librdf_model *newgraph, librdf_model *oldgraph, const char *graphuri);

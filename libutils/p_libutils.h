@@ -30,6 +30,7 @@
 # include <sys/types.h>
 
 # include "libsupport.h"
+# include "libmq.h"
 
 # include <curl/curl.h>
 # include <librdf.h>
@@ -38,6 +39,6 @@
 
 # include "libutils.h"
 
-# define DEFAULT_AMQP_URI               "amqp://~0.0.0.0/amq.direct"
+# define DEFAULT_MQ_URI               "amqp://~0.0.0.0/amq.direct"
 
 #endif /*!P_LIBUTILS_H_*/

@@ -119,6 +119,8 @@ int mq_proton_message_accept_(struct mq_proton_struct *proton, struct mq_proton_
 int mq_proton_message_reject_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message);
 int mq_proton_message_pass_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message);
 const char *mq_proton_message_type_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message);
+const char *mq_proton_message_subject_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message);
+const char *mq_proton_message_address_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message);
 const unsigned char *mq_proton_message_body_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message);
 size_t mq_proton_message_len_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message);
 int mq_proton_errcode_(struct mq_proton_struct *proton);

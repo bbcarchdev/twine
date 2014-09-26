@@ -139,6 +139,22 @@ mq_proton_message_type_(struct mq_proton_struct *proton, struct mq_proton_messag
 	return pn_message_get_content_type(message->msg);
 }
 
+const char *
+mq_proton_message_subject_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message)
+{
+	(void) proton;
+
+	return pn_message_get_subject(message->msg);
+}
+
+const char *
+mq_proton_message_address_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message)
+{
+	(void) proton;
+
+	return pn_message_get_address(message->msg);
+}
+
 const unsigned char *
 mq_proton_message_body_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message)
 {

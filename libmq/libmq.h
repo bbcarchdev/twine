@@ -61,6 +61,10 @@ int mq_message_reject(MQMESSAGE *message);
 int mq_message_pass(MQMESSAGE *message);
 /* Return the content type of a message */
 const char *mq_message_type(MQMESSAGE *message);
+/* Return the subject of a message */
+const char *mq_message_subject(MQMESSAGE *message);
+/* Return the address of a message */
+const char *mq_message_address(MQMESSAGE *message);
 /* Return the message body */
 const unsigned char *mq_message_body(MQMESSAGE *message);
 /* Return the length of the message body */

@@ -34,7 +34,7 @@ extern "C" {
  * This callback is invoked when a message of the MIME type registered
  * for this plug-in is received.
  */
-typedef int (*twine_processor_fn)(const char *mimetype, const char *data, size_t length, void *userdata);
+typedef int (*twine_processor_fn)(const char *mimetype, const unsigned char *data, size_t length, void *userdata);
 
 
 /* A Twine bulk processor callback
@@ -48,7 +48,7 @@ typedef int (*twine_processor_fn)(const char *mimetype, const char *data, size_t
  * been processed.
  *
  */
-typedef const char *(*twine_bulk_fn)(const char *mimetype, const char *data, size_t length, void *userdata);
+typedef const unsigned char *(*twine_bulk_fn)(const char *mimetype, const unsigned char *data, size_t length, void *userdata);
 
 /* A Twine post-processing callback
  *

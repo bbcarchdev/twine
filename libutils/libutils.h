@@ -21,6 +21,8 @@
 # define LIBUTILS_H_                    1
 
 # include <stdint.h>
+# include "libmq.h"
+
 # include <proton/message.h>
 # include <proton/messenger.h>
 
@@ -37,6 +39,11 @@ int utils_config_defaults(void);
 
 /* Daemonize the process */
 pid_t utils_daemon(const char *configkey, const char *pidfile);
+
+/* Interface with libmq */
+int utils_mq_init_recv(const char *confkey);
+const char *utils_mq_uri(void);
+MQ *utils_mq_messenger(void);
 
 /* Interface with the Qpid Proton AMQP messenger library */
 int utils_proton_init_recv(const char *confkey);
