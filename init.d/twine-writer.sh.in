@@ -58,21 +58,20 @@ do_stop()
 
 case "$1" in
 	start)
-		if is_true "$START" ; then			
-			[ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
-			do_start
-			case "$?" in
-				0|1)
-					[ "$VERBOSE" != no ] && log_end_msg 0
-					;;
-				2)
-					[ "$VERBOSE" != no ] && log_end_msg 1
-					;;
-			esac
-		else
-			[ "$VERBOSE" != no ] && log_daemon_msg "$DESC is not configured to start; edit /etc/default/$ME to enable" "$NAME"
-			[ "$VERBOSE" != no ] && log_end_msg 1		
-		fi			
+		if ! is_true "$START" ; then
+			[ "$VERBOSE" != no ] && log_warning_msg "$DESC is not configured to start"
+			exit 0
+		fi
+		[ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+		do_start
+		case "$?" in
+			0|1)
+				[ "$VERBOSE" != no ] && log_end_msg 0
+				;;
+			2)
+				[ "$VERBOSE" != no ] && log_end_msg 1
+				;;
+		esac
 		;;
 	stop|force-stop)
 		log_daemon_msg "Stopping $DESC" "$NAME"
@@ -87,6 +86,11 @@ case "$1" in
 		esac
 		;;
 	restart|force-reload)
+		if ! is_true "$START" ; then
+			[ "$VERBOSE" != no ] && log_warning_msg "$DESC is not configured to start"
+			do_stop
+			exit 0
+		fi
 		log_daemon_msg "Restarting $DESC" $NAME
 		do_stop
 		case "$?" in
