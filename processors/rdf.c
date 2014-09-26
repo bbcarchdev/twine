@@ -26,7 +26,7 @@
 
 #include "libtwine.h"
 
-static int process_rdf(const char *mime, const char *buf, size_t buflen, void *data);
+static int process_rdf(const char *mime, const unsigned char *buf, size_t buflen, void *data);
 
 /* Twine plug-in entry-point */
 int
@@ -46,16 +46,18 @@ twine_plugin_init(void)
  */
 
 static int
-process_rdf(const char *mime, const char *buf, size_t buflen, void *data)
+process_rdf(const char *mime, const unsigned char *buf, size_t buflen, void *data)
 {
 	librdf_model *model;
 	librdf_iterator *iter;
 	librdf_node *node;
 	librdf_uri *uri;
-	librdf_stream *stream;
+	librdf_stream *stream;	
+	int r;
 
 	(void) data;
 
+	r = 0;
 	model = twine_rdf_model_create();
 	if(!model)
 	{
@@ -63,7 +65,7 @@ process_rdf(const char *mime, const char *buf, size_t buflen, void *data)
 		return -1;
 	}
 	twine_logf(LOG_DEBUG, "parsing buffer into model as '%s'\n", mime);
-	if(twine_rdf_model_parse(model, mime, buf, buflen))
+	if(twine_rdf_model_parse(model, mime, (const char *) buf, buflen))
 	{
 		twine_logf(LOG_ERR, "failed to parse string into model\n");
 		return -1;
@@ -88,6 +90,8 @@ process_rdf(const char *mime, const char *buf, size_t buflen, void *data)
 			if(twine_sparql_put_stream((const char *) librdf_uri_as_string(uri), stream))
 			{
 				twine_logf(LOG_ERR, "failed to update graph <%s>\n", (const char *) librdf_uri_as_string(uri));
+				r = 1;
+				break;
 			}
 			librdf_free_stream(stream);
 		}
@@ -97,6 +101,6 @@ process_rdf(const char *mime, const char *buf, size_t buflen, void *data)
 	librdf_free_iterator(iter);
 	librdf_free_model(model);
 
-	return 0;
+	return r;
 }
 
