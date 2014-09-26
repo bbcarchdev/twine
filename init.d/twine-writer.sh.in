@@ -43,13 +43,8 @@ is_true()
 
 do_start()
 {
-
-	if is_true "$START" ; then
-		start-stop-daemon --start --quiet --pidfile "$PIDFILE" --exec "$DAEMON" --test >/dev/null || return 1
-		start-stop-daemon --start --quiet --pidfile "$PIDFILE" --exec "$DAEMON" -- $DAEMON_ARGS || return 2
-	else
-		log_daemon_msg "$DESC is not configured to start; edit /etc/default/$ME to enable" "$NAME"
-	fi
+	start-stop-daemon --start --quiet --pidfile "$PIDFILE" --exec "$DAEMON" --test >/dev/null || return 1
+	start-stop-daemon --start --quiet --pidfile "$PIDFILE" --exec "$DAEMON" -- $DAEMON_ARGS || return 2
 }
 
 do_stop()
@@ -63,16 +58,21 @@ do_stop()
 
 case "$1" in
 	start)
-		[ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
-		do_start
-		case "$?" in
-			0|1)
-				[ "$VERBOSE" != no ] && log_end_msg 0
-				;;
-			2)
-				[ "$VERBOSE" != no ] && log_end_msg 1
-				;;
-		esac
+		if is_true "$START" ; then			
+			[ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+			do_start
+			case "$?" in
+				0|1)
+					[ "$VERBOSE" != no ] && log_end_msg 0
+					;;
+				2)
+					[ "$VERBOSE" != no ] && log_end_msg 1
+					;;
+			esac
+		else
+			[ "$VERBOSE" != no ] && log_daemon_msg "$DESC is not configured to start; edit /etc/default/$ME to enable" "$NAME"
+			[ "$VERBOSE" != no ] && log_end_msg 1		
+		fi			
 		;;
 	stop|force-stop)
 		log_daemon_msg "Stopping $DESC" "$NAME"
