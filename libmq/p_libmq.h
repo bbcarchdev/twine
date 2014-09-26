@@ -53,6 +53,7 @@ typedef enum
 struct mq_proton_struct
 {
 	pn_messenger_t *messenger;
+	pn_subscription_t *sub;
 };
 
 struct mq_proton_message_struct

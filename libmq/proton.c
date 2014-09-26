@@ -25,8 +25,6 @@
 
 # include "p_libmq.h"
 
-# define PROTON_BUFSIZE                 1024
-
 int
 mq_proton_connect_recv_(struct mq_proton_struct *proton, const char *uri)
 {
@@ -40,11 +38,12 @@ mq_proton_connect_recv_(struct mq_proton_struct *proton, const char *uri)
 	{
 		return 1;
 	}
-	pn_messenger_subscribe(proton->messenger, uri);
-	if(pn_messenger_errno(proton->messenger))
+	proton->sub = pn_messenger_subscribe(proton->messenger, uri);
+	if(!proton->sub || pn_messenger_errno(proton->messenger))
 	{
 		return 1;
 	}
+	pn_messenger_set_incoming_window(proton->messenger, 1);
 	return 0;
 }
 
@@ -59,10 +58,14 @@ mq_proton_disconnect_(struct mq_proton_struct *proton)
 int
 mq_proton_next_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message)
 {
-	while(!pn_messenger_incoming(proton->messenger))
+	if(!pn_messenger_incoming(proton->messenger))
 	{
-		pn_messenger_recv(proton->messenger, PROTON_BUFSIZE);
+		pn_messenger_recv(proton->messenger, -1);
 		if(pn_messenger_errno(proton->messenger))
+		{
+			return 1;
+		}
+		if(!pn_messenger_incoming(proton->messenger))
 		{
 			return 1;
 		}
@@ -97,6 +100,7 @@ mq_proton_message_accept_(struct mq_proton_struct *proton, struct mq_proton_mess
 		return -1;
 	}
 	pn_messenger_accept(proton->messenger, message->tracker, 0);
+	pn_messenger_settle(proton->messenger, message->tracker, 0);
 	pn_message_free(message->msg);
 	memset(message, 0, sizeof(struct mq_proton_message_struct));
 	return 0;
@@ -111,6 +115,7 @@ mq_proton_message_reject_(struct mq_proton_struct *proton, struct mq_proton_mess
 		return -1;
 	}
 	pn_messenger_reject(proton->messenger, message->tracker, 0);
+	pn_messenger_settle(proton->messenger, message->tracker, 0);
 	pn_message_free(message->msg);
 	memset(message, 0, sizeof(struct mq_proton_message_struct));
 	return 0;
@@ -126,6 +131,7 @@ mq_proton_message_pass_(struct mq_proton_struct *proton, struct mq_proton_messag
 		errno = EINVAL;
 		return -1;
 	}
+	pn_messenger_settle(proton->messenger, message->tracker, 0);
 	pn_message_free(message->msg);
 	memset(message, 0, sizeof(struct mq_proton_message_struct));
 	return 0;
