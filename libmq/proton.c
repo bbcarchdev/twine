@@ -48,10 +48,42 @@ mq_proton_connect_recv_(struct mq_proton_struct *proton, const char *uri)
 }
 
 int
+mq_proton_connect_send_(struct mq_proton_struct *proton, const char *uri)
+{
+	(void) uri;
+
+	proton->messenger = pn_messenger(NULL);
+	if(!proton->messenger)
+	{
+		return -1;
+	}
+	pn_messenger_start(proton->messenger);
+	if(pn_messenger_errno(proton->messenger))
+	{
+		return 1;
+	}
+	pn_messenger_set_outgoing_window(proton->messenger, 1);
+	return 0;
+}
+
+int
 mq_proton_disconnect_(struct mq_proton_struct *proton)
 {
 	pn_messenger_stop(proton->messenger);
 	pn_messenger_free(proton->messenger);
+	return 0;
+}
+
+int
+mq_proton_create_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message)
+{
+	(void) proton;
+
+	message->msg = pn_message();
+	if(!message->msg)
+	{
+		return 1;
+	}
 	return 0;
 }
 
@@ -100,7 +132,10 @@ mq_proton_message_accept_(struct mq_proton_struct *proton, struct mq_proton_mess
 		return -1;
 	}
 	pn_messenger_accept(proton->messenger, message->tracker, 0);
-	pn_messenger_settle(proton->messenger, message->tracker, 0);
+	if(message->tracker)
+	{
+		pn_messenger_settle(proton->messenger, message->tracker, 0);
+	}
 	pn_message_free(message->msg);
 	memset(message, 0, sizeof(struct mq_proton_message_struct));
 	return 0;
@@ -115,7 +150,10 @@ mq_proton_message_reject_(struct mq_proton_struct *proton, struct mq_proton_mess
 		return -1;
 	}
 	pn_messenger_reject(proton->messenger, message->tracker, 0);
-	pn_messenger_settle(proton->messenger, message->tracker, 0);
+	if(message->tracker)
+	{
+		pn_messenger_settle(proton->messenger, message->tracker, 0);
+	}
 	pn_message_free(message->msg);
 	memset(message, 0, sizeof(struct mq_proton_message_struct));
 	return 0;
@@ -131,10 +169,40 @@ mq_proton_message_pass_(struct mq_proton_struct *proton, struct mq_proton_messag
 		errno = EINVAL;
 		return -1;
 	}
-	pn_messenger_settle(proton->messenger, message->tracker, 0);
+	if(message->tracker)
+	{
+		pn_messenger_settle(proton->messenger, message->tracker, 0);
+	}
 	pn_message_free(message->msg);
 	memset(message, 0, sizeof(struct mq_proton_message_struct));
 	return 0;
+}
+
+int
+mq_proton_message_free_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message)
+{
+	(void) proton;
+
+	if(!message->msg)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+	if(message->tracker)
+	{
+		pn_messenger_settle(proton->messenger, message->tracker, 0);
+	}
+	pn_message_free(message->msg);
+	memset(message, 0, sizeof(struct mq_proton_message_struct));
+	return 0;
+}
+
+int
+mq_proton_message_set_type_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message, const char *type)
+{
+	(void) proton;
+	
+	return pn_message_set_content_type(message->msg, type);
 }
 
 const char *
@@ -145,12 +213,35 @@ mq_proton_message_type_(struct mq_proton_struct *proton, struct mq_proton_messag
 	return pn_message_get_content_type(message->msg);
 }
 
+int
+mq_proton_message_set_subject_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message, const char *subject)
+{
+	(void) proton;
+	
+	return pn_message_set_content_type(message->msg, subject);
+}
+
 const char *
 mq_proton_message_subject_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message)
 {
 	(void) proton;
 
 	return pn_message_get_subject(message->msg);
+}
+
+int
+mq_proton_message_set_address_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message, const char *address)
+{
+	int r;
+
+	(void) proton;
+	
+	r = pn_message_set_address(message->msg, address);
+	if(!r)
+	{
+		message->addressed = 1;
+	}
+	return r;
 }
 
 const char *
@@ -201,6 +292,53 @@ mq_proton_errmsg_(struct mq_proton_struct *proton, int errcode, char *buf, size_
 	(void) buflen;
 
 	return pn_error_text(pn_messenger_error(proton->messenger));
+}
+
+int
+mq_proton_message_add_bytes_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message, unsigned char *buf, size_t len)
+{
+	(void) proton;
+
+	if(!message->body)
+	{
+		message->body = pn_message_body(message->msg);
+		if(!message->body)
+		{
+			return 1;
+		}
+	}
+	if(pn_data_put_binary(message->body, pn_bytes(len, (char *) buf)))
+	{
+		return 1;
+	}
+	return 0;
+}
+
+int
+mq_proton_message_send_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message, const char *uri)
+{
+	if(!message->addressed)
+	{
+		if(pn_message_set_address(message->msg, uri))
+		{
+			return 1;
+		}
+	}
+	if(pn_messenger_put(proton->messenger, message->msg))
+	{
+		return 1;
+	}
+	return 0;
+}
+
+int
+mq_proton_deliver_(struct mq_proton_struct *proton)
+{
+	if(pn_messenger_send(proton->messenger, -1))
+	{
+		return 1;
+	}
+	return 0;
 }
 
 #endif /*WITH_LIBQPID_PROTON*/

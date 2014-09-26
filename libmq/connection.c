@@ -64,6 +64,45 @@ mq_connect_recv(const char *uri, const char *reserved1, const char *reserved2)
 	return mq;
 }
 
+/* Create a connection for receiving messages from a queue */
+MQ *
+mq_connect_send(const char *uri, const char *reserved1, const char *reserved2)
+{
+	MQ *mq;
+	int e;
+
+	(void) reserved1;
+	(void) reserved2;
+
+	mq = (MQ *) calloc(1, sizeof(MQ));
+	if(!mq)
+	{
+		return NULL;	   
+	}
+	mq->uri = strdup(uri);
+	if(!mq->uri)
+	{
+		SET_ERRNO(mq);
+		return mq;
+	}
+	mq->kind = MQK_DISCONNECTED;
+#ifdef WITH_LIBQPID_PROTON
+	if(!strncmp(uri, "amqp:", 5) || !strncmp(uri, "amqps:", 6))
+	{
+		mq->type = MQT_PROTON;
+		if((e = mq_proton_connect_send_(&(mq->d.proton), uri)))
+		{
+			SET_ERROR(mq, e);
+			return mq;
+		}
+		mq->kind = MQK_SEND;
+		return mq;
+	}
+#endif
+	SET_SYSERR(mq, EINVAL);
+	return mq;
+}
+
 /* Close a connection */
 int
 mq_disconnect(MQ *connection)
@@ -81,6 +120,44 @@ mq_disconnect(MQ *connection)
 	return 0;
 }
 
+/* Create a new outgoing message */
+MQMESSAGE *
+mq_message_create(MQ *connection)
+{
+	MQMESSAGE *message;
+	int e;
+
+	RESET_ERROR(connection);
+	if(connection->kind != MQK_SEND)
+	{
+		SET_SYSERR(connection, EINVAL);
+		return NULL;
+	}
+	message = (MQMESSAGE *) calloc(1, sizeof(MQMESSAGE));
+	if(!message)
+	{
+		SET_ERRNO(connection);
+		return NULL;
+	}
+	message->connection = connection;
+	message->state = MQS_CREATED;
+	switch(connection->type)
+	{
+#ifdef WITH_LIBQPID_PROTON
+	case MQT_PROTON:
+		if((e = mq_proton_create_(&(connection->d.proton), &(message->d.proton))))
+		{
+			SET_ERROR(connection, e);
+			free(message);
+			return NULL;
+		}
+		return message;		
+#endif
+	}
+	SET_SYSERR(connection, EINVAL);
+	free(message);
+	return NULL;
+}
 
 /* Wait for the next message to arrive */
 MQMESSAGE *
@@ -119,6 +196,33 @@ mq_next(MQ *connection)
 	SET_SYSERR(connection, EINVAL);
 	free(message);
 	return NULL;
+}
+
+/* Deliver any outgoing messages */
+int
+mq_deliver(MQ *connection)
+{
+	int e;
+
+	RESET_ERROR(connection);
+	if(connection->kind != MQK_SEND)
+	{
+		SET_SYSERR(connection, EINVAL);
+		return -1;
+	}
+	switch(connection->type)
+	{
+#ifdef WITH_LIBQPID_PROTON
+	case MQT_PROTON:
+		if((e = mq_proton_deliver_(&(connection->d.proton))))
+		{
+			SET_ERROR(connection, e);
+			return -1;
+		}
+		return 0;
+#endif
+	}
+	return 0;
 }
 
 /* Internal: Determine the error code for a connection */

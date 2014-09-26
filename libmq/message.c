@@ -110,6 +110,51 @@ mq_message_pass(MQMESSAGE *message)
 	return 0;
 }
 
+/* Free an outgoing message */
+int
+mq_message_free(MQMESSAGE *message)
+{
+	int e;
+
+	RESET_ERROR(message->connection);
+	if(message->state != MQS_CREATED)
+	{
+		SET_SYSERR(message->connection, EINVAL);
+		return -1;
+	}
+	switch(message->connection->type)
+	{
+#ifdef WITH_LIBQPID_PROTON
+	case MQT_PROTON:
+		if((e = mq_proton_message_free_(&(message->connection->d.proton), &(message->d.proton))))
+		{
+			SET_ERROR(message->connection, e);
+			free(message);
+			return -1;
+		}
+		break;
+#endif
+	}
+	free(message);
+	return 0;	
+}
+
+
+/* Set the content type of a message */
+int
+mq_message_set_type(MQMESSAGE *message, const char *type)
+{	
+	RESET_ERROR(message->connection);
+	switch(message->connection->type)
+	{
+#ifdef WITH_LIBQPID_PROTON
+	case MQT_PROTON:
+		return mq_proton_message_set_type_(&(message->connection->d.proton), &(message->d.proton), type);
+#endif
+	}
+	return 0;
+}
+
 /* Return the content type of a message */
 const char *
 mq_message_type(MQMESSAGE *message)
@@ -125,6 +170,21 @@ mq_message_type(MQMESSAGE *message)
 	return NULL;
 }
 
+/* Set the content type of a message */
+int
+mq_message_set_subject(MQMESSAGE *message, const char *subject)
+{	
+	RESET_ERROR(message->connection);
+	switch(message->connection->type)
+	{
+#ifdef WITH_LIBQPID_PROTON
+	case MQT_PROTON:
+		return mq_proton_message_set_subject_(&(message->connection->d.proton), &(message->d.proton), subject);
+#endif
+	}
+	return 0;
+}
+
 /* Return the subject of a message */
 const char *
 mq_message_subject(MQMESSAGE *message)
@@ -138,6 +198,21 @@ mq_message_subject(MQMESSAGE *message)
 #endif
 	}
 	return NULL;
+}
+
+/* Set the destination address of a message */
+int
+mq_message_set_address(MQMESSAGE *message, const char *address)
+{	
+	RESET_ERROR(message->connection);
+	switch(message->connection->type)
+	{
+#ifdef WITH_LIBQPID_PROTON
+	case MQT_PROTON:
+		return mq_proton_message_set_address_(&(message->connection->d.proton), &(message->d.proton), address);
+#endif
+	}
+	return 0;
 }
 
 /* Return the address of a message */
@@ -181,4 +256,44 @@ mq_message_len(MQMESSAGE *message)
 #endif
 	}
 	return (size_t) -1;
+}
+
+/* Add bytes to the message body */
+int
+mq_message_add_bytes(MQMESSAGE *message, unsigned char *bytes, size_t len)
+{	
+	RESET_ERROR(message->connection);
+	if(message->state != MQS_CREATED)
+	{
+		SET_SYSERR(message->connection, EINVAL);
+		return -1;
+	}
+	switch(message->connection->type)
+	{
+#ifdef WITH_LIBQPID_PROTON
+	case MQT_PROTON:
+		return mq_proton_message_add_bytes_(&(message->connection->d.proton), &(message->d.proton), bytes, len);
+#endif
+	}
+	return 0;
+}
+
+/* Send a message */
+int
+mq_message_send(MQMESSAGE *message)
+{	
+	RESET_ERROR(message->connection);
+	if(message->state != MQS_CREATED)
+	{
+		SET_SYSERR(message->connection, EINVAL);
+		return -1;
+	}
+	switch(message->connection->type)
+	{
+#ifdef WITH_LIBQPID_PROTON
+	case MQT_PROTON:
+		return mq_proton_message_send_(&(message->connection->d.proton), &(message->d.proton), message->connection->uri);
+#endif
+	}
+	return 0;
 }

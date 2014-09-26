@@ -23,7 +23,10 @@ libmq_la_SOURCES = libmq.h p_libmq.h \
 
 libmq_la_LDFLAGS = -static
 
-noinst_PROGRAMS = mq-recv
+noinst_PROGRAMS = mq-recv mq-send
 
 mq_recv_SOURCES = mq-recv.c
 mq_recv_LDADD = libmq.la
+
+mq_send_SOURCES = mq-send.c
+mq_send_LDADD = libmq.la

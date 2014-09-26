@@ -44,6 +44,8 @@ MQ *mq_connect_send(const char *uri, const char *reserved1, const char *reserved
 int mq_disconnect(MQ *connection);
 /* Wait for the next message to arrive */
 MQMESSAGE *mq_next(MQ *connection);
+/* Deliver any buffered outgoing messages */
+int mq_deliver(MQ *connection);
 /* Obtain the error state for a connection */
 int mq_error(MQ *connection);
 /* Obtain the error message for a connection */
@@ -69,6 +71,16 @@ const char *mq_message_address(MQMESSAGE *message);
 const unsigned char *mq_message_body(MQMESSAGE *message);
 /* Return the length of the message body */
 size_t mq_message_len(MQMESSAGE *message);
+/* Set the type of a message */
+int mq_message_set_type(MQMESSAGE *message, const char *type);
+/* Set the subject of a message */
+int mq_message_set_subject(MQMESSAGE *message, const char *subject);
+/* Set the (destination) address of a message */
+int mq_message_set_address(MQMESSAGE *message, const char *address);
+/* Add binary data to the body of a message */
+int mq_message_add_bytes(MQMESSAGE *message, unsigned char *bytes, size_t len);
+/* Send a message */
+int mq_message_send(MQMESSAGE *message);
 
 END_DECLS_
 

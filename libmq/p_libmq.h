@@ -62,6 +62,7 @@ struct mq_proton_message_struct
 	pn_tracker_t tracker;
 	pn_data_t *body;
 	pn_bytes_t bytes;
+	int addressed:1;
 };
 # endif
 
@@ -114,19 +115,27 @@ int mq_errcode_(MQ *connection);
 
 # ifdef WITH_LIBQPID_PROTON
 int mq_proton_connect_recv_(struct mq_proton_struct *proton, const char *uri);
+int mq_proton_connect_send_(struct mq_proton_struct *proton, const char *uri);
 int mq_proton_disconnect_(struct mq_proton_struct *proton);
+int mq_proton_create_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message);
 int mq_proton_next_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message);
 int mq_proton_message_accept_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message);
 int mq_proton_message_reject_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message);
 int mq_proton_message_pass_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message);
+int mq_proton_message_free_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message);
 const char *mq_proton_message_type_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message);
 const char *mq_proton_message_subject_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message);
 const char *mq_proton_message_address_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message);
 const unsigned char *mq_proton_message_body_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message);
+int mq_proton_message_set_type_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message, const char *type);
+int mq_proton_message_set_subject_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message, const char *subject);
+int mq_proton_message_set_address_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message, const char *address);
+int mq_proton_message_add_bytes_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message, unsigned char *buf, size_t len);
+int mq_proton_message_send_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message, const char *uri);
 size_t mq_proton_message_len_(struct mq_proton_struct *proton, struct mq_proton_message_struct *message);
 int mq_proton_errcode_(struct mq_proton_struct *proton);
 const char *mq_proton_errmsg_(struct mq_proton_struct *proton, int errcode, char *buf, size_t buflen);
-# endif
+int mq_proton_deliver_(struct mq_proton_struct *proton);
+# endif /*WITH_LIBQPID_PROTON*/
 
 #endif /*!P_LIBMQ_H_*/
-
