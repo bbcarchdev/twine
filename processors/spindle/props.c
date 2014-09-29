@@ -807,7 +807,7 @@ spindle_prop_candidate_lang_(struct propdata_struct *data, struct propmatch_stru
 	{
 		if((!lang && !match->literals[c].lang) ||
 		   (lang && match->literals[c].lang &&
-			!strcmp(match->literals[c].lang, lang)))
+			!strcasecmp(match->literals[c].lang, lang)))
 		{
 			entry = &(match->literals[c]);
 			break;
