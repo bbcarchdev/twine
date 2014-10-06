@@ -34,7 +34,8 @@ twine_plugin_init(void)
 {
 	twine_logf(LOG_DEBUG, "rdf plug-in: initialising\n");
 	twine_plugin_register("application/trig", "RDF TriG", process_rdf, NULL);
-	twine_plugin_register("application/nquads", "RDF N-Quads", process_rdf, NULL);
+	twine_plugin_register("application/n-quads", "RDF N-Quads", process_rdf, NULL);
+	twine_plugin_register("text/x-nquads", "RDF N-Quads", process_rdf, NULL);
 	return 0;
 }
 
