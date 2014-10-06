@@ -21,7 +21,13 @@ AM_CPPFLAGS = @AM_CPPFLAGS@ \
 	-I$(top_builddir)/libutils -I$(top_srcdir)/libutils \
 	-I$(top_builddir)/libmq -I$(top_srcdir)/libmq
 
-bin_PROGRAMS = twine-inject
+if HAVE_LIBSQL
+
+anansi_bridge = twine-anansi-bridge
+
+endif
+
+bin_PROGRAMS = twine-inject $(anansi_bridge)
 
 twine_inject_SOURCES = inject.c
 
@@ -29,6 +35,18 @@ twine_inject_LDADD = \
 	$(top_builddir)/libutils/libutils.la \
 	$(top_builddir)/libsupport/libsupport.la \
 	$(top_builddir)/libmq/libmq.la
+
+if HAVE_LIBSQL
+
+twine_anansi_bridge_SOURCES = anansi-bridge.c
+
+twine_anansi_bridge_LDADD = \
+	$(top_builddir)/libutils/libutils.la \
+	$(top_builddir)/libsupport/libsupport.la \
+	$(top_builddir)/libmq/libmq.la \
+	$(LIBSQL_LOCAL_LIBS) $(LIBSQL_LIBS)
+
+endif
 
 EXTRA_DIST = twine-inject.xml
 

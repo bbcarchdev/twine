@@ -48,6 +48,7 @@ BT_CHECK_LIBJSONDATA
 LIBS="$old_LIBS"
 
 AM_CONDITIONAL([HAVE_LIBJSONDATA],[test x"$have_libjsondata" = x"yes"])
+AM_CONDITIONAL([HAVE_LIBSQL],[test x"$have_libsql" = x"yes"])
 
 use_docbook_html5=yes
 BT_BUILD_DOCS
