@@ -256,16 +256,26 @@ twine_plugin_unregister_all_(void *handle)
 int
 twine_plugin_process(const char *mimetype, const unsigned char *message, size_t msglen, const char *subject)
 {
-	size_t l;
+	size_t l, tl;
+	const char *s;
 	void *prev;
 	int r;
 
 	(void) subject;
-
+	
+	s = strchr(mimetype, ';');
+	if(s)
+	{
+		tl = s - mimetype;
+	}
+	else
+	{
+		tl = strlen(mimetype);
+	}
 	prev = current;
 	for(l = 0; l < mimecount; l++)
 	{
-		if(!strcmp(mimetypes[l].mimetype, mimetype))
+		if(!strncasecmp(mimetypes[l].mimetype, mimetype, tl) && !mimetypes[l].mimetype[tl])
 		{
 			current = mimetypes[l].module;
 			r = mimetypes[l].processor(mimetype, message, msglen, mimetypes[l].data);

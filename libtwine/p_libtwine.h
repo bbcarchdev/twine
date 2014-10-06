@@ -20,6 +20,8 @@
 #ifndef P_LIBTWINE_H_
 # define P_LIBTWINE_H_                  1
 
+# define _BSD_SOURCE                    1
+
 # include <stdlib.h>
 # include <dlfcn.h>
 # include <errno.h>
