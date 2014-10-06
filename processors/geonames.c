@@ -54,7 +54,7 @@ strnchr(const char *src, int ch, size_t max)
 int
 twine_plugin_init(void)
 {
-	twine_logf(LOG_DEBUG, PLUGIN_NAME "plug-in: initialising\n");
+	twine_logf(LOG_DEBUG, PLUGIN_NAME " plug-in: initialising\n");
 	twine_bulk_register("text/x-geonames-dump", "Geonames dump", bulk_geonames, NULL);
 	return 0;
 }
