@@ -1,5 +1,3 @@
-## Twine: A Linked Data workflow engine
-##
 ## Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
 ##
 ## Copyright (c) 2014 BBC
@@ -16,15 +14,13 @@
 ##  See the License for the specific language governing permissions and
 ##  limitations under the License.
 
-ACLOCAL_AMFLAGS = -I m4
+AM_CPPFLAGS = @AM_CPPFLAGS@ $(LIBCURL_CPPFLAGS) $(OPENSSL_CPPFLAGS)
 
-DIST_SUBDIRS = libsupport libsparqlclient libmq libutils libtwine \
-	libs3client \
-	writer bridges processors \
-	init.d conf docs m4 docbook-html5
+noinst_LTLIBRARIES = libs3client.la
 
-SUBDIRS = libsupport @subdirs@ libmq libutils libtwine libs3client \
-	writer bridges processors \
-	init.d conf docs
+libs3client_la_SOURCES = libs3client.h p_libs3client.h \
+	sign.c bucket.c request.c
 
-EXTRA_DIST = README.md LICENSE-2.0
+libs3client_la_LIBADD = \
+	$(LIBCURL_LOCAL_LIBS) $(LIBCURL_LIBS) \
+	$(OPENSSL_LOCAL_LIBS) $(OPENSSL_LIBS)

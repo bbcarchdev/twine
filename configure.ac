@@ -53,6 +53,7 @@ libutils/Makefile
 libtwine/Makefile
 libtwine/libtwine.pc
 libtwine/libtwine-uninstalled.pc
+libs3client/Makefile
 writer/Makefile
 bridges/Makefile
 processors/Makefile
