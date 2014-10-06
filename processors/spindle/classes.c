@@ -91,12 +91,16 @@ static const char *work_matches[] = {
 	"http://purl.org/ontology/po/Series",
 	"http://purl.org/ontology/po/ProgrammeItem",
 	"http://www.tate.org.uk/ontologies/collection#Artwork",
+	"http://dbpedia.org/ontology/Work",
+	"http://schema.org/CreativeWork",
 	NULL,
 };
 
 static const char *digital_matches[] = {
 	"http://xmlns.com/foaf/0.1/Document",
 	"http://xmlns.com/foaf/0.1/Image",
+	"http://purl.org/dc/dcmitype/Image",
+	"http://purl.org/dc/dcmitype/Text",
 	NULL,
 };
 
