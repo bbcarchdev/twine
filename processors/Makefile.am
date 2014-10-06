@@ -21,12 +21,17 @@ SUBDIRS = spindle
 AM_CPPFLAGS = @AM_CPPFLAGS@ \
 	-I$(top_builddir)/libtwine -I$(top_srcdir)/libtwine \
 	-I$(top_builddir)/libs3client -I$(top_srcdir)/libs3client
-
 LIBS = $(top_builddir)/libtwine/libtwine.la
 
 moduledir = $(libdir)/twine
 
-module_LTLIBRARIES = rdf.la xslt.la geonames.la s3.la
+if HAVE_LIBJSONDATA
+
+anansi_module = anansi.la
+
+endif
+
+module_LTLIBRARIES = rdf.la xslt.la geonames.la s3.la $(anansi_module)
 
 rdf_la_SOURCES = rdf.c
 rdf_la_LDFLAGS = -no-undefined -module -avoid-version
@@ -37,6 +42,14 @@ geonames_la_LDFLAGS = -no-undefined -module -avoid-version
 s3_la_SOURCES = s3.c
 s3_la_LDFLAGS = -no-undefined -module -avoid-version
 s3_la_LIBADD = $(top_builddir)/libs3client/libs3client.la
+
+if HAVE_LIBJSONDATA
+
+anansi_la_SOURCES = anansi.c
+anansi_la_LDFLAGS = -no-undefined -module -avoid-version
+anansi_la_LIBADD = $(top_builddir)/libs3client/libs3client.la $(LIBJSONDATA_LOCAL_LIBS) $(LIBJSONDATA_LIBS)
+
+endif
 
 xslt_la_SOURCES = xslt.c
 xslt_la_LIBADD = \
