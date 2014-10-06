@@ -85,15 +85,34 @@ twine_rdf_model_destroy(librdf_model *model)
 	return 0;
 }
 
+static int
+nstrcasecmp(const char *a, const char *b, size_t alen)
+{
+	if(strlen(b) != alen)
+	{
+		return -1;
+	}
+	return strncasecmp(a, b, alen);
+}
+
 /* Parse a buffer of a particular MIME type into a model */
 int
 twine_rdf_model_parse(librdf_model *model, const char *mime, const char *buf, size_t buflen)
 {	
 	static librdf_uri *base;
-	const char *name;
+	const char *name, *t;
 	librdf_parser *parser;
-	int r;
-
+	int r, sl;
+	
+	t = strchr(mime, ';');
+	if(t)
+	{
+		sl = t - mime;
+	}
+	else
+	{
+		sl = strlen(mime);
+	}
 	if(!base)
 	{
 		base = librdf_new_uri(twine_world, (const unsigned char *) "/");
@@ -107,17 +126,21 @@ twine_rdf_model_parse(librdf_model *model, const char *mime, const char *buf, si
 	/* Handle specific MIME types whether or not librdf already knows
 	 * about them
 	 */
-	if(!strcmp(mime, "application/trig"))
+	if(!nstrcasecmp(mime, "application/trig", sl))
 	{
 		name = "trig";
 	}
-	else if(!strcmp(mime, "application/nquads"))
+	else if(!nstrcasecmp(mime, "application/n-quads", sl) || !nstrcasecmp(mime, "text/x-nquads", sl))
 	{
 		name = "nquads";
 	}
-	else if(!strcmp(mime, "application/n-triples"))
+	else if(!nstrcasecmp(mime, "application/n-triples", sl) || !nstrcasecmp(mime, "text/plain", sl))
 	{
 		name = "ntriples";
+	}
+	else if(!nstrcasecmp(mime, "text/turtle", sl) || !nstrcasecmp(mime, "text/n3", sl))
+	{
+		name = "turtle";
 	}
 	/* If we have a specific parser name, don't use the MIME type */
 	if(name)
