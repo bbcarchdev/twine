@@ -201,6 +201,26 @@ static struct predicatematch_struct page_match[] = {
 	{ 0, "http://xmlns.com/foaf/0.1/workplaceHomepage", NULL },
 	{ 0, "http://xmlns.com/foaf/0.1/schoolHomepage", NULL },
 	{ 0, "http://xmlns.com/foaf/0.1/isPrimaryTopicOf", NULL },
+	{ 0, "http://dbpedia.org/property/website", NULL },
+	{ -1, NULL, NULL }
+};
+
+static struct predicatematch_struct seealso_match[] = {
+	{ 0, "http://www.w3.org/2000/01/rdf-schema#seeAlso", "http://purl.org/dc/dcmitype/Collection" },
+	{ -1, NULL, NULL }
+};
+
+static struct predicatematch_struct rights_match[] = {
+	{ 0, "http://purl.org/dc/terms/rights", NULL },
+	{ 0, "http://purl.org/dc/terms/license", NULL },
+	{ 0, "http://purl.org/dc/terms/accessRights", NULL },
+	{ 0, "http://creativecommons.org/ns#license", NULL },
+	{ 0, "http://www.w3.org/1999/xhtml/vocab#license", NULL },
+	{ -1, NULL, NULL }
+};
+
+static struct predicatematch_struct player_match[] = {
+	{ 0, "http://search.yahoo.com/mrss/player", NULL },
 	{ -1, NULL, NULL }
 };
 
@@ -292,6 +312,27 @@ static struct predicatemap_struct predicatemap[] = {
 	{
 		"http://xmlns.com/foaf/0.1/page",
 		page_match,
+		RAPTOR_TERM_TYPE_URI,
+		NULL,
+		0
+	},
+	{
+		"http://www.w3.org/2000/01/rdf-schema#seeAlso",
+		seealso_match,
+		RAPTOR_TERM_TYPE_URI,
+		NULL,
+		1
+	},
+	{
+		"http://purl.org/dc/terms/rights",
+		rights_match,
+		RAPTOR_TERM_TYPE_URI,
+		NULL,
+		0
+	},
+	{
+		"http://search.yahoo.com/mrss/player",
+		player_match,
 		RAPTOR_TERM_TYPE_URI,
 		NULL,
 		0
