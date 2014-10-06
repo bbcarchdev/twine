@@ -20,19 +20,23 @@ SUBDIRS = spindle
 
 AM_CPPFLAGS = @AM_CPPFLAGS@ \
 	-I$(top_builddir)/libtwine -I$(top_srcdir)/libtwine \
-	-I$(top_builddir)/libsparqlclient -I$(top_srcdir)/libsparqlclient
+	-I$(top_builddir)/libs3client -I$(top_srcdir)/libs3client
 
 LIBS = $(top_builddir)/libtwine/libtwine.la
 
 moduledir = $(libdir)/twine
 
-module_LTLIBRARIES = rdf.la xslt.la geonames.la
+module_LTLIBRARIES = rdf.la xslt.la geonames.la s3.la
 
 rdf_la_SOURCES = rdf.c
 rdf_la_LDFLAGS = -no-undefined -module -avoid-version
 
 geonames_la_SOURCES = geonames.c
 geonames_la_LDFLAGS = -no-undefined -module -avoid-version
+
+s3_la_SOURCES = s3.c
+s3_la_LDFLAGS = -no-undefined -module -avoid-version
+s3_la_LIBADD = $(top_builddir)/libs3client/libs3client.la
 
 xslt_la_SOURCES = xslt.c
 xslt_la_LIBADD = \

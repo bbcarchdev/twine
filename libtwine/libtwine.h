@@ -69,6 +69,9 @@ int twine_bulk_register(const char *mimetype, const char *description, twine_bul
 int twine_plugin_supported(const char *mimetype);
 int twine_bulk_supported(const char *mimetype);
 
+/* Process a single message */
+int twine_plugin_process(const char *mimetype, const unsigned char *message, size_t msglen, const char *subject);
+
 /* Perform a bulk import from a file */
 int twine_bulk_import(const char *mimetype, FILE *file);
 

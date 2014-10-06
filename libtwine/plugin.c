@@ -252,9 +252,9 @@ twine_plugin_unregister_all_(void *handle)
 	return 0;
 }
 
-/* Internal: forward a message to a plug-in for processing */
+/* Forward a message to a plug-in for processing */
 int
-twine_plugin_process_(const char *mimetype, const unsigned char *message, size_t msglen, const char *subject)
+twine_plugin_process(const char *mimetype, const unsigned char *message, size_t msglen, const char *subject)
 {
 	size_t l;
 	void *prev;

@@ -267,7 +267,7 @@ writerd_import(const char *type)
 		buflen += r;
 		buffer[buflen] = 0;
 	}
-	if(twine_plugin_process_(type, buffer, buflen, NULL))
+	if(twine_plugin_process(type, buffer, buflen, NULL))
 	{
 		twine_logf(LOG_ERR, "failed to process input as '%s'\n", type);
 		free(buffer);

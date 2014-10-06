@@ -78,7 +78,7 @@ writerd_runloop(void)
 			continue;
 		}		 
 		log_printf(LOG_DEBUG, "received a %s '%s' message via %s\n", mime, mq_message_subject(msg), mq_message_address(msg));
-		if(twine_plugin_process_(mime, body, len, subject))
+		if(twine_plugin_process(mime, body, len, subject))
 		{
 			log_printf(LOG_ERR, "processing of a %s '%s' message via %s failed\n", mime, mq_message_subject(msg), mq_message_address(msg));
 			mq_message_reject(msg);
