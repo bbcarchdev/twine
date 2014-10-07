@@ -7,6 +7,8 @@ usr/lib/twine/xslt.so
 usr/lib/twine/rdf.so
 usr/lib/twine/spindle.so
 usr/lib/twine/geonames.so
+usr/lib/twine/s3.so
+usr/lib/twine/anansi.so
 usr/lib/twine/example-xml.xsl
 usr/share/doc/twine/twine.conf
 usr/share/doc/twine/example-xml.xml
