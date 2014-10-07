@@ -16,6 +16,7 @@ Depends: ${misc:Depends}, ${shlibs:Depends}, libtwine
 Description: Linked Data workflow engine
 
 Package: twine-anansi-bridge
+Architecture: any
 Depends: ${misc:Depends}, ${shlibs:Depends}, libtwine, libsql, libjsondata
 Description: Bridge between an Anansi queue and Twine
 
