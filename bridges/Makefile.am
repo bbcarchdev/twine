@@ -23,11 +23,13 @@ AM_CPPFLAGS = @AM_CPPFLAGS@ \
 
 if HAVE_LIBSQL
 
+sbin_PROGRAMS = twine-anansi-bridge
+
 anansi_bridge = twine-anansi-bridge
 
 endif
 
-bin_PROGRAMS = twine-inject $(anansi_bridge)
+bin_PROGRAMS = twine-inject
 
 twine_inject_SOURCES = inject.c
 
