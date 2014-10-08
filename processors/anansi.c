@@ -128,7 +128,7 @@ static int process_anansi(const char *mime, const unsigned char *buf, size_t buf
 			}
 			else
 			{
-				loc = jd_get_ks(&dict, "location", 0);
+				loc = jd_get_ks(&dict, "content_location", 0);
 				if(loc)
 				{
 					r = ingest_payload(bucket, info->path, jd_bytes(loc, NULL));
@@ -316,21 +316,27 @@ ingest_payload(S3BUCKET *bucket, const char *resource, const char *location)
 static int
 process_payload(const char *buf, size_t buflen, const char *type, const char *graph)
 {
+	librdf_world *world;
+	librdf_uri *base;
 	librdf_model *model;
 	librdf_stream *stream;
 	int r;
 
+	world = twine_rdf_world();
+	base = librdf_new_uri(world, (const unsigned char *) graph);
 	model = twine_rdf_model_create();
 	if(!model)
 	{
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create new RDF model\n");
+		librdf_free_uri(base);
 		return -1;
 	}
 	twine_logf(LOG_DEBUG, PLUGIN_NAME ": parsing buffer into model as '%s'\n", type);
-	if(twine_rdf_model_parse(model, type, buf, buflen))
+	if(twine_rdf_model_parse_base(model, type, buf, buflen, base))
 	{
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to parse string into model\n");
 		librdf_free_model(model);
+		librdf_free_uri(base);
 		return -1;
 	}
 	stream = librdf_model_as_stream(model);
@@ -345,6 +351,7 @@ process_payload(const char *buf, size_t buflen, const char *type, const char *gr
 	}
 	librdf_free_stream(stream);
 	librdf_free_model(model);
+	librdf_free_uri(base);
 	return r;	
 }
 

@@ -97,13 +97,12 @@ nstrcasecmp(const char *a, const char *b, size_t alen)
 
 /* Parse a buffer of a particular MIME type into a model */
 int
-twine_rdf_model_parse(librdf_model *model, const char *mime, const char *buf, size_t buflen)
-{	
-	static librdf_uri *base;
+twine_rdf_model_parse_base(librdf_model *model, const char *mime, const char *buf, size_t buflen, librdf_uri *base)
+{
 	const char *name, *t;
 	librdf_parser *parser;
 	int r, sl;
-	
+
 	t = strchr(mime, ';');
 	if(t)
 	{
@@ -112,15 +111,6 @@ twine_rdf_model_parse(librdf_model *model, const char *mime, const char *buf, si
 	else
 	{
 		sl = strlen(mime);
-	}
-	if(!base)
-	{
-		base = librdf_new_uri(twine_world, (const unsigned char *) "/");
-		if(!base)
-		{
-			twine_logf(LOG_CRIT, "failed to parse URI </>\n");
-			return -1;
-		}
 	}
 	name = NULL;
 	/* Handle specific MIME types whether or not librdf already knows
@@ -163,7 +153,25 @@ twine_rdf_model_parse(librdf_model *model, const char *mime, const char *buf, si
 		twine_logf(LOG_DEBUG, "failed to parse buffer as %s (%s)\n", mime, name);
 	}
 	librdf_free_parser(parser);
-	return r;
+	return r;	
+}
+
+/* Parse a buffer of a particular MIME type into a model */
+int
+twine_rdf_model_parse(librdf_model *model, const char *mime, const char *buf, size_t buflen)
+{	
+	static librdf_uri *base;
+	
+	if(!base)
+	{
+		base = librdf_new_uri(twine_world, (const unsigned char *) "/");
+		if(!base)
+		{
+			twine_logf(LOG_CRIT, "failed to parse URI </>\n");
+			return -1;
+		}
+	}
+	return twine_rdf_model_parse_base(model, mime, buf, buflen, base);
 }
 
 /* Create a new statement */

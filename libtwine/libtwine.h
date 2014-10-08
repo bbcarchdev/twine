@@ -89,6 +89,7 @@ int twine_rdf_model_destroy(librdf_model *model);
 
 /* Parse a buffer into a librdf model */
 int twine_rdf_model_parse(librdf_model *model, const char *mime, const char *buf, size_t buflen);
+	int twine_rdf_model_parse_base(librdf_model *model, const char *mime, const char *buf, size_t buflen, librdf_uri *uri);
 
 /* Create a new statement */
 librdf_statement *twine_rdf_st_create(void);
