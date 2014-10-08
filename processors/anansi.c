@@ -274,17 +274,10 @@ ingest_payload(S3BUCKET *bucket, const char *resource, const char *location)
 	struct ingestinfo_struct info;
 	long status;
 	int r;
-	char *type, *urlbuf;
+	char *type;
 
 	memset(&info, 0, sizeof(struct ingestinfo_struct));
-	urlbuf = (char *) malloc(strlen(resource) + 9);
-	if(!urlbuf)
-	{
-		return -1;
-	}
-	strcpy(urlbuf, resource);
-	strcat(urlbuf, ".payload");
-	req = s3_request_create(bucket, urlbuf, "GET");
+	req = s3_request_create(bucket, resource, "GET");
 	ch = s3_request_curl(req);
 	curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, ingest_write);
 	curl_easy_setopt(ch, CURLOPT_WRITEDATA, (void *) &info);
