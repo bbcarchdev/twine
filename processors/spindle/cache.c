@@ -38,13 +38,13 @@ spindle_cache_update_set(SPINDLE *spindle, struct spindle_strset_struct *set)
 	origcount = set->count;
 	for(c = 0; c < set->count; c++)
 	{
-		if(c >= origcount)
+		if(c < origcount && (set->flags[c] & SF_MOVED))
 		{
-			spindle_cache_update(spindle, set->strings[c], NULL);
+			spindle_cache_update(spindle, set->strings[c], set);
 		}
 		else
 		{
-			spindle_cache_update(spindle, set->strings[c], set);
+			spindle_cache_update(spindle, set->strings[c], NULL);
 		}
 	}
 	return 0;

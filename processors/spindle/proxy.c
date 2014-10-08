@@ -121,11 +121,12 @@ int
 spindle_proxy_create(SPINDLE *spindle, const char *uri1, const char *uri2, struct spindle_strset_struct *changeset)
 {
 	char *u1, *u2, *uu;
-	
+	unsigned flags = SF_REFRESHED;
+
 	u1 = spindle_proxy_locate(spindle, uri1);
 	if(uri2)
 	{		
-		u2 = spindle_proxy_locate(spindle, uri2);		
+		u2 = spindle_proxy_locate(spindle, uri2);
 	}
 	else
 	{
@@ -137,7 +138,7 @@ spindle_proxy_create(SPINDLE *spindle, const char *uri1, const char *uri2, struc
 		twine_logf(LOG_DEBUG, PLUGIN_NAME ": <%s> <=> <%s> already exists\n", uri1, uri2);
 		if(changeset)
 		{
-			spindle_strset_add(changeset, u1);
+			spindle_strset_add_flags(changeset, u1, flags);
 		}
 		return 0;
 	}
@@ -147,7 +148,7 @@ spindle_proxy_create(SPINDLE *spindle, const char *uri1, const char *uri2, struc
 		twine_logf(LOG_DEBUG, PLUGIN_NAME ": <%s> already exists\n", uri1);
 		if(changeset)
 		{
-			spindle_strset_add(changeset, u1);
+			spindle_strset_add_flags(changeset, u1, flags);
 		}
 		return 0;
 	}
@@ -167,6 +168,7 @@ spindle_proxy_create(SPINDLE *spindle, const char *uri1, const char *uri2, struc
 		{
 			return -1;
 		}
+		flags |= SF_MOVED;
 	}
 	if(uri2)
 	{
@@ -181,13 +183,14 @@ spindle_proxy_create(SPINDLE *spindle, const char *uri1, const char *uri2, struc
 	{
 		twine_logf(LOG_DEBUG, PLUGIN_NAME ": relating %s to %s\n", uri1, uu);
 		spindle_proxy_relate(spindle, uri1, uu);
+		flags |= SF_MOVED;
 	}
 	/* If the second entity didn't previously have a local proxy, attach it */
 	if(!u2)
 	{
 		if(uri2)
 		{
-			twine_logf(LOG_DEBUG, PLUGIN_NAME ": relating %s to %s\n", uri1, uu);
+			twine_logf(LOG_DEBUG, PLUGIN_NAME ": relating %s to %s\n", uri2, uu);
 			spindle_proxy_relate(spindle, uri2, uu);
 		}
 	}
@@ -199,14 +202,15 @@ spindle_proxy_create(SPINDLE *spindle, const char *uri1, const char *uri2, struc
 		 */
 		twine_logf(LOG_INFO, PLUGIN_NAME ": relocating references from <%s> to <%s>\n", u2, uu);
 		spindle_proxy_migrate(spindle, u2, uu, NULL);
+		flags |= SF_MOVED;
 		if(changeset)
 		{
-			spindle_strset_add(changeset, u2);
+			spindle_strset_add_flags(changeset, u2, flags);
 		}
 	}
 	if(changeset)
 	{
-		spindle_strset_add(changeset, uu);
+		spindle_strset_add_flags(changeset, uu, flags);
 	}
 	free(u1);
 	free(u2);

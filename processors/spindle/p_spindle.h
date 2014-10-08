@@ -37,6 +37,12 @@
 /* The number of co-references allocated at a time when extending a set */
 #define SET_BLOCKSIZE                   4
 
+/* Flags on strsets */
+# define SF_NONE                        0
+# define SF_MOVED                       (1<<0)
+# define SF_UPDATED                     (1<<1)
+# define SF_REFRESHED                   (1<<2)
+
 typedef struct spindle_context_struct SPINDLE;
 typedef struct spindle_cache_struct SPINDLECACHE;
 
@@ -78,6 +84,7 @@ struct spindle_corefset_struct
 struct spindle_strset_struct
 {
 	char **strings;
+	unsigned *flags;
 	size_t count;
 	size_t size;
 };
@@ -109,6 +116,7 @@ int spindle_coref_destroy(struct spindle_corefset_struct *set);
 struct spindle_strset_struct *spindle_strset_create(void);
 /* Add a string to a string-set */
 int spindle_strset_add(struct spindle_strset_struct *set, const char *str);
+int spindle_strset_add_flags(struct spindle_strset_struct *set, const char *str, unsigned flags);
 /* Free the resources used by a string set */
 int spindle_strset_destroy(struct spindle_strset_struct *set);
 

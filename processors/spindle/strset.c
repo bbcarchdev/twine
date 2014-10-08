@@ -42,13 +42,21 @@ spindle_strset_create(void)
 int
 spindle_strset_add(struct spindle_strset_struct *set, const char *str)
 {
+	return spindle_strset_add_flags(set, str, 0);
+}
+
+int
+spindle_strset_add_flags(struct spindle_strset_struct *set, const char *str, unsigned flags)
+{
 	char **p;
+	unsigned *q;
 	size_t c;
 
 	for(c = 0; c < set->count; c++)
 	{
 		if(!strcmp(set->strings[c], str))
 		{
+			set->flags[c] |= flags;
 			return 0;
 		}
 	}	
@@ -60,10 +68,18 @@ spindle_strset_add(struct spindle_strset_struct *set, const char *str)
 			twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to expand string-set\n");
 			return -1;
 		}
+		q = (unsigned *) realloc(set->flags, sizeof(char *) * (set->size + SET_BLOCKSIZE));
+		if(!p)
+		{
+			twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to expand flag-set\n");
+			return -1;
+		}
 		set->size += SET_BLOCKSIZE;
 		set->strings = p;
+		set->flags = q;
 	}
 	set->strings[set->count] = strdup(str);
+	set->flags[set->count] = flags;
 	if(!set->strings[set->count])
 	{
 		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to duplicate string\n");
