@@ -132,6 +132,10 @@ twine_rdf_model_parse_base(librdf_model *model, const char *mime, const char *bu
 	{
 		name = "turtle";
 	}
+	else if(!nstrcasecmp(mime, "application/rdf+xml", sl))
+	{
+		name = "rdfxml";
+	}
 	/* If we have a specific parser name, don't use the MIME type */
 	if(name)
 	{
