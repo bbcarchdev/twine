@@ -74,8 +74,10 @@ spindle_process(librdf_model *newgraph, librdf_model *oldgraph, const char *grap
 	spindle_coref_destroy(oldset);
 	spindle_coref_destroy(newset);
 	/* Re-build the metadata for any related proxies */
+	twine_logf(LOG_DEBUG, PLUGIN_NAME ": updating caches for <%s>\n", graph);
 	spindle_cache_update_set(spindle, changes);
 	spindle_strset_destroy(changes);
+	twine_logf(LOG_DEBUG, PLUGIN_NAME ": completed <%s>\n", graph);
 	return 0;
 }
 
