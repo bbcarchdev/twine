@@ -77,6 +77,7 @@ static const char *concept_matches[] = {
 
 static const char *collection_matches[] = {
 	"http://purl.org/dc/dcmitype/Collection",
+	"http://rdfs.org/ns/void#Dataset",
 	NULL
 };
 
