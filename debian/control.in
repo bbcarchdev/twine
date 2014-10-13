@@ -12,15 +12,15 @@ Description: Linked Data workflow engine (module API)
 
 Package: twine
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}, libtwine
+Depends: ${misc:Depends}, ${shlibs:Depends}, libtwine (= %%VERSION%%)
 Description: Linked Data workflow engine
 
 Package: twine-anansi-bridge
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}, libtwine, libsql, libjsondata
+Depends: ${misc:Depends}, ${shlibs:Depends}, libtwine (= %%VERSION%%), libsql, libjsondata
 Description: Bridge between an Anansi queue and Twine
 
 Package: libtwine-dev
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}, libsparqlclient-dev, librdf0-dev
+Depends: ${misc:Depends}, ${shlibs:Depends}, libtwine (= %%VERSION%%), libsparqlclient-dev, librdf0-dev
 Description: Linked Data workflow engine (module API development files)
