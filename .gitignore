@@ -10,6 +10,7 @@
 *.pc
 .deps
 .libs
+.release
 core
 Makefile.in
 Makefile
