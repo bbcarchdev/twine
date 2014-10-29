@@ -16,13 +16,13 @@
 ##  See the License for the specific language governing permissions and
 ##  limitations under the License.
 
-EXTRA_DIST = twine.conf.in twine.conf.xml
+EXTRA_DIST = twine.conf.in
 
 doc_DATA = twine.conf
 
 dist_man5_MANS = twine.conf.5
 
-twine.conf.5: $(srcdir)/twine.conf.xml
+twine.conf.5: $(top_srcdir)/docs/twine.conf.xml
 	$(XML2MAN) $<
 
 install-data-local:

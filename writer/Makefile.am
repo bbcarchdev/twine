@@ -34,9 +34,7 @@ twine_writerd_LDADD = \
 	$(top_builddir)/libtwine/libtwine.la \
 	$(top_builddir)/libmq/libmq.la
 
-EXTRA_DIST = twine-writerd.xml
-
 dist_man8_MANS = twine-writerd.8
 
-twine-writerd.8: $(srcdir)/twine-writerd.xml
+twine-writerd.8: $(top_srcdir)/docs/twine-writerd.xml
 	$(XML2MAN) $<

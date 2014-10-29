@@ -50,9 +50,7 @@ twine_anansi_bridge_LDADD = \
 
 endif
 
-EXTRA_DIST = twine-inject.xml
-
 dist_man1_MANS = twine-inject.1
 
-twine-inject.1: $(srcdir)/twine-inject.xml
+twine-inject.1: $(top_srcdir)/docs/twine-inject.xml
 	$(XML2MAN) $<

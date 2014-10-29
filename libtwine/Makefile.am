@@ -39,9 +39,7 @@ pkgconfig_DATA = libtwine.pc
 
 noinst_DATA = libtwine-uninstalled.pc
 
-EXTRA_DIST = libtwine.xml
-
 dist_man3_MANS = libtwine.3
 
-libtwine.3: $(srcdir)/libtwine.xml
+libtwine.3: $(top_srcdir)/docs/libtwine.xml
 	$(XML2MAN) $<
