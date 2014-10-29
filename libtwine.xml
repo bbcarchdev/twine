@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<refentry xml:id="libtwine-3" xmlns="http://docbook.org/ns" xmlns:xlink="http://www.w3.org/1999/xlink" version="5.0" xml:lang="en">
+  <info>
+	<productname>Twine</productname>
+	<author>
+	  <personname>
+		<firstname>Mo</firstname>
+		<surname>McRoberts</surname>
+	  </personname>
+	  <affiliation>
+		<org>
+		  <orgname>BBC</orgname>
+		  <orgdiv>Archive Development</orgdiv>
+		  <uri>http://www.bbc.co.uk/archive/</uri>
+		</org>
+	  </affiliation>
+	</author>
+	<copyright>
+	    <year>2014</year>
+		  <holder>BBC</holder>
+	</copyright>
+  </info>
+  
+  <refmeta>
+	<refentrytitle>libtwine</refentrytitle>
+	<manvolnum>3</manvolnum>
+	<refmiscinfo class="source">Twine workflow engine</refmiscinfo>
+	<refmiscinfo class="manual">Library functions</refmiscinfo>
+  </refmeta>
+
+  <refnamediv>
+	<refname>libtwine</refname>
+	<refpurpose>Twine processor module API</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+	<cmdsynopsis>
+	  <command>cc</command>
+	  <arg choice="opt"><option><replaceable>flag</replaceable></option></arg>
+	  <arg choice="plain"><replaceable>file …</replaceable></arg>
+	  <arg choice="plain">-ltwine</arg>
+	  <arg choice="opt"><option><replaceable>library …</replaceable></option></arg>
+	</cmdsynopsis>
+	<funcsynopsis>
+	  <funcsynopsisinfo>#include &lt;libtwine.h&gt;</funcsynopsisinfo>
+	</funcsynopsis>
+  </refsynopsisdiv>
+  
+  <refsect1>
+	<title>Description</title>
+	<para>
+	  <package>libtwine</package> provides the API to
+	  <link xlink:href="http://bbcarchdev.github.io/twine/">Twine</link>
+	  which is used by loadable processor modules.
+	</para>	
+  </refsect1>
+
+  <refsect1>
+	<title>Interfaces</title>
+	<para>
+	  <package>libtwine</package> provides the public interfaces listed
+	  below:
+	</para>
+	
+	<segmentedlist>
+	  <segtitle>Function</segtitle>
+	  <segtitle>Description</segtitle>	 
+	  <seglistitem>
+		<seg><function>twine_plugin_register</function></seg>
+		<seg>Invoked by a module in order to perform self-registration</seg>
+	  </seglistitem>
+	  <seglistitem>
+		<seg><function>twine_rdf_world</function></seg>
+		<seg>Obtain the shared <type>librdf_world</type> instance</seg>
+	  </seglistitem>
+	  <seglistitem>
+		<seg><function>twine_rdf_model_create</function></seg>
+		<seg>Create a new <type>librdf_model</type> using the shared <type>librdf_world</type></seg>
+	  </seglistitem>
+	  <seglistitem>
+		<seg><function>twine_rdf_model_parse</function></seg>
+		<seg>Parse a buffer containing serialised RDF into a <type>librdf_model</type></seg>
+	  </seglistitem>
+	  <seglistitem>
+		<seg><function>twine_sparql_create</function></seg>
+		<seg>Create a new SPARQL connection based upon the Twine configuration settings</seg>
+	  </seglistitem>
+	  <seglistitem>
+		<seg><function>twine_sparql_put</function></seg>
+		<seg>Replace a named graph with the N-Triples in the supplied buffer using a SPARQL datastore PUT operation</seg>
+	  </seglistitem>
+	  <seglistitem>
+		<seg><function>twine_sparql_put_stream</function></seg>
+		<seg>Replace a named graph with the contents of a <type>librdf_stream</type> using a SPARQL datastore PUT operation</seg>
+	  </seglistitem>
+	  <seglistitem>
+		<seg><function>twine_logf</function></seg>
+		<seg>Log an event using the configured logging mechanism</seg>
+	  </seglistitem>
+	  <seglistitem>
+		<seg><function>twine_vlogf</function></seg>
+		<seg>Log an event (passing a <type>va_args</type>) using the configured logging mechanism</seg>
+	  </seglistitem>
+	  <seglistitem>
+		<seg><function>twine_config_get</function></seg>
+		<seg>Copy a configuration value into the supplied buffer</seg>
+	  </seglistitem>
+	  <seglistitem>
+		<seg><function>twine_config_geta</function></seg>
+		<seg>Duplicate a configuration value and return it</seg>
+	  </seglistitem>
+	  <seglistitem>
+		<seg><function>twine_config_get_int</function></seg>
+		<seg>Return the integer value of a configuration value</seg>
+	  </seglistitem>
+	  <seglistitem>
+		<seg><function>twine_config_get_bool</function></seg>
+		<seg>Return the integer value of a configuration value</seg>
+	  </seglistitem>
+	  <seglistitem>
+		<seg><function>twine_config_get_all</function></seg>
+		<seg>Invoke a callback function for each configuration value matching given criteria</seg>
+	  </seglistitem>
+	</segmentedlist>
+  </refsect1>
+  
+</refentry>

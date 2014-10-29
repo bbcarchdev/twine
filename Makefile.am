@@ -19,26 +19,26 @@
 XML2HTMLFLAGS = \
 	--param "html.linksfile" "'file://$(abs_top_srcdir)/docbook-html5/res-links.xml'" \
 	--param "html.navfile" "'file://$(abs_top_srcdir)/docbook-html5/res-nav.xml'" \
-	--param "html.ie78css" "'http://bbcarchdev.github.io/painting-by-numbers/ie78.css'"
+	--param "html.ie78css" "'//bbcarchdev.github.io/painting-by-numbers/ie78.css'"
 
 dist_noinst_DATA = \
-	index.html twine.xml local.css \
-	twine-writerd.8.html \
-	twine-inject.8.html \
-	twine.conf.5.html \
-	libtwine.3.html
+	twine.xml twine-writerd.xml twine-inject.xml twine.conf.xml libtwine.xml
 
-index.html: twine.xml $(XSLTFILES)
+dist_doc_DATA = index.html twine-writerd.8.html twine-inject.8.html \
+	twine.conf.5.html libtwine.3.html \
+	local.css
+
+index.html: $(srcdir)/twine.xml $(XSLTFILES)
 	$(XML2HTML) $<
 
-twine-writerd.8.html: $(top_srcdir)/writer/twine-writerd.xml $(XSLTFILES)
+twine-writerd.8.html: $(srcdir)/twine-writerd.xml $(XSLTFILES)
 	$(XML2HTML) $<
 
-twine-inject.8.html: $(top_srcdir)/bridges/twine-inject.xml $(XSLTFILES)
+twine-inject.8.html: $(srcdir)/twine-inject.xml $(XSLTFILES)
 	$(XML2HTML) $<
 
-twine.conf.5.html: $(top_srcdir)/conf/twine.conf.xml $(XSLTFILES)
+twine.conf.5.html: $(srcdir)/twine.conf.xml $(XSLTFILES)
 	$(XML2HTML) $<
 
-libtwine.3.html: $(top_srcdir)/libtwine/libtwine.xml $(XSLTFILES)
+libtwine.3.html: $(srcdir)/libtwine.xml $(XSLTFILES)
 	$(XML2HTML) $<
