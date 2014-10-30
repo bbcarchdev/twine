@@ -16,29 +16,24 @@
 ##  See the License for the specific language governing permissions and
 ##  limitations under the License.
 
-XML2HTMLFLAGS = \
-	--param "html.linksfile" "'file://$(abs_top_srcdir)/docbook-html5/res-links.xml'" \
-	--param "html.navfile" "'file://$(abs_top_srcdir)/docbook-html5/res-nav.xml'" \
-	--param "html.ie78css" "'//bbcarchdev.github.io/painting-by-numbers/ie78.css'"
-
 dist_noinst_DATA = \
 	twine.xml twine-writerd.xml twine-inject.xml twine.conf.xml libtwine.xml
 
-dist_doc_DATA = index.html twine-writerd.8.html twine-inject.8.html \
+dist_twinehtdoc_DATA = index.html twine-writerd.8.html twine-inject.8.html \
 	twine.conf.5.html libtwine.3.html \
 	local.css
 
-index.html: $(srcdir)/twine.xml $(XSLTFILES)
+index.html: $(srcdir)/twine.xml $(XSLTFILES) $(NAV) $(LINKS)
 	$(XML2HTML) $<
 
-twine-writerd.8.html: $(srcdir)/twine-writerd.xml $(XSLTFILES)
+twine-writerd.8.html: $(srcdir)/twine-writerd.xml $(XSLTFILES) $(NAV) $(LINKS)
 	$(XML2HTML) $<
 
-twine-inject.8.html: $(srcdir)/twine-inject.xml $(XSLTFILES)
+twine-inject.8.html: $(srcdir)/twine-inject.xml $(XSLTFILES) $(NAV) $(LINKS)
 	$(XML2HTML) $<
 
-twine.conf.5.html: $(srcdir)/twine.conf.xml $(XSLTFILES)
+twine.conf.5.html: $(srcdir)/twine.conf.xml $(XSLTFILES) $(NAV) $(LINKS)
 	$(XML2HTML) $<
 
-libtwine.3.html: $(srcdir)/libtwine.xml $(XSLTFILES)
+libtwine.3.html: $(srcdir)/libtwine.xml $(XSLTFILES) $(NAV) $(LINKS)
 	$(XML2HTML) $<
