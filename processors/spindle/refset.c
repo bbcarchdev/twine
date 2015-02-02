@@ -36,9 +36,10 @@ static struct coref_match_struct matches[] =
 {
 	{ "http://www.w3.org/2002/07/owl#sameAs", match_sameas },
 	{ "http://www.bbc.co.uk/ontologies/coreconcepts/sameAs", match_sameas },
+	{ "http://www.w3.org/2004/02/skos/core#exactMatch", match_sameas },
+	{ "http://www.w3.org/2008/05/skos#exactMatch", match_sameas },
 	{ "http://www.geonames.org/ontology#wikipediaArticle", match_wikipedia },
 	{ "http://www.xmlns.com/foaf/0.1/isPrimaryTopicOf", match_wikipedia },
-	{ "http://www.bbc.co.uk/ontologies/coreconcepts/sameAs", match_wikipedia },
 	{ NULL, NULL }
 };
 
