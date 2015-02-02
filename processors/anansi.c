@@ -364,7 +364,7 @@ ingest_write(char *ptr, size_t size, size_t nemb, void *userdata)
 	info = (struct ingestinfo_struct *) userdata;
 	
 	size *= nemb;
-	if(size >= info->size)
+	if(size >= (info->size - info->pos))
 	{
 		p = (char *) realloc(info->buf, info->size + size + 1);
 		if(!p)
@@ -373,6 +373,7 @@ ingest_write(char *ptr, size_t size, size_t nemb, void *userdata)
 			return 0;
 		}
 		info->buf = p;
+		info->size += size;
 	}
 	memcpy(&(info->buf[info->pos]), ptr, size);
 	info->pos += size;
