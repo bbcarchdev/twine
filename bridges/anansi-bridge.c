@@ -3,7 +3,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2015 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -128,6 +128,7 @@ anansi_runloop(MQ *messenger, SQL *sql, const char *bucket)
 	MQMESSAGE *message;
 	SQL_STATEMENT *rs;
 	char *uribuf, *p;
+	int printed;
 
 	uribuf = (char *) calloc(1, 8 + strlen(bucket) + 64);
 	if(!uribuf)
@@ -139,6 +140,7 @@ anansi_runloop(MQ *messenger, SQL *sql, const char *bucket)
 	strcat(uribuf, bucket);
 	strcat(uribuf, "/");
 	p = strchr(uribuf, 0);
+	printed = 0;
 	for(;;)
 	{
 		rs = sql_queryf(sql, "SELECT \"hash\" FROM \"crawl_resource\" WHERE \"state\" = %Q ORDER BY \"updated\" DESC LIMIT 5", "ACCEPTED");
@@ -149,10 +151,16 @@ anansi_runloop(MQ *messenger, SQL *sql, const char *bucket)
 		}
 		if(sql_stmt_eof(rs))
 		{
+			if(!printed)
+			{
+				log_printf(LOG_DEBUG, "no new resources remain; sleeping\n");
+				printed = 1;
+			}
 			sql_stmt_destroy(rs);
-			sleep(1);
+			sleep(2);
 			continue;
 		}
+		printed = 0;
 		while(!sql_stmt_eof(rs))
 		{
 			if(sql_stmt_value(rs, 0, p, 64) > 64)
