@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2015 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -72,6 +72,8 @@ static const char *concept_matches[] = {
 	"http://www.w3.org/2004/02/skos/core#Concept",
 	"http://www.w3.org/2008/05/skos#Concept",
 	"http://www.tate.org.uk/ontologies/collection#Subject",
+	"http://www.w3.org/2002/07/owl#Class",
+	"http://www.w3.org/2000/01/rdf-schema#Class",
 	NULL,
 };
 
