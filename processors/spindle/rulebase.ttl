@@ -1,10 +1,8 @@
-## THIS FILE IS NOT CURRENTLY USED
-##
 ## This file is part of Spindle, a co-reference aggregation engine
 ##
 ##  Author: Mo McRoberts
 ##
-##  Copyright (c) 2014 BBC
+##  Copyright (c) 2014-2015 BBC
 ##
 ##  Licensed under the Apache License, Version 2.0 (the "License");
 ##  you may not use this file except in compliance with the License.
@@ -24,6 +22,24 @@
 # This graph is not imported into the quad-store used by Spindle, but held
 # in-memory and its contents used by the proxy generation logic.
 
+#### Class rules
+
+## Class rules take the form:
+##
+## ex:Example
+##   a spindle:Class ;
+##   olo:index 25 ;
+##   rdfs:label "Examples"@en .
+##
+## foo:E47_Example spindle:expressedAs ex:Example .
+##
+## This defines a class, ex:Example, which will be used for proxy generation.
+## Processed instances which have a type of ex:Example or foo:E47_Example will
+## result in a proxy being generated with a class of ex:Example, provided
+## another class's rules don't match first. The olo:index property on the
+## class specifies the matching priority, where lower is better (provided the
+## value is a positive integer).
+
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
@@ -39,32 +55,67 @@
 @prefix ecrm: <http://erlangen-crm.org/current/> .
 @prefix frbr: <http://purl.org/vocab/frbr/core#> .
 @prefix spindle: <http://bbcarchdev.github.io/ns/spindle#> .
+@prefix olo: <http://purl.org/ontology/olo/core#> .
+@prefix po: <http://purl.org/ontology/po/> .
+@prefix event: <http://purl.org/NET/c4dm/event.owl#> .
+@prefix void: <http://rdfs.org/ns/void#> .
+@prefix dcmitype: <http://purl.org/dc/dcmitype/> .
 
 foaf:Person
 		a spindle:Class ;
+		olo:index 10 ;
 		rdfs:label "Person"@en .
+
+po:Person spindle:expressedAs foaf:Person .
+
 
 foaf:Group
 		a spindle:Class ;
+		olo:index 20 ;
 		rdfs:label "Group"@en .
 
 foaf:Organization spindle:expressedAs foaf:Group .
+po:Broadcaster spindle:expressedAs foaf:Group .
+
+
 
 foaf:Agent
 		a spindle:Class ;
+		olo:index 30 ;
 		rdfs:label "Agent"@en .
 
 dct:Agent spindle:expressedAs foaf:Agent .
+<http://www.tate.org.uk/ontologies/collection#Artist> spindle:expressedAs foaf:Agent .
+
+
 
 geo:SpatialThing
 		a spindle:Class ;
+		olo:index 40 ;
 		rdfs:label "Place"@en .
 
 dct:Location spindle:expressedAs geo:SpatialThing .
 gn:Feature spindle:expressedAs geo:SpatialThing .
 
+
+
+
+event:Event
+		a spindle:Class ;
+		olo:index 50 ;
+		rdfs:label "Event"@en .
+
+<http://www.tate.org.uk/ontologies/collection#Birth> spindle:expressedAs event:Event .
+<http://www.tate.org.uk/ontologies/collection#Death> spindle:expressedAs event:Event .
+dct:PeriodOfTime spindle:expressedAs event:Event .
+po:Broadcast spindle:expressedAs event:Event .
+
+
+
+
 crm:E18_Physical_Thing
 		a spindle:Class ;
+		olo:index 60 ;
 		rdfs:label "Physical thing"@en .
 
 crm:E22_Man-Made_Object spindle:expressedAs crm:E18_Physical_Thing .
@@ -73,22 +124,57 @@ ecrm:E22_Man-Made_Object spindle:expressedAs crm:E18_Physical_Thing .
 dcmitype:PhysicalObject spindle:expressedAs crm:E18_Physical_Thing .
 dct:PhysicalResource spindle:expressedAs crm:E18_Physical_Thing .
 
+
+
+
 skos:Concept
 		a spindle:Class ;
+		olo:index 100 ;
 		rdfs:label "Concept"@en .
 
 skos08:Concept spindle:expressedAs skos:Concept .
+<http://www.tate.org.uk/ontologies/collection#Subject> spindle:expressedAs skos:Concept .
+owl:Class spindle:expressedAs skos:Concept .
+rdfs:Class spindle:expressedAs skos:Concept .
+
+
+
 
 dcmitype:Collection
 		a spindle:Class ;
+		olo:index 70 ;
 		rdfs:label "Collection"@en .
+
+void:Dataset spindle:expressedAs dcmitype:Collection .
+
+
+
 
 frbr:Work
 		a spindle:Class ;
+		olo:index 80 ;
 		rdfs:label "Creative work"@en .
+
+po:Clip spindle:expressedAs frbr:Work .
+po:Episode spindle:expressedAs frbr:Work .
+po:Version spindle:expressedAs frbr:Work .
+po:OriginalVersion spindle:expressedAs frbr:Work .
+po:Programme spindle:expressedAs frbr:Work .
+po:Brand spindle:expressedAs frbr:Work .
+po:Series spindle:expressedAs frbr:Work .
+po:ProgrammeItem spindle:expressedAs frbr:Work .
+<http://www.tate.org.uk/ontologies/collection#Artwork> spindle:expressedAs frbr:Work .
+<http://dbpedia.org/ontology/Work> spindle:expressedAs frbr:Work .
+<http://schema.org/CreativeWork> spindle:expressedAs frbr:Work .
+
+
+
 
 foaf:Document
 		a spindle:Class ;
+		olo:index 90 ;
 		rdfs:label "Digital object"@en .
 
 foaf:Image spindle:expressedAs foaf:Document .
+dcmitype:Image spindle:expressedAs foaf:Document .
+dcmitype:Text spindle:expressedAs foaf:Document .

@@ -94,6 +94,11 @@ spindle_init_(SPINDLE *spindle)
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create URI for xsd:dateTime\n");
 		return -1;
 	}
+	if(spindle_class_init(spindle))
+	{
+		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to initialise classes\n");
+		return -1;
+	}
 	return 0;
 }
 

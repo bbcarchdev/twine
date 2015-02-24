@@ -2,7 +2,7 @@
 ##
 ##  Author: Mo McRoberts
 ##
-##  Copyright (c) 2014 BBC
+##  Copyright (c) 2014-2015 BBC
 ##
 ##  Licensed under the Apache License, Version 2.0 (the "License");
 ##  you may not use this file except in compliance with the License.
@@ -35,3 +35,5 @@ spindle_la_LIBADD = \
 	@LIBUUID_LIBS@ @LIBUUID_LOCAL_LIBS@
 
 spindle_la_LDFLAGS = -no-undefined -module -avoid-version
+
+dist_module_DATA = rulebase.ttl

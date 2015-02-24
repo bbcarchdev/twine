@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2015 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -66,6 +66,18 @@ struct spindle_context_struct
 	librdf_node *rootgraph;
 	/* Whether to store each proxy in its own graph */
 	int multigraph;
+	/* Class-matching data */
+	struct spindle_classmatch_struct *classes;
+	size_t classcount;
+	size_t classsize;
+};
+
+struct spindle_classmatch_struct
+{
+	char *uri;
+	char **match;
+	size_t matchsize;
+	int score;
 };
 
 struct spindle_coref_struct
@@ -142,6 +154,7 @@ int spindle_cache_update_set(SPINDLE *spindle, struct spindle_strset_struct *set
  */
 int spindle_cache_update(SPINDLE *spindle, const char *localname, struct spindle_strset_struct *set);
 
+int spindle_class_init(SPINDLE *spindle);
 /* Determine the class of something (storing in cache->classname) */
 int spindle_class_match(SPINDLECACHE *cache, struct spindle_strset_struct *classes);
 /* Update the classes of a proxy (updates cache->classname) */
