@@ -23,38 +23,6 @@
 
 #include "p_spindle.h"
 
-/* A single predicate which should be matched; optionally matching is restricted
- * to members of a particular class (the class must be defined in classes.c)
- * Priority values are 0 for 'always add', or 1..n, where 1 is highest-priority.
- */
-struct predicatematch_struct
-{
-	int priority;
-	const char *predicate;
-	const char *onlyfor;
-};
-
-/* Mapping data for a predicate. 'target' is the predicate which should be
- * used in the proxy data. If 'expected' is RAPTOR_TERM_TYPE_LITERAL, then
- * 'datatype' can optionally specify a datatype which literals must conform
- * to (candidate literals must either have no datatype and language, or
- * be of the specified datatype).
- *
- * If 'expected' is RAPTOR_TERM_TYPE_URI and proxyonly is nonzero, then
- * only those candidate properties whose objects have existing proxy
- * objects within the store will be used (and the triple stored in the
- * proxy will point to the corresponding proxy instead of the original
- * URI).
- */
-struct predicatemap_struct
-{
-	const char *target;
-	struct predicatematch_struct *matches;
-	raptor_term_type expected;
-	const char *datatype;
-	int proxyonly;
-};
-
 /* A single entry in a list of multi-lingual literals */
 struct literal_struct
 {
@@ -77,7 +45,7 @@ struct literal_struct
  */
 struct propmatch_struct
 {
-	struct predicatemap_struct *map;
+	struct spindle_predicatemap_struct *map;
 	int priority;
 	librdf_node *resource;
 	struct literal_struct *literals;
@@ -94,11 +62,11 @@ struct propdata_struct
 	librdf_node *context;
 	librdf_model *source;
 	librdf_model *proxymodel;
-	struct predicatemap_struct *maps;
+	struct spindle_predicatemap_struct *maps;
 	struct propmatch_struct *matches;
 };
 
-static struct predicatematch_struct label_match[] = {
+static struct spindle_predicatematch_struct label_match[] = {
 	{ 20, "http://www.w3.org/2008/05/skos#prefLabel", NULL },
 	{ 21, "http://www.w3.org/2004/02/skos/core#prefLabel", NULL },
 	{ 30, "http://xmlns.com/foaf/0.1/name", "http://xmlns.com/foaf/0.1/Person" },
@@ -118,31 +86,31 @@ static struct predicatematch_struct label_match[] = {
 	{ -1, NULL, NULL }
 };
 
-static struct predicatematch_struct description_match[] = {
+static struct spindle_predicatematch_struct description_match[] = {
 	{ 40, "http://purl.org/dc/terms/description", NULL },
 	{ 41, "http://purl.org/dc/elements/1.1/description", NULL },
 	{ 50, "http://www.w3.org/2000/01/rdf-schema#comment", NULL },
 	{ -1, NULL, NULL }
 };
 
-static struct predicatematch_struct lat_match[] = {
+static struct spindle_predicatematch_struct lat_match[] = {
 	{ 50, "http://www.w3.org/2003/01/geo/wgs84_pos#lat", "http://www.w3.org/2003/01/geo/wgs84_pos#SpatialThing" },
 	{ -1, NULL, NULL }
 };
 
-static struct predicatematch_struct long_match[] = {
+static struct spindle_predicatematch_struct long_match[] = {
 	{ 50, "http://www.w3.org/2003/01/geo/wgs84_pos#long", "http://www.w3.org/2003/01/geo/wgs84_pos#SpatialThing" },
 	{ -1, NULL, NULL }
 };
 
-static struct predicatematch_struct depiction_match[] = {
+static struct spindle_predicatematch_struct depiction_match[] = {
 	{ 0, "http://xmlns.com/foaf/0.1/depiction", NULL },
 	{ 0, "http://xmlns.com/foaf/0.1/thumbnail", NULL },
 	{ 0, "http://www.tate.org.uk/ontologies/collection#thumbnailUrl", NULL },
 	{ -1, NULL, NULL }
 };
 
-static struct predicatematch_struct subject_match[] = {
+static struct spindle_predicatematch_struct subject_match[] = {
 	{ 0, "http://xmlns.com/foaf/0.1/topic", NULL },
 	{ 0, "http://xmlns.com/foaf/0.1/primaryTopic", NULL },
 	{ 0, "http://purl.org/dc/terms/subject", NULL },
@@ -150,26 +118,26 @@ static struct predicatematch_struct subject_match[] = {
 	{ -1, NULL, NULL }
 };
 
-static struct predicatematch_struct inscheme_match[] = {
+static struct spindle_predicatematch_struct inscheme_match[] = {
 	{ 0, "http://www.w3.org/2004/02/skos/core#inScheme", NULL },
 	{ 0, "http://www.w3.org/2008/05/skos#inScheme", NULL },
 	{ -1, NULL, NULL }
 };
 
-static struct predicatematch_struct broader_match[] = {
+static struct spindle_predicatematch_struct broader_match[] = {
 	{ 0, "http://www.w3.org/2004/02/skos/core#broader", NULL },
 	{ 0, "http://www.w3.org/2008/05/skos#broader", NULL },
 	{ 0, "http://www.tate.org.uk/ontologies/collection#parentSubject", NULL },
 	{ -1, NULL, NULL }
 };
 
-static struct predicatematch_struct narrower_match[] = {
+static struct spindle_predicatematch_struct narrower_match[] = {
 	{ 0, "http://www.w3.org/2004/02/skos/core#narrower", NULL },
 	{ 0, "http://www.w3.org/2008/05/skos#narrower", NULL },
 	{ -1, NULL, NULL }
 };
 
-static struct predicatematch_struct locatedin_match[] = {
+static struct spindle_predicatematch_struct locatedin_match[] = {
 	{ 0, "http://www.geonames.org/ontology#locatedIn", NULL },
 	{ 0, "http://www.tate.org.uk/ontologies/collection#place", "http://purl.org/vocab/frbr/core#Work" },
 	{ 0, "http://www.geonames.org/ontology#parentCountry", NULL },
@@ -181,18 +149,18 @@ static struct predicatematch_struct locatedin_match[] = {
 	{ -1, NULL, NULL }
 };
 
-static struct predicatematch_struct part_match[] = {
+static struct spindle_predicatematch_struct part_match[] = {
 	{ 0, "http://purl.org/dc/terms/isPartOf", NULL },
 	{ -1, NULL, NULL }
 };
 
-static struct predicatematch_struct place_match[] = {
+static struct spindle_predicatematch_struct place_match[] = {
 	{ 0, "http://purl.org/NET/c4dm/event.owl#place", "http://purl.org/NET/c4dm/event.owl#Event" },
 	{ 0, "http://www.tate.org.uk/ontologies/collection#place", "http://purl.org/NET/c4dm/event.owl#Event" },
 	{ -1, NULL, NULL }
 };
 
-static struct predicatematch_struct page_match[] = {
+static struct spindle_predicatematch_struct page_match[] = {
 	{ 0, "http://xmlns.com/foaf/0.1/page", NULL },
 	{ 0, "http://xmlns.com/foaf/0.1/homepage", NULL },
 	{ 0, "http://xmlns.com/foaf/0.1/weblog", NULL },
@@ -205,12 +173,12 @@ static struct predicatematch_struct page_match[] = {
 	{ -1, NULL, NULL }
 };
 
-static struct predicatematch_struct seealso_match[] = {
+static struct spindle_predicatematch_struct seealso_match[] = {
 	{ 0, "http://www.w3.org/2000/01/rdf-schema#seeAlso", "http://purl.org/dc/dcmitype/Collection" },
 	{ -1, NULL, NULL }
 };
 
-static struct predicatematch_struct rights_match[] = {
+static struct spindle_predicatematch_struct rights_match[] = {
 	{ 0, "http://purl.org/dc/terms/rights", NULL },
 	{ 0, "http://purl.org/dc/terms/license", NULL },
 	{ 0, "http://purl.org/dc/terms/accessRights", NULL },
@@ -219,12 +187,12 @@ static struct predicatematch_struct rights_match[] = {
 	{ -1, NULL, NULL }
 };
 
-static struct predicatematch_struct player_match[] = {
+static struct spindle_predicatematch_struct player_match[] = {
 	{ 0, "http://search.yahoo.com/mrss/player", NULL },
 	{ -1, NULL, NULL }
 };
 
-static struct predicatemap_struct predicatemap[] = {
+static struct spindle_predicatemap_struct predicatemap[] = {
 	{
 		"http://www.w3.org/2000/01/rdf-schema#label",
 		label_match,
@@ -345,10 +313,10 @@ static int spindle_prop_cleanup_(struct propdata_struct *data);
 static int spindle_prop_modified_(struct propdata_struct *data);
 static int spindle_prop_loop_(struct propdata_struct *data);
 static int spindle_prop_test_(struct propdata_struct *data, librdf_statement *st, const char *predicate);
-static int spindle_prop_candidate_(struct propdata_struct *data, struct propmatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj);
-static int spindle_prop_candidate_uri_(struct propdata_struct *data, struct propmatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj);
-static int spindle_prop_candidate_literal_(struct propdata_struct *data, struct propmatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj);
-static int spindle_prop_candidate_lang_(struct propdata_struct *data, struct propmatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj, const char *lang);
+static int spindle_prop_candidate_(struct propdata_struct *data, struct propmatch_struct *match, struct spindle_predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj);
+static int spindle_prop_candidate_uri_(struct propdata_struct *data, struct propmatch_struct *match, struct spindle_predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj);
+static int spindle_prop_candidate_literal_(struct propdata_struct *data, struct propmatch_struct *match, struct spindle_predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj);
+static int spindle_prop_candidate_lang_(struct propdata_struct *data, struct propmatch_struct *match, struct spindle_predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj, const char *lang);
 
 static int spindle_prop_apply_(struct propdata_struct *data);
 
@@ -392,7 +360,7 @@ spindle_prop_init_(struct propdata_struct *data, SPINDLECACHE *cache)
 	data->proxymodel = cache->proxydata;
 	data->context = cache->graph;
 	data->maps = predicatemap;
-	data->matches = (struct propmatch_struct *) calloc(sizeof(predicatemap) / sizeof(struct predicatemap_struct), sizeof(struct propmatch_struct));
+	data->matches = (struct propmatch_struct *) calloc(sizeof(predicatemap) / sizeof(struct spindle_predicatemap_struct), sizeof(struct propmatch_struct));
 	if(!data->matches)
 	{
 		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to allocate memory for prop matches\n");
@@ -615,7 +583,7 @@ spindle_prop_test_(struct propdata_struct *data, librdf_statement *st, const cha
  * beaten by a high-priority alternative, store it
  */
 static int
-spindle_prop_candidate_(struct propdata_struct *data, struct propmatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj)
+spindle_prop_candidate_(struct propdata_struct *data, struct propmatch_struct *match, struct spindle_predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj)
 {
 	switch(match->map->expected)
 	{
@@ -642,7 +610,7 @@ spindle_prop_candidate_(struct propdata_struct *data, struct propmatch_struct *m
 }
 
 static int
-spindle_prop_candidate_uri_(struct propdata_struct *data, struct propmatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj)
+spindle_prop_candidate_uri_(struct propdata_struct *data, struct propmatch_struct *match, struct spindle_predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj)
 {
 	librdf_node *node, *newobj;
 	librdf_statement *newst;
@@ -765,7 +733,7 @@ spindle_dt_is_int(const char *dtstr)
 }
 
 static int
-spindle_prop_candidate_literal_(struct propdata_struct *data, struct propmatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj)
+spindle_prop_candidate_literal_(struct propdata_struct *data, struct propmatch_struct *match, struct spindle_predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj)
 {
 	char *lang;
 	librdf_uri *dturi, *uri;
@@ -834,7 +802,7 @@ spindle_prop_candidate_literal_(struct propdata_struct *data, struct propmatch_s
 }
 
 static int
-spindle_prop_candidate_lang_(struct propdata_struct *data, struct propmatch_struct *match, struct predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj, const char *lang)
+spindle_prop_candidate_lang_(struct propdata_struct *data, struct propmatch_struct *match, struct spindle_predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj, const char *lang)
 {
 	struct literal_struct *entry, *p;
 	size_t c;

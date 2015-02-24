@@ -80,6 +80,38 @@ struct spindle_classmatch_struct
 	int score;
 };
 
+/* Mapping data for a predicate. 'target' is the predicate which should be
+ * used in the proxy data. If 'expected' is RAPTOR_TERM_TYPE_LITERAL, then
+ * 'datatype' can optionally specify a datatype which literals must conform
+ * to (candidate literals must either have no datatype and language, or
+ * be of the specified datatype).
+ *
+ * If 'expected' is RAPTOR_TERM_TYPE_URI and proxyonly is nonzero, then
+ * only those candidate properties whose objects have existing proxy
+ * objects within the store will be used (and the triple stored in the
+ * proxy will point to the corresponding proxy instead of the original
+ * URI).
+ */
+struct spindle_predicatemap_struct
+{
+	const char *target;
+	struct spindle_predicatematch_struct *matches;
+	raptor_term_type expected;
+	const char *datatype;
+	int proxyonly;
+};
+
+/* A single predicate which should be matched; optionally matching is restricted
+ * to members of a particular class (the class must be defined in classes.c)
+ * Priority values are 0 for 'always add', or 1..n, where 1 is highest-priority.
+ */
+struct spindle_predicatematch_struct
+{
+	int priority;
+	const char *predicate;
+	const char *onlyfor;
+};
+
 struct spindle_coref_struct
 {
 	char *left;
