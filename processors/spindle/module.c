@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2015 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -94,9 +94,9 @@ spindle_init_(SPINDLE *spindle)
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create URI for xsd:dateTime\n");
 		return -1;
 	}
-	if(spindle_class_init(spindle))
+	if(spindle_rulebase_init(spindle))
 	{
-		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to initialise classes\n");
+		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to load rulebase\n");
 		return -1;
 	}
 	return 0;

@@ -154,7 +154,9 @@ int spindle_cache_update_set(SPINDLE *spindle, struct spindle_strset_struct *set
  */
 int spindle_cache_update(SPINDLE *spindle, const char *localname, struct spindle_strset_struct *set);
 
-int spindle_class_init(SPINDLE *spindle);
+/* Load the Spindle rulebase */
+int spindle_rulebase_init(SPINDLE *spindle);
+
 /* Determine the class of something (storing in cache->classname) */
 int spindle_class_match(SPINDLECACHE *cache, struct spindle_strset_struct *classes);
 /* Update the classes of a proxy (updates cache->classname) */
