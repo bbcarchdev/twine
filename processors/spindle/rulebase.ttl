@@ -22,24 +22,6 @@
 # This graph is not imported into the quad-store used by Spindle, but held
 # in-memory and its contents used by the proxy generation logic.
 
-#### Class rules
-
-## Class rules take the form:
-##
-## ex:Example
-##   a spindle:Class ;
-##   olo:index 25 ;
-##   rdfs:label "Examples"@en .
-##
-## foo:E47_Example spindle:expressedAs ex:Example .
-##
-## This defines a class, ex:Example, which will be used for proxy generation.
-## Processed instances which have a type of ex:Example or foo:E47_Example will
-## result in a proxy being generated with a class of ex:Example, provided
-## another class's rules don't match first. The olo:index property on the
-## class specifies the matching priority, where lower is better (provided the
-## value is a positive integer).
-
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
@@ -60,6 +42,31 @@
 @prefix event: <http://purl.org/NET/c4dm/event.owl#> .
 @prefix void: <http://rdfs.org/ns/void#> .
 @prefix dcmitype: <http://purl.org/dc/dcmitype/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix mrss: <http://search.yahoo.com/mrss/> .
+@prefix cc: <http://creativecommons.org/ns#> .
+@prefix xhtml: <http://www.w3.org/1999/xhtml/vocab#> .
+
+#### Class rules
+
+## Class rules take the form:
+##
+## ex:Example
+##   a spindle:Class ;
+##   olo:index 25 ;
+##   rdfs:label "Examples"@en .
+##
+## foo:E47_Example spindle:expressedAs ex:Example .
+##
+## This defines a class, ex:Example, which will be used for proxy generation.
+## Processed instances which have a type of ex:Example or foo:E47_Example will
+## result in a proxy being generated with a class of ex:Example, provided
+## another class's rules don't match first. The olo:index property on the
+## class specifies the matching priority, where lower is better (provided the
+## value is a positive integer).
+
+
+## People
 
 foaf:Person
 		a spindle:Class ;
@@ -68,6 +75,7 @@ foaf:Person
 
 po:Person spindle:expressedAs foaf:Person .
 
+## Groups
 
 foaf:Group
 		a spindle:Class ;
@@ -77,7 +85,7 @@ foaf:Group
 foaf:Organization spindle:expressedAs foaf:Group .
 po:Broadcaster spindle:expressedAs foaf:Group .
 
-
+## Agents
 
 foaf:Agent
 		a spindle:Class ;
@@ -87,7 +95,7 @@ foaf:Agent
 dct:Agent spindle:expressedAs foaf:Agent .
 <http://www.tate.org.uk/ontologies/collection#Artist> spindle:expressedAs foaf:Agent .
 
-
+## Places
 
 geo:SpatialThing
 		a spindle:Class ;
@@ -97,8 +105,7 @@ geo:SpatialThing
 dct:Location spindle:expressedAs geo:SpatialThing .
 gn:Feature spindle:expressedAs geo:SpatialThing .
 
-
-
+## Events, timespans
 
 event:Event
 		a spindle:Class ;
@@ -111,7 +118,7 @@ dct:PeriodOfTime spindle:expressedAs event:Event .
 po:Broadcast spindle:expressedAs event:Event .
 
 
-
+## Physical things
 
 crm:E18_Physical_Thing
 		a spindle:Class ;
@@ -124,8 +131,7 @@ ecrm:E22_Man-Made_Object spindle:expressedAs crm:E18_Physical_Thing .
 dcmitype:PhysicalObject spindle:expressedAs crm:E18_Physical_Thing .
 dct:PhysicalResource spindle:expressedAs crm:E18_Physical_Thing .
 
-
-
+## Concepts
 
 skos:Concept
 		a spindle:Class ;
@@ -137,8 +143,7 @@ skos08:Concept spindle:expressedAs skos:Concept .
 owl:Class spindle:expressedAs skos:Concept .
 rdfs:Class spindle:expressedAs skos:Concept .
 
-
-
+## Collections
 
 dcmitype:Collection
 		a spindle:Class ;
@@ -147,8 +152,7 @@ dcmitype:Collection
 
 void:Dataset spindle:expressedAs dcmitype:Collection .
 
-
-
+## Creative works
 
 frbr:Work
 		a spindle:Class ;
@@ -167,8 +171,7 @@ po:ProgrammeItem spindle:expressedAs frbr:Work .
 <http://dbpedia.org/ontology/Work> spindle:expressedAs frbr:Work .
 <http://schema.org/CreativeWork> spindle:expressedAs frbr:Work .
 
-
-
+## Digital objects
 
 foaf:Document
 		a spindle:Class ;
@@ -178,3 +181,417 @@ foaf:Document
 foaf:Image spindle:expressedAs foaf:Document .
 dcmitype:Image spindle:expressedAs foaf:Document .
 dcmitype:Text spindle:expressedAs foaf:Document .
+
+#### Property rules
+
+## rdfs:label
+
+rdfs:label
+	a spindle:Property ;
+	spindle:expect rdfs:Literal ;
+	olo:index 1 .
+
+skos08:prefLabel spindle:property [
+	olo:index 20 ;
+	spindle:expressedAs rdfs:label
+] .
+skos:prefLabel spindle:property [
+	olo:index 21 ;
+	spindle:expressedAs rdfs:label
+] .
+skos:prefLabel spindle:property [
+	olo:index 30 ;
+	rdfs:domain foaf:Person, foaf:Group, foaf:Agent ;
+	spindle:expressedAs rdfs:label
+] .
+gn:name spindle:property [
+	olo:index 30 ;
+	rdfs:domain geo:SpatialThing ;
+	spindle:expressedAs rdfs:label
+] .
+
+<http://www.tate.org.uk/ontologies/collection#fc> spindle:property [
+	olo:index 30 ;
+	rdfs:domain foaf:Person, foaf:Group, foaf:Agent ;
+	spindle:expressedAs rdfs:label
+] .
+
+<http://www.tate.org.uk/ontologies/collection#mda> spindle:property [
+	olo:index 35 ;
+	rdfs:domain foaf:Person, foaf:Group, foaf:Agent ;
+	spindle:expressedAs rdfs:label
+] .
+
+gn:alternateName spindle:property [
+	olo:index 35 ;
+	rdfs:domain geo:SpatialThing ;
+	spindle:expressedAs rdfs:label
+] .
+
+dct:title spindle:property [
+	olo:index 40 ;
+	spindle:expressedAs rdfs:label
+] .
+
+dc:title spindle:property [
+	olo:index 41 ;
+	spindle:expressedAs rdfs:label
+] .
+
+rdfs:label spindle:property [
+	olo:index 50 ;
+	spindle:expressedAs rdfs:label
+] .
+
+## dct:description
+
+dct:description
+	a spindle:Property ;
+	olo:index 2 ;
+	spindle:expect rdfs:Literal .
+
+dct:description spindle:property [
+	olo:index 40 ;
+	spindle:expressedAs dct:description
+] .
+
+dc:description spindle:property [
+	olo:index 41 ;
+	spindle:expressedAs dct:description
+] .
+
+rdfs:comment spindle:property [
+	olo:index 50 ;
+	spindle:expressedAs dct:description
+] .
+
+## geo:long
+
+geo:long
+	a spindle:Property ;
+	olo:index 3 ;
+	spindle:expect rdfs:Literal ;
+	spindle:expectType xsd:decimal .
+
+geo:long spindle:property [
+	olo:index 50 ;
+	spindle:expressedAs geo:long
+] .
+
+## geo:lat
+
+geo:lat
+	a spindle:Property ;
+	olo:index 4 ;
+	spindle:expect rdfs:Literal ;
+	spindle:expectType xsd:decimal .
+
+geo:lat spindle:property [
+	olo:index 50 ;
+	spindle:expressedAs geo:lat
+] .
+
+## foaf:depiction
+
+foaf:depiction
+	a spindle:Property ;
+	olo:index 5 ;
+	spindle:expect rdfs:Resource ;
+	spindle:proxyOnly false .
+
+foaf:depiction spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs foaf:depiction
+] .
+
+foaf:thumbnail spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs foaf:depiction
+] .
+
+<http://www.tate.org.uk/ontologies/collection#thumbnailUrl> spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs foaf:depiction
+] .
+
+## skos:inScheme
+
+skos:inScheme
+	a spindle:Property ;
+	olo:index 6 ;
+	spindle:expect rdfs:Resource ;
+	spindle:proxyOnly true .
+
+skos:inScheme spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs skos:inScheme
+] .
+
+skos08:inScheme spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs skos:inScheme
+] .
+
+## skos:broader
+
+skos:broader
+	a spindle:Property ;
+	olo:index 7 ;
+	spindle:expect rdfs:Resource ;
+	spindle:proxyOnly true .
+
+skos:broader spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs skos:broader
+] .
+
+skos08:broader spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs skos:broader
+] .
+
+<http://www.tate.org.uk/ontologies/collection#parentSubject> spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs skos:broader
+] .
+
+## skos:narrower
+
+skos:narrower
+	a spindle:Property ;
+	olo:index 8 ;
+	spindle:expect rdfs:Resource ;
+	spindle:proxyOnly true .
+
+skos:narrower spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs skos:narrower
+] .
+
+skos08:narrower spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs skos:narrower
+] .
+
+## foaf:topic
+
+foaf:topic
+	a spindle:Property ;
+	olo:index 9 ;
+	spindle:expect rdfs:Resource ;
+	spindle:proxyOnly true .
+
+foaf:topic spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs foaf:topic
+] .
+
+foaf:primaryTopic spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs foaf:topic
+] .
+
+dct:terms spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs foaf:topic
+] .
+
+dc:terms spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs foaf:topic
+] .
+
+## dct:isPartOf
+
+dct:isPartOf
+	a spindle:Property ;
+	olo:index 10 ;
+	spindle:expect rdfs:Resource ;
+	spindle:proxyOnly true .
+
+dct:isPartOf spindle:expressed [
+	olo:index 0 ;
+	spindle:expressedAs dct:isPartOf
+] .
+
+## gn:locatedIn
+
+gn:locatedIn
+	a spindle:Property ;
+	olo:index 11 ;
+	spindle:expect rdfs:Resource ;
+	spindle:proxyOnly true .
+
+gn:locatedIn spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs gn:locatedIn
+] .
+
+<http://www.tate.org.uk/ontologies/collection#place> spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs gn:locatedIn ;
+	rdfs:domain frbr:Work
+] .
+
+gn:parentCountry spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs gn:locatedIn
+] .
+
+gn:parentFeature spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs gn:locatedIn
+] .
+
+gn:parentADM1 spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs gn:locatedIn
+] .
+
+gn:parentADM2 spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs gn:locatedIn
+] .
+
+gn:parentADM3 spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs gn:locatedIn
+] .
+
+gn:parentADM4 spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs gn:locatedIn
+] .
+
+## event:place
+
+event:place
+	a spindle:Property ;
+	olo:index 12 ;
+	spindle:expect rdfs:Resource ;
+	spindle:proxyOnly true .
+
+event:place spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs event:place ;
+	rdfs:domain event:Event
+] .
+
+<http://www.tate.org.uk/ontologies/collection#place> spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs event:place ;
+	rdfs:domain event:Event
+] .
+
+## foaf:page
+
+foaf:page
+	a spindle:Property ;
+	olo:index 13 ;
+	spindle:expect rdfs:Resource ;
+	spindle:proxyOnly false .
+
+foaf:page spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs foaf:page
+] .
+
+foaf:homepage spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs foaf:page
+] .
+
+foaf:weblog spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs foaf:page
+] .
+
+foaf:workInfoHomepage spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs foaf:page
+] .
+
+foaf:workplaceHomepage spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs foaf:page
+] .
+
+foaf:schoolHomepage spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs foaf:page
+] .
+
+foaf:isPrimaryTopicOf spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs foaf:page
+] .
+
+<http://dbpedia.org/property/website> spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs foaf:page
+] .
+
+gn:wikipediaArticle spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs foaf:page
+] .
+
+## rdfs:seeAlso
+
+rdfs:seeAlso
+	a spindle:Property ;
+	olo:index 14 ;
+	spindle:expect rdfs:Resource ;
+	spindle:proxyOnly true .
+
+rdfs:seeAlso spindle:property [
+	olo:index 0 ;
+	rdfs:domain dcmitype:Collection ;
+	spindle:expressedAs rdfs:seeAlso
+] .
+
+## dct:rights
+
+dct:rights
+	a spindle:Property ;
+	olo:index 15 ;
+	spindle:expect rdfs:Resource ;
+	spindle:proxyOnly false .
+
+dct:rights spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs dct:rights
+] .
+
+dct:license spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs dct:rights
+] .
+
+dct:accessRights spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs dct:rights
+] .
+
+cc:license spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs dct:rights
+] .
+
+xhtml:license spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs dct:rights
+] .
+
+## mrss:player
+
+mrss:player
+	a spindle:Property ;
+	olo:index 16 ;
+	spindle:expect rdfs:Resource ;
+	spindle:proxyOnly false .
+
+mrss:player spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs mrss:player
+] .

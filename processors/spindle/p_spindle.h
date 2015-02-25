@@ -70,6 +70,10 @@ struct spindle_context_struct
 	struct spindle_classmatch_struct *classes;
 	size_t classcount;
 	size_t classsize;
+	/* Predicate-matching data */
+	struct spindle_predicatemap_struct *predicates;
+	size_t predcount;
+	size_t predsize;
 };
 
 struct spindle_classmatch_struct
@@ -94,11 +98,14 @@ struct spindle_classmatch_struct
  */
 struct spindle_predicatemap_struct
 {
-	const char *target;
+	char *target;
 	struct spindle_predicatematch_struct *matches;
+	size_t matchcount;
+	size_t matchsize;
 	raptor_term_type expected;
-	const char *datatype;
+	char *datatype;
 	int proxyonly;
+	int score;
 };
 
 /* A single predicate which should be matched; optionally matching is restricted
@@ -108,8 +115,8 @@ struct spindle_predicatemap_struct
 struct spindle_predicatematch_struct
 {
 	int priority;
-	const char *predicate;
-	const char *onlyfor;
+	char *predicate;
+	char *onlyfor;
 };
 
 struct spindle_coref_struct
