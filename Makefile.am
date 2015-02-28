@@ -2,7 +2,7 @@
 ##
 ## Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
 ##
-## Copyright (c) 2014 BBC
+## Copyright (c) 2014-2015 BBC
 ##
 ##  Licensed under the Apache License, Version 2.0 (the "License");
 ##  you may not use this file except in compliance with the License.
@@ -20,11 +20,11 @@ ACLOCAL_AMFLAGS = -I m4
 
 DIST_SUBDIRS = libsupport libsparqlclient libmq libutils libtwine \
 	libs3client \
-	writer bridges processors \
+	writer bridges handlers processors \
 	init.d conf docs m4 docbook-html5
 
 SUBDIRS = libsupport @subdirs@ libmq libutils libtwine libs3client \
-	writer bridges processors \
+	writer bridges handlers processors \
 	init.d conf docs
 
 EXTRA_DIST = README.md LICENSE-2.0

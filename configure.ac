@@ -66,6 +66,7 @@ libtwine/libtwine-uninstalled.pc
 libs3client/Makefile
 writer/Makefile
 bridges/Makefile
+handlers/Makefile
 processors/Makefile
 processors/spindle/Makefile
 init.d/Makefile

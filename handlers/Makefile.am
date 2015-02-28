@@ -16,8 +16,6 @@
 ##  See the License for the specific language governing permissions and
 ##  limitations under the License.
 
-SUBDIRS = spindle
-
 AM_CPPFLAGS = @AM_CPPFLAGS@ \
 	-I$(top_builddir)/libtwine -I$(top_srcdir)/libtwine \
 	-I$(top_builddir)/libs3client -I$(top_srcdir)/libs3client
@@ -25,20 +23,22 @@ LIBS = $(top_builddir)/libtwine/libtwine.la
 
 moduledir = $(libdir)/twine
 
-module_LTLIBRARIES = rdf.la xslt.la geonames.la
+if HAVE_LIBJSONDATA
 
-rdf_la_SOURCES = rdf.c
-rdf_la_LDFLAGS = -no-undefined -module -avoid-version
+anansi_module = anansi.la
 
-geonames_la_SOURCES = geonames.c
-geonames_la_LDFLAGS = -no-undefined -module -avoid-version
+endif
 
-xslt_la_SOURCES = xslt.c
-xslt_la_LIBADD = \
-	@LIBXSLT_LIBS@ @LIBXSLT_LOCAL_LIBS@ \
-	@LIBXML2_LIBS@ @LIBXML2_LOCAL_LIBS@
-xslt_la_LDFLAGS = -no-undefined -module -avoid-version
+module_LTLIBRARIES = s3.la $(anansi_module)
 
-dist_doc_DATA = example-xml.xml
+s3_la_SOURCES = s3.c
+s3_la_LDFLAGS = -no-undefined -module -avoid-version
+s3_la_LIBADD = $(top_builddir)/libs3client/libs3client.la
 
-dist_module_DATA = example-xml.xsl
+if HAVE_LIBJSONDATA
+
+anansi_la_SOURCES = anansi.c
+anansi_la_LDFLAGS = -no-undefined -module -avoid-version
+anansi_la_LIBADD = $(top_builddir)/libs3client/libs3client.la $(LIBJSONDATA_LOCAL_LIBS) $(LIBJSONDATA_LIBS)
+
+endif
