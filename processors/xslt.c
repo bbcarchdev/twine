@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2015 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -47,9 +47,9 @@ struct xslt_mime_struct
 
 static struct xslt_mime_struct *first, *last;
 
-static int xslt_process(const char *mime, const char *buf, size_t buflen, void *data);
+static int xslt_process(const char *mime, const unsigned char *buf, size_t buflen, void *data);
 static int xslt_process_buf(const char *buf, size_t buflen, xsltStylesheetPtr stylesheet, const char *xpath);
-static int xslt_config_cb(const char *key, const char *value);
+static int xslt_config_cb(const char *key, const char *value, void *data);
 static int xslt_mime_add(const char *mimetype);
 static struct xslt_mime_struct *xslt_mime_find(const char *mimetype);
 
@@ -61,7 +61,7 @@ twine_plugin_init(void)
 	size_t c;
 
 	twine_logf(LOG_DEBUG, "XSLT: initialising\n");
-	twine_config_get_all(NULL, NULL, xslt_config_cb);
+	twine_config_get_all(NULL, NULL, xslt_config_cb, NULL);
 	c = 0;
 	for(p = first; p; p = p->next)
 	{
@@ -102,10 +102,12 @@ twine_plugin_init(void)
  * 'xslt: <MIME TYPE>'
  */
 static int
-xslt_config_cb(const char *key, const char *value)
+xslt_config_cb(const char *key, const char *value, void *data)
 {
 	char mimebuf[XSLT_MIME_LEN + 1], *t;
 	struct xslt_mime_struct *mime;
+
+	(void) data;
 
 	if(strncmp(key, "xslt:", 5))
 	{
@@ -244,7 +246,7 @@ xslt_mime_find(const char *mimetype)
  * and XPath expression above
  */
 static int
-xslt_process(const char *mime, const char *buf, size_t buflen, void *data)
+xslt_process(const char *mime, const unsigned char *buf, size_t buflen, void *data)
 {
 	struct xslt_mime_struct *p;
 
@@ -256,7 +258,7 @@ xslt_process(const char *mime, const char *buf, size_t buflen, void *data)
 		twine_logf(LOG_CRIT, "unable to locate MIME type information for '%s'\n", mime);
 		return -1;
 	}
-	return xslt_process_buf(buf, buflen, p->xslt, p->xpath);
+	return xslt_process_buf((const char *) buf, buflen, p->xslt, p->xpath);
 }	
 
 /* Process a buffer using an XSLT stylesheet, and evaluate an XPath expression

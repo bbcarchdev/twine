@@ -23,21 +23,19 @@
 
 #include "p_libtwine.h"
 
-#define MIMETYPE_BLOCKSIZE              4
+#define CALLBACK_BLOCKSIZE              4
 #define POSTPROC_BLOCKSIZE              4
 #define PLUGINDIR                       LIBDIR "/" PACKAGE_TARNAME "/"
 
 static void *current;
-static int postprocessing;
+static int preprocessing, postprocessing;
 
-static struct twine_mime_struct *mimetypes;
-static size_t mimecount, mimesize;
+static size_t mimecount, bulkcount, precount, postcount;
 
-static struct twine_bulk_struct *bulktypes;
-static size_t bulkcount, bulksize;
+static struct twine_callback_struct *callbacks;
+static size_t cbcount, cbsize;
 
-static struct twine_postproc_struct *postprocs;
-static size_t ppcount, ppsize;
+static struct twine_callback_struct *twine_plugin_callback_add_(void *data);
 
 /* Internal: load a plug-in and invoke its initialiser callback */
 
@@ -100,113 +98,136 @@ twine_plugin_load_(const char *pathname)
 	return 0;
 }
 
+/* Internal: add a new callback */
+static struct twine_callback_struct *
+twine_plugin_callback_add_(void *data)
+{
+	struct twine_callback_struct *p;
+
+	if(!current)
+	{
+		twine_logf(LOG_ERR, "attempt to register a new callback outside of a module\n");
+		return NULL;
+	}
+	if(cbcount >= cbsize)
+	{
+		p = (struct twine_callback_struct *) realloc(callbacks, sizeof(struct twine_callback_struct) * (cbsize + CALLBACK_BLOCKSIZE));
+		if(!p)
+		{
+			twine_logf(LOG_CRIT, "failed to allocate memory to register callback\n");
+			return NULL;
+		}
+		callbacks = p;
+		cbsize += CALLBACK_BLOCKSIZE;
+	}
+	p = &(callbacks[cbcount]);
+	memset(p, 0, sizeof(struct twine_callback_struct));
+	p->module = current;
+	p->data = data;
+	cbcount++;
+	return p;
+}
+
 /* Public: register a MIME type */
 int
 twine_plugin_register(const char *mimetype, const char *description, twine_processor_fn fn, void *data)
 {
-	struct twine_mime_struct *p;
+	struct twine_callback_struct *p;
 
-	if(!current)
+	p = twine_plugin_callback_add_(data);
+	if(!p)
 	{
-		twine_logf(LOG_ERR, "attempt to register MIME type '%s' outside of plug-in initialisation\n", mimetype);
 		return -1;
 	}
-	if(mimecount >= mimesize)
+	p->m.mime.type = strdup(mimetype);
+	p->m.mime.desc = strdup(description);
+	if(!p->m.mime.type || !p->m.mime.desc)
 	{
-		p = (struct twine_mime_struct *) realloc(mimetypes, sizeof(struct twine_mime_struct) * (mimesize + MIMETYPE_BLOCKSIZE));
-		if(!p)
-		{
-			twine_logf(LOG_CRIT, "failed to allocate memory to register MIME type '%s'\n", mimetype);
-			return -1;
-		}
-		mimetypes = p;
-		mimesize += MIMETYPE_BLOCKSIZE;
-	}
-	p = &(mimetypes[mimecount]);
-	p->module = current;
-	p->mimetype = strdup(mimetype);
-	p->desc = strdup(description);
-	if(!p->mimetype || !p->desc)
-	{
-		free(p->mimetype);
-		free(p->desc);
+		free(p->m.mime.type);
+		free(p->m.mime.desc);
 		twine_logf(LOG_CRIT, "failed to allocate memory to register MIME type '%s'\n", mimetype);
 		return -1;
 	}
-	twine_logf(LOG_INFO, "registered MIME type: '%s' (%s)\n", mimetype, description);
-	p->processor = fn;
-	p->data = data;
+	p->m.mime.fn = fn;
+	p->type = TCB_MIME;
 	mimecount++;
+	twine_logf(LOG_INFO, "registered MIME type: '%s' (%s)\n", mimetype, description);
 	return 0;
 }
+
 /* Public: register a bulk processor for a MIME type */
 int
 twine_bulk_register(const char *mimetype, const char *description, twine_bulk_fn fn, void *data)
 {
-	struct twine_bulk_struct *p;
+	struct twine_callback_struct *p;
 
-	if(!current)
+	p = twine_plugin_callback_add_(data);
+	if(!p)
 	{
-		twine_logf(LOG_ERR, "attempt to register MIME type '%s' outside of plug-in initialisation\n", mimetype);
 		return -1;
 	}
-	if(bulkcount >= bulksize)
+	p->m.bulk.type = strdup(mimetype);
+	p->m.bulk.desc = strdup(description);
+	if(!p->m.bulk.type || !p->m.bulk.desc)
 	{
-		p = (struct twine_bulk_struct *) realloc(bulktypes, sizeof(struct twine_bulk_struct) * (bulksize + MIMETYPE_BLOCKSIZE));
-		if(!p)
-		{
-			twine_logf(LOG_CRIT, "failed to allocate memory to register MIME type '%s'\n", mimetype);
-			return -1;
-		}
-		bulktypes = p;
-		bulksize += MIMETYPE_BLOCKSIZE;
-	}
-	p = &(bulktypes[bulkcount]);
-	p->module = current;
-	p->mimetype = strdup(mimetype);
-	p->desc = strdup(description);
-	if(!p->mimetype || !p->desc)
-	{
-		free(p->mimetype);
-		free(p->desc);
+		p->type = TCB_NONE;
+		free(p->m.bulk.type);
+		free(p->m.bulk.desc);
 		twine_logf(LOG_CRIT, "failed to allocate memory to register MIME type '%s'\n", mimetype);
 		return -1;
 	}
-	twine_logf(LOG_INFO, "registered MIME type: '%s' (%s)\n", mimetype, description);
-	p->processor = fn;
-	p->data = data;
+	p->m.bulk.fn = fn;
+	p->type = TCB_BULK;
 	bulkcount++;
+	twine_logf(LOG_INFO, "registered bulk processor for MIME type: '%s' (%s)\n", mimetype, description);
 	return 0;
 }
 
-/* Register a post-processing module */
+/* Public: Register a post-processing module */
 int
 twine_postproc_register(const char *name, twine_postproc_fn fn, void *data)
 {
-	struct twine_postproc_struct *p;
+	struct twine_callback_struct *p;
 
-	if(ppcount >= ppsize)
-	{
-		p = (struct twine_postproc_struct *) realloc(postprocs, sizeof(struct twine_postproc_struct) * (ppsize + POSTPROC_BLOCKSIZE));
-		if(!p)
-		{
-			twine_logf(LOG_CRIT, "failed to allocate memory to register post-processing module '%s'\n", name);
-			return -1;
-		}
-		postprocs = p;
-		ppsize += POSTPROC_BLOCKSIZE;
-	}
-	p = &(postprocs[ppcount]);
-	p->module = current;
-	p->fn = fn;
-	p->data = data;
-	p->name = strdup(name);
-	if(!p->name)
+	p = twine_plugin_callback_add_(data);
+	if(!p)
 	{
 		return -1;
 	}
-	ppcount++;
+	p->m.postproc.name = strdup(name);
+	if(!p->m.postproc.name)
+	{
+		twine_logf(LOG_CRIT, "failed to allocate memory to register post-processor\n");
+		return -1;
+	}
+	p->m.postproc.fn = fn;
+	p->type = TCB_POSTPROC;
+	postcount++;
 	twine_logf(LOG_INFO, "registered post-processor module: '%s'\n", name);
+	return 0;
+}
+
+/* Public: Register a pre-processing module */
+int
+twine_preproc_register(const char *name, twine_postproc_fn fn, void *data)
+{
+	struct twine_callback_struct *p;
+
+	p = twine_plugin_callback_add_(data);
+	if(!p)
+	{
+		return -1;
+	}
+	p->m.preproc.name = strdup(name);
+	if(!p->m.preproc.name)
+	{
+		twine_logf(LOG_CRIT, "failed to allocate memory to register pre-processor\n");
+		return -1;
+	}
+	p->m.preproc.fn = fn;
+	p->type = TCB_PREPROC;
+	precount++;
+	twine_logf(LOG_INFO, "registered pre-processor module: '%s'\n", name);
 	return 0;
 }
 
@@ -217,42 +238,42 @@ twine_plugin_unregister_all_(void *handle)
 	size_t l;
 
 	l = 0;
-	while(l < mimecount)
+	while(l < cbcount)
 	{
-		if(mimetypes[l].module != handle)
+		if(callbacks[l].module != handle)
 		{
 			l++;
 			continue;
 		}
-		twine_logf(LOG_INFO, "deregistering MIME type '%s'\n", mimetypes[l].mimetype);
-		free(mimetypes[l].mimetype);
-		free(mimetypes[l].desc);
-		if(l + 1 < mimecount)
+		switch(callbacks[l].type)
 		{
-			memmove(&(mimetypes[l]), &(mimetypes[l + 1]), sizeof(struct twine_mime_struct) * (mimecount - l - 1));
+		case TCB_NONE:
+			break;
+		case TCB_MIME:
+			free(callbacks[l].m.mime.type);
+			free(callbacks[l].m.mime.desc);
+			break;
+		case TCB_BULK:
+			free(callbacks[l].m.bulk.type);
+			free(callbacks[l].m.bulk.desc);
+			break;
+		case TCB_PREPROC:
+			free(callbacks[l].m.preproc.name);
+			break;
+		case TCB_POSTPROC:
+			free(callbacks[l].m.postproc.name);
+			break;
 		}
-		mimecount--;
-	}
-	l = 0;
-	while(l < ppcount)
-	{
-		if(postprocs[l].module != handle)
+		if(l + 1 < cbcount)
 		{
-			l++;
-			continue;
+			memmove(&(callbacks[l]), &(callbacks[l + 1]), sizeof(struct twine_callback_struct) * (cbcount - l - 1));
 		}
-		twine_logf(LOG_INFO, "deregistering post-processor '%s'\n", postprocs[l].name);
-		free(postprocs[l].name);
-		if(l + 1 < ppcount)
-		{
-			memmove(&(postprocs[l]), &(postprocs[l + 1]), sizeof(struct twine_postproc_struct) * (ppcount - l - 1));
-		}
-		ppcount--;
+		cbcount--;
 	}
 	return 0;
 }
 
-/* Forward a message to a plug-in for processing */
+/* Public: Forward a message to a plug-in for processing */
 int
 twine_plugin_process(const char *mimetype, const unsigned char *message, size_t msglen, const char *subject)
 {
@@ -273,12 +294,17 @@ twine_plugin_process(const char *mimetype, const unsigned char *message, size_t 
 		tl = strlen(mimetype);
 	}
 	prev = current;
-	for(l = 0; l < mimecount; l++)
+	for(l = 0; l < cbcount; l++)
 	{
-		if(!strncasecmp(mimetypes[l].mimetype, mimetype, tl) && !mimetypes[l].mimetype[tl])
+		if(callbacks[l].type != TCB_MIME)
 		{
-			current = mimetypes[l].module;
-			r = mimetypes[l].processor(mimetype, message, msglen, mimetypes[l].data);
+			continue;
+		}
+		twine_logf(LOG_DEBUG, "found MIME processor for '%s'\n", callbacks[l].m.mime.type);
+		if(!strncasecmp(callbacks[l].m.mime.type, mimetype, tl) && !callbacks[l].m.mime.type[tl])
+		{
+			current = callbacks[l].module;
+			r = callbacks[l].m.mime.fn(mimetype, message, msglen, callbacks[l].data);
 			current = prev;
 			return r;
 		}
@@ -287,14 +313,20 @@ twine_plugin_process(const char *mimetype, const unsigned char *message, size_t 
 	return -1;
 }
 
-/* Check whether a MIME type is supported by any processor plugin */
+/* Public: Check whether a MIME type is supported by any processor plugin */
 int
 twine_plugin_supported(const char *mimetype)
 {
 	size_t l;
-	for(l = 0; l < mimecount; l++)
+
+	for(l = 0; l < cbcount; l++)
 	{
-		if(!strcmp(mimetypes[l].mimetype, mimetype))
+		if(callbacks[l].type != TCB_MIME)
+		{
+			continue;
+		}
+		twine_logf(LOG_DEBUG, "found MIME processor for '%s'\n", callbacks[l].m.mime.type);
+		if(!strcasecmp(callbacks[l].m.mime.type, mimetype))
 		{
 			return 1;
 		}
@@ -302,15 +334,19 @@ twine_plugin_supported(const char *mimetype)
 	return 0;
 }
 
-/* Check whether a MIME type is supported by any bulk processor plugin */
+/* Public: Check whether a MIME type is supported by any bulk processor */
 int
 twine_bulk_supported(const char *mimetype)
 {
 	size_t l;
 
-	for(l = 0; l < bulkcount; l++)
+	for(l = 0; l < cbcount; l++)
 	{
-		if(!strcmp(bulktypes[l].mimetype, mimetype))
+		if(callbacks[l].type != TCB_BULK)
+		{
+			continue;
+		}
+		if(!strcasecmp(callbacks[l].m.bulk.type, mimetype))
 		{
 			return 1;
 		}
@@ -318,10 +354,11 @@ twine_bulk_supported(const char *mimetype)
 	return 0;
 }
 
-/* Perform a bulk import from a file */
-int twine_bulk_import(const char *mimetype, FILE *file)
+/* Public: Perform a bulk import from a file */
+int
+twine_bulk_import(const char *mimetype, FILE *file)
 {
-	struct twine_bulk_struct *importer;
+	struct twine_callback_struct *importer;
 	void *prev;
 	unsigned char *buffer;
 	const unsigned char *p;
@@ -330,11 +367,15 @@ int twine_bulk_import(const char *mimetype, FILE *file)
 	
 	prev = current;
 	importer = NULL;
-	for(l = 0; l < bulkcount; l++)
+	for(l = 0; l < cbcount; l++)
 	{
-		if(!strcmp(bulktypes[l].mimetype, mimetype))
+		if(callbacks[l].type != TCB_BULK)
 		{
-			importer = &(bulktypes[l]);
+			continue;
+		}
+		if(!strcmp(callbacks[l].m.bulk.type, mimetype))
+		{
+			importer = &(callbacks[l]);
 			break;
 		}
 	}
@@ -377,13 +418,13 @@ int twine_bulk_import(const char *mimetype, FILE *file)
 			/* Nothing new was read */
 			continue;
 		}
-		p = importer->processor(importer->mimetype, buffer, buflen, importer->data);
+		p = importer->m.bulk.fn(importer->m.bulk.type, buffer, buflen, importer->data);
 		if(!p)
 		{
 			twine_logf(LOG_ERR, "bulk importer failed\n");
 			free(buffer);
 			current = prev;
-			return -1;			
+			return -1;
 		}
 		if(p == buffer)
 		{
@@ -402,7 +443,7 @@ int twine_bulk_import(const char *mimetype, FILE *file)
 	}
 	if(buflen)
 	{
-		p = importer->processor(importer->mimetype, buffer, buflen, importer->data);
+		p = importer->m.bulk.fn(importer->m.bulk.type, buffer, buflen, importer->data);
 		if(!p)
 		{
 			twine_logf(LOG_ERR, "bulk importer failed\n");
@@ -420,29 +461,97 @@ int twine_bulk_import(const char *mimetype, FILE *file)
 int
 twine_postproc_registered_(void)
 {
-	return (ppcount ? 1 : 0);
+	return (postcount ? 1 : 0);
+}
+
+/* Internal: return nonzero if any preprocessors have been registered */
+int
+twine_preproc_registered_(void)
+{
+	return (precount ? 1 : 0);
+}
+
+/* Internal: invoke post-processing handlers before a graph is replaced */
+int
+twine_preproc_process_(twine_graph *graph)
+{
+	void *prev;
+	size_t c;
+	int r;
+
+	if(!precount)
+	{
+		return 0;
+	}
+	if(preprocessing || postprocessing)
+	{
+		return 0;
+	}
+	twine_logf(LOG_DEBUG, "invoking pre-processors for <%s>\n", graph->uri);
+	if(!graph->store)
+	{
+		graph->store = librdf_new_model_from_model(graph->pristine);
+		if(!graph->store)
+		{
+			twine_logf(LOG_ERR, "failed to duplicate model for pre-processors\n");
+			return -1;
+		}
+	}
+	preprocessing = 1;
+	prev = current;
+	r = 0;
+	for(c = 0; c < cbcount; c++)
+	{
+		if(callbacks[c].type == TCB_PREPROC)
+		{
+			current = callbacks[c].module;
+			if(callbacks[c].m.preproc.fn(graph, callbacks[c].data))
+			{
+				twine_logf(LOG_ERR, "pre-processor '%s' failed\n", callbacks[c].m.preproc.name);
+				r = -1;
+				break;
+			}
+		}
+	}
+	current = prev;
+	postprocessing = 0;
+	return r;
 }
 
 /* Internal: invoke post-processing handlers after a graph has been replaced */
 int
-twine_postproc_process_(librdf_model *newgraph, librdf_model *oldgraph, const char *graphuri)
+twine_postproc_process_(twine_graph *graph)
 {
 	size_t c;
 	void *prev;
+	int r;
 
-	if(postprocessing)
+	if(!postcount)
 	{
 		return 0;
 	}
-	twine_logf(LOG_DEBUG, "invoking post-processors for <%s>\n", graphuri);
+	if(postprocessing || postprocessing)
+	{
+		return 0;
+	}
+	twine_logf(LOG_DEBUG, "invoking post-processors for <%s>\n", graph->uri);
 	postprocessing = 1;
 	prev = current;
-	for(c = 0; c < ppcount; c++)
+	r = 0;
+	for(c = 0; c < cbcount; c++)
 	{
-		current = postprocs[c].module;
-		postprocs[c].fn(newgraph, oldgraph, graphuri, postprocs[c].data);
+		if(callbacks[c].type == TCB_POSTPROC)
+		{
+			current = callbacks[c].module;
+			if(callbacks[c].m.postproc.fn(graph, callbacks[c].data))
+			{
+				twine_logf(LOG_ERR, "pre-processor '%s' failed\n", callbacks[c].m.preproc.name);
+				r = -1;
+				break;
+			}
+		}
 	}
 	current = prev;
 	postprocessing = 0;
-	return 0;
+	return r;
 }

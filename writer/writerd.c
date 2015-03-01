@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2015 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@
 static void writerd_usage(void);
 static int writerd_init(int argc, char **argv);
 static int writerd_process_args(int argc, char **argv);
-static int writerd_plugin_config_cb(const char *key, const char *value);
+static int writerd_plugin_config_cb(const char *key, const char *value, void *data);
 static void writerd_signal(int sig);
 static int writerd_import(const char *type);
 
@@ -138,7 +138,7 @@ writerd_init(int argc, char **argv)
 		}
 	}
 	/* Load plug-ins */
-	config_get_all(TWINE_APP_NAME, "module", writerd_plugin_config_cb);
+	config_get_all(TWINE_APP_NAME, "module", writerd_plugin_config_cb, NULL);
 	return 0;
 }
 
@@ -206,9 +206,10 @@ writerd_process_args(int argc, char **argv)
 }
 
 static int
-writerd_plugin_config_cb(const char *key, const char *value)
+writerd_plugin_config_cb(const char *key, const char *value, void *data)
 {
 	(void) key;
+	(void) data;
 
 	twine_plugin_load_(value);
 	return 0;

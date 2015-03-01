@@ -153,8 +153,11 @@ struct spindle_cache_struct
 	librdf_node *sameas;
 };
 
+/* Pre-process an updated graph */
+int spindle_preproc(twine_graph *graph, void *data);
+
 /* Post-process an updated graph */
-int spindle_process(librdf_model *newgraph, librdf_model *oldgraph, const char *graph, void *data);
+int spindle_postproc(twine_graph *graph, void *data);
 
 /* Extract a list of co-references from a librdf model */
 struct spindle_corefset_struct *spindle_coref_extract(SPINDLE *spindle, librdf_model *model, const char *graphuri);

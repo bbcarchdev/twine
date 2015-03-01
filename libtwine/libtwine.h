@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2015 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -50,11 +50,35 @@ typedef int (*twine_processor_fn)(const char *mimetype, const unsigned char *dat
  */
 typedef const unsigned char *(*twine_bulk_fn)(const char *mimetype, const unsigned char *data, size_t length, void *userdata);
 
+/* Graph processing */
+
+typedef struct twine_graph_struct twine_graph;
+
+struct twine_graph_struct
+{
+	/* The graph URI */
+	const char *uri;
+	/* The new graph, as originally supplied to the processing chain */
+	librdf_model *pristine;
+	/* The new graph, possibly modified by processors (initially a clone
+	 * of pristine
+	 */
+	librdf_model *store;
+	/* The old graph in the quad store, if available */
+	librdf_model *old;
+};
+
+/* A Twine pre-processing callback
+ *
+ * This callback is invoked before a graph is added, removed, or modified
+ */
+typedef int (*twine_preproc_fn)(twine_graph *graph, void *userdata);
+
 /* A Twine post-processing callback
  *
  * This callback is invoked after a graph has been added, removed, or modified
  */
-typedef int (*twine_postproc_fn)(librdf_model *newgraph, librdf_model *oldgraph, const char *uri, void *userdata);
+typedef int (*twine_postproc_fn)(twine_graph *graph, void *userdata);
 
 /* Twine plug-in entry-point */
 int twine_plugin_init(void);
@@ -109,6 +133,12 @@ librdf_node *twine_rdf_node_createuri(const char *uri);
 /* Destroy a node */
 int twine_rdf_node_destroy(librdf_node *node);
 
+/* Serialise a model to a string */
+char *twine_rdf_model_ntriples(librdf_model *model, size_t *buflen);
+
+/* Serialise a stream to a string */
+char *twine_rdf_stream_ntriples(librdf_stream *model, size_t *buflen);
+
 /* Create a SPARQL connection */
 SPARQL *twine_sparql_create(void);
 
@@ -127,7 +157,7 @@ size_t twine_config_get(const char *key, const char *defval, char *buf, size_t b
 char *twine_config_geta(const char *key, const char *defval);
 int twine_config_get_int(const char *key, int defval);
 int twine_config_get_bool(const char *key, int defval);
-int twine_config_get_all(const char *section, const char *key, int (*fn)(const char *key, const char *value));
+int twine_config_get_all(const char *section, const char *key, int (*fn)(const char *key, const char *value, void *data), void *data);
 
 
 # ifdef __cplusplus

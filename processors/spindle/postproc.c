@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2015 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@
 
 /* Post-processing hook, invoked by Twine operations */
 int
-spindle_process(librdf_model *newgraph, librdf_model *oldgraph, const char *graph, void *data)
+spindle_postproc(twine_graph *graph, void *data)
 {
 	SPINDLE *spindle;
 	struct spindle_corefset_struct *oldset, *newset;
@@ -33,20 +33,20 @@ spindle_process(librdf_model *newgraph, librdf_model *oldgraph, const char *grap
 	size_t c;
 
 	spindle = (SPINDLE *) data;
-	twine_logf(LOG_DEBUG, PLUGIN_NAME ": processing updated graph <%s>\n", graph);
+	twine_logf(LOG_DEBUG, PLUGIN_NAME ": processing updated graph <%s>\n", graph->uri);
 	changes = spindle_strset_create();
 	if(!changes)
 	{
 		return -1;
 	}
 	/* find all owl:sameAs refs where either side is same-origin as graph */
-	oldset = spindle_coref_extract(spindle, oldgraph, graph);
+	oldset = spindle_coref_extract(spindle, graph->old, graph->uri);
 	if(!oldset)
 	{
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to extract co-references from previous graph state\n");
 		return -1;
 	}
-	newset = spindle_coref_extract(spindle, newgraph, graph);
+	newset = spindle_coref_extract(spindle, graph->pristine, graph->uri);
 	if(!newset)
 	{
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to extract co-references from new graph state\n");
@@ -74,10 +74,10 @@ spindle_process(librdf_model *newgraph, librdf_model *oldgraph, const char *grap
 	spindle_coref_destroy(oldset);
 	spindle_coref_destroy(newset);
 	/* Re-build the metadata for any related proxies */
-	twine_logf(LOG_DEBUG, PLUGIN_NAME ": updating caches for <%s>\n", graph);
+	twine_logf(LOG_DEBUG, PLUGIN_NAME ": updating caches for <%s>\n", graph->uri);
 	spindle_cache_update_set(spindle, changes);
 	spindle_strset_destroy(changes);
-	twine_logf(LOG_DEBUG, PLUGIN_NAME ": completed <%s>\n", graph);
+	twine_logf(LOG_DEBUG, PLUGIN_NAME ": completed <%s>\n", graph->uri);
 	return 0;
 }
 

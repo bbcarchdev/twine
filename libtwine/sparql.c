@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2015 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -98,14 +98,15 @@ twine_sparql_put(const char *uri, const char *triples, size_t length)
 {
 	int r, pp;
 	SPARQL *conn;
-	librdf_model *oldgraph, *newgraph;
-	char *qbuf;
+	twine_graph graph;
+	char *qbuf, *tbuf;
 	size_t l;
 
-	oldgraph = NULL;
-	newgraph = NULL;
-	pp = twine_postproc_registered_();
+	memset(&graph, 0, sizeof(twine_graph));
+	graph.uri = uri;
+	pp = twine_postproc_registered_() || twine_preproc_registered_();
 	conn = twine_sparql_create();
+	r = 0;
 	if(!conn)
 	{
 		return -1;
@@ -121,41 +122,55 @@ twine_sparql_put(const char *uri, const char *triples, size_t length)
 			return -1;
 		}
 		snprintf(qbuf, l, "SELECT * WHERE { GRAPH <%s> { ?s ?p ?o . } }", uri);
-		oldgraph = twine_rdf_model_create();
-		if(!oldgraph)
+		graph.old = twine_rdf_model_create();
+		if(!graph.old)
 		{
 			sparql_destroy(conn);
 			return -1;
 		}
-		r = sparql_query_model(conn, qbuf, strlen(qbuf), oldgraph);
+		r = sparql_query_model(conn, qbuf, strlen(qbuf), graph.old);
 		free(qbuf);
 		if(r)
 		{
 			twine_logf(LOG_ERR, "failed to obtain triples for graph <%s>\n", uri);
-			librdf_free_model(oldgraph);
+			twine_graph_cleanup_(&graph);
 			sparql_destroy(conn);
 			return -1;
 		}
+		/* Parse the triples if there are any postprocessors */
+		graph.pristine = twine_rdf_model_create();
+		if(!(r = twine_rdf_model_parse(graph.pristine, "text/turtle", triples, length)))
+		{
+			r = twine_preproc_process_(&graph);
+		}	
 	}
-	r = sparql_put(conn, uri, triples, length);
+	if(!r)
+	{
+		if(graph.store)
+		{
+			tbuf = twine_rdf_model_ntriples(graph.store, &l);
+			if(tbuf)
+			{
+				r = sparql_put(conn, uri, tbuf, l);
+				librdf_free_memory(tbuf);
+			}
+			else
+			{
+				r = -1;
+			}
+			
+		}
+		else
+		{
+			r = sparql_put(conn, uri, triples, length);
+		}
+	}
 	sparql_destroy(conn);
 	if(!r && pp)
 	{
-		/* Parse the triples if there are any postprocessors */
-		newgraph = twine_rdf_model_create();
-		if(!twine_rdf_model_parse(newgraph, "application/n-triples", triples, length))
-		{
-			twine_postproc_process_(newgraph, oldgraph, uri);
-		}
+		twine_postproc_process_(&graph);
 	}
-	if(oldgraph)
-	{
-		librdf_free_model(oldgraph);
-	}
-	if(newgraph)
-	{
-		librdf_free_model(newgraph);
-	}
+	twine_graph_cleanup_(&graph);
 	return r;
 }
 
@@ -165,28 +180,15 @@ twine_sparql_put_stream(const char *uri, librdf_stream *stream)
 {
 	char *buf;
 	size_t buflen;
-	librdf_world *world;
-	librdf_serializer *serializer;
 	int r;
 
-	world = twine_rdf_world();
-	serializer = librdf_new_serializer(world, "ntriples", NULL, NULL);
-	if(!serializer)
-	{
-		twine_logf(LOG_ERR, "failed to create ntriples serializer\n");
-		return -1;
-	}
-	buflen = 0;
-	buf = (char *) librdf_serializer_serialize_stream_to_counted_string(serializer, NULL, stream, &buflen);
+	buf = twine_rdf_stream_ntriples(stream, &buflen);
 	if(!buf)
 	{
-		librdf_free_serializer(serializer);
-		twine_logf(LOG_ERR, "failed to serialise buffer\n");
 		return -1;
 	}
 	r = twine_sparql_put(uri, buf, buflen);
 	librdf_free_memory(buf);
-	librdf_free_serializer(serializer);
 	return r;
 }
 

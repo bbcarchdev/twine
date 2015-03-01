@@ -40,7 +40,7 @@ twine_plugin_init(void)
 		return -1;
 	}
 	twine_logf(LOG_INFO, PLUGIN_NAME ": URI prefix is <%s>\n", spindle.root);
-	twine_postproc_register(PLUGIN_NAME, spindle_process, &spindle);
+	twine_postproc_register(PLUGIN_NAME, spindle_postproc, &spindle);
 	return 0;
 }
 

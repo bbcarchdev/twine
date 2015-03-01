@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2015 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -154,7 +154,7 @@ twine_rdf_model_parse_base(librdf_model *model, const char *mime, const char *bu
 	r = librdf_parser_parse_counted_string_into_model(parser, (const unsigned char *) buf, buflen, base, model);
 	if(r)
 	{
-		twine_logf(LOG_DEBUG, "failed to parse buffer as %s (%s)\n", mime, name);
+		twine_logf(LOG_DEBUG, "failed to parse buffer of %u bytes as %s\n", (unsigned int) buflen, mime ? mime : name);
 	}
 	librdf_free_parser(parser);
 	return r;	
@@ -290,6 +290,83 @@ twine_librdf_logger(void *data, librdf_log_message *message)
 		break;
 	}
 	twine_logf(level, "RDF: %s\n", librdf_log_message_message(message));
+	return 0;
+}
+
+/* Serialise a model to a string - the result should be freed by
+ * librdf_free_memory()
+ */
+char *
+twine_rdf_model_ntriples(librdf_model *model, size_t *buflen)
+{
+	char *buf;
+	librdf_world *world;
+	librdf_serializer *serializer;
+
+	*buflen = 0;
+	world = twine_rdf_world();
+	serializer = librdf_new_serializer(world, "ntriples", NULL, NULL);
+	if(!serializer)
+	{
+		twine_logf(LOG_ERR, "failed to create ntriples serializer\n");
+		return NULL;
+	}
+	buflen = 0;
+	buf = (char *) librdf_serializer_serialize_model_to_counted_string(serializer, NULL, model, buflen);
+	if(!buf)
+	{
+		librdf_free_serializer(serializer);
+		twine_logf(LOG_ERR, "failed to serialise model to buffer\n");
+		return NULL;
+	}
+	librdf_free_serializer(serializer);
+	return buf;
+}
+
+/* Serialise a stream to a string - the result should be freed by
+ * librdf_free_memory()
+ */
+char *
+twine_rdf_stream_ntriples(librdf_stream *stream, size_t *buflen)
+{
+	char *buf;
+	librdf_world *world;
+	librdf_serializer *serializer;
+
+	*buflen = 0;
+	world = twine_rdf_world();
+	serializer = librdf_new_serializer(world, "ntriples", NULL, NULL);
+	if(!serializer)
+	{
+		twine_logf(LOG_ERR, "failed to create ntriples serializer\n");
+		return NULL;
+	}
+	buf = (char *) librdf_serializer_serialize_stream_to_counted_string(serializer, NULL, stream, buflen);
+	if(!buf)
+	{
+		librdf_free_serializer(serializer);
+		twine_logf(LOG_ERR, "failed to serialise stream to buffer\n");
+		return NULL;
+	}
+	librdf_free_serializer(serializer);
+	return buf;
+}
+
+int
+twine_graph_cleanup_(twine_graph *graph)
+{
+	if(graph->old)
+	{
+		librdf_free_model(graph->old);
+	}
+	if(graph->pristine)
+	{
+		librdf_free_model(graph->pristine);
+	}
+	if(graph->store)
+	{
+		librdf_free_model(graph->store);
+	}
 	return 0;
 }
 

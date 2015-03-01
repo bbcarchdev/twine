@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2015 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ struct twine_configfn_struct
 	char *(*config_geta)(const char *key, const char *defval);
 	int (*config_get_int)(const char *key, int defval);
 	int (*config_get_bool)(const char *key, int defval);
-	int (*config_get_all)(const char *section, const char *key, int (*fn)(const char *key, const char *value));
+	int (*config_get_all)(const char *section, const char *key, int (*fn)(const char *key, const char *value, void *data), void *data);
 };
 
 int twine_init_(twine_log_fn logger);
@@ -38,7 +38,9 @@ int twine_config_init_(struct twine_configfn_struct *fns);
 int twine_sparql_defaults_(const char *query_uri, const char *update_uri, const char *data_uri, int verbose);
 int twine_plugin_load_(const char *pathname);
 int twine_plugin_unregister_all_(void *handle);
+int twine_preproc_registered_(void);
 int twine_postproc_registered_(void);
-int twine_postproc_process_(librdf_model *newgraph, librdf_model *oldgraph, const char *graphuri);
+int twine_preproc_process_(twine_graph *graph);
+int twine_postproc_process_(twine_graph *graph);
 
 #endif /*!LIBTWINE_INTERNAL_H_*/

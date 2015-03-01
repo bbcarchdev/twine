@@ -29,8 +29,8 @@ moduledir = $(libdir)/twine
 module_LTLIBRARIES = spindle.la
 
 spindle_la_SOURCES = p_spindle.h \
-	module.c postproc.c proxy.c refset.c cache.c classes.c props.c strset.c \
-	rulebase.c
+	module.c preproc.c postproc.c proxy.c refset.c cache.c classes.c props.c \
+	strset.c rulebase.c
 
 spindle_la_LIBADD = \
 	@LIBUUID_LIBS@ @LIBUUID_LOCAL_LIBS@

@@ -118,13 +118,13 @@ spindle_prop_init_(struct propdata_struct *data, SPINDLECACHE *cache)
 	data->proxymodel = cache->proxydata;
 	data->context = cache->graph;
 	data->maps = cache->spindle->predicates;
-	data->matches = (struct propmatch_struct *) calloc(cache->spindle->predcount, sizeof(struct propmatch_struct));
+	data->matches = (struct propmatch_struct *) calloc(cache->spindle->predcount + 1, sizeof(struct propmatch_struct));
 	if(!data->matches)
 	{
 		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to allocate memory for property match state\n");
 		return -1;
 	}
-	for(c = 0; c < cache->spindle->predicates; c++)
+	for(c = 0; c < cache->spindle->predcount; c++)
 	{
 		data->matches[c].map = &(data->maps[c]);
 	}

@@ -31,35 +31,60 @@
 
 typedef int (*twine_plugin_init_fn)(void);
 
+typedef enum
+{
+	TCB_NONE,
+	TCB_MIME,
+	TCB_BULK,
+	TCB_PREPROC,
+	TCB_POSTPROC
+} twine_callback_type;
+
 struct twine_mime_struct
 {
-	char *mimetype;
+	char *type;
 	char *desc;
-	twine_processor_fn processor;
-	void *module;
-	void *data;
+	twine_processor_fn fn;
 };
 
 struct twine_bulk_struct
 {
-	char *mimetype;
+	char *type;
 	char *desc;
-	twine_bulk_fn processor;
-	void *module;
-	void *data;
+	twine_bulk_fn fn;
 };
 
 struct twine_postproc_struct
 {
 	twine_postproc_fn fn;
-	void *module;
 	char *name;
-	void *data;
 };
+
+struct twine_preproc_struct
+{
+	twine_preproc_fn fn;
+	char *name;
+};
+
+struct twine_callback_struct
+{
+	twine_callback_type type;
+	void *module;
+	void *data;
+	union
+	{
+		struct twine_mime_struct mime;
+		struct twine_bulk_struct bulk;
+		struct twine_preproc_struct preproc;
+		struct twine_postproc_struct postproc;
+	} m;
+};
+		
 
 extern twine_log_fn twine_logger_;
 
 int twine_log_init_(twine_log_fn logfn);
 int twine_rdf_init_(void);
+int twine_graph_cleanup_(twine_graph *graph);
 
 #endif /*!P_LIBTWINE_H_*/
