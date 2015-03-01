@@ -74,6 +74,33 @@ twine_rdf_model_create(void)
 	return model;
 }
 
+librdf_model *
+twine_rdf_model_clone(librdf_model *model)
+{
+	librdf_model *dest;
+	char *nq;
+	size_t nqlen;
+	
+	dest = twine_rdf_model_create();
+	if(!dest)
+	{
+		return NULL;
+	}
+	if(!(nq = twine_rdf_model_nquads(model, &nqlen)))
+	{
+		twine_rdf_model_destroy(dest);
+		return NULL;
+	}	   
+	if(twine_rdf_model_parse(dest, "application/n-quads", nq, nqlen))
+	{
+		librdf_free_memory(nq);
+		twine_rdf_model_destroy(dest);
+		return NULL;
+	}
+	librdf_free_memory(nq);
+	return dest;
+}
+
 /* Destroy a model */
 int
 twine_rdf_model_destroy(librdf_model *model)

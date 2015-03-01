@@ -99,6 +99,9 @@ int twine_plugin_process(const char *mimetype, const unsigned char *message, siz
 /* Perform a bulk import from a file */
 int twine_bulk_import(const char *mimetype, FILE *file);
 
+/* Register a pre-processor */
+int twine_preproc_register(const char *name, twine_preproc_fn fn, void *data);
+
 /* Register a post-processor */
 int twine_postproc_register(const char *name, twine_postproc_fn fn, void *data);
 
@@ -107,6 +110,9 @@ librdf_world *twine_rdf_world(void);
 
 /* Convenience API for creating a new librdf model */
 librdf_model *twine_rdf_model_create(void);
+
+/* Convenience API for cloning librdf model */
+librdf_model *twine_rdf_model_clone(librdf_model *model);
 
 /* Destroy a model */
 int twine_rdf_model_destroy(librdf_model *model);

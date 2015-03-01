@@ -490,7 +490,7 @@ twine_preproc_process_(twine_graph *graph)
 	twine_logf(LOG_DEBUG, "invoking pre-processors for <%s>\n", graph->uri);
 	if(!graph->store)
 	{
-		graph->store = librdf_new_model_from_model(graph->pristine);
+		graph->store = twine_rdf_model_clone(graph->pristine);
 		if(!graph->store)
 		{
 			twine_logf(LOG_ERR, "failed to duplicate model for pre-processors\n");
