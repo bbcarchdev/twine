@@ -155,6 +155,9 @@ int twine_sparql_put(const char *uri, const char *triples, size_t length);
 /* Replace a graph contained within a librdf stream */
 int twine_sparql_put_stream(const char *uri, librdf_stream *stream);
 
+/* Replace a graph contained within a librdf model */
+int twine_sparql_put_model(const char *uri, librdf_model *model);
+
 /* Log an event */
 void twine_logf(int prio, const char *fmt, ...);
 void twine_vlogf(int prio, const char *fmt, va_list ap);

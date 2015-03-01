@@ -192,3 +192,20 @@ twine_sparql_put_stream(const char *uri, librdf_stream *stream)
 	return r;
 }
 
+/* Public: Replace a graph from a librdf model */
+int
+twine_sparql_put_model(const char *uri, librdf_model *model)
+{
+	char *buf;
+	size_t buflen;
+	int r;
+
+	buf = twine_rdf_model_ntriples(model, &buflen);
+	if(!buf)
+	{
+		return -1;
+	}
+	r = twine_sparql_put(uri, buf, buflen);
+	librdf_free_memory(buf);
+	return r;
+}
