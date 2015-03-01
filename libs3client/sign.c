@@ -117,7 +117,6 @@ s3_sign(const char *method, const char *resource, const char *access_key, const 
 	t++;
 	if(amzcount)
 	{
-		fprintf(stderr, "*** have x-amz-* headers\n");
 		/* Build an array of x-amz-* headers, excluding x-amz-date */
 		amzhdr = (char **) calloc(amzcount, sizeof(char *));
 		amzbuf = (char *) calloc(1, amzlen + 1);
