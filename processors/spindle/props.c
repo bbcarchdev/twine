@@ -319,6 +319,10 @@ spindle_prop_test_(struct propdata_struct *data, librdf_statement *st, const cha
 
 	for(c = 0; data->maps[c].target; c++)
 	{
+		if(!data->maps[c].matches)
+		{
+			continue;
+		}
 		for(d = 0; data->maps[c].matches[d].predicate; d++)
 		{
 			if(data->maps[c].matches[d].onlyfor &&

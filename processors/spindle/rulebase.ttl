@@ -409,7 +409,7 @@ dct:isPartOf
 	spindle:expect rdfs:Resource ;
 	spindle:proxyOnly true .
 
-dct:isPartOf spindle:expressed [
+dct:isPartOf spindle:property [
 	olo:index 0 ;
 	spindle:expressedAs dct:isPartOf
 ] .

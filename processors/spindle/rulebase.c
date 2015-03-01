@@ -823,7 +823,7 @@ spindle_pred_add_(SPINDLE *spindle, const char *preduri)
 			return NULL;
 		}
 		spindle->predicates = p;
-		memset(&(p[spindle->predcount]), 0, sizeof(struct spindle_predicatemap_struct) * (4 + 1));
+		memset(&(p[spindle->predsize]), 0, sizeof(struct spindle_predicatemap_struct) * (4 + 1));
 		spindle->predsize += 4;
 	}
 	p = &(spindle->predicates[spindle->predcount]);
