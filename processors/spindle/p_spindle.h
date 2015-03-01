@@ -28,6 +28,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <uuid/uuid.h>
+#include <libs3client.h>
 
 #include "libtwine.h"
 
@@ -74,6 +75,9 @@ struct spindle_context_struct
 	struct spindle_predicatemap_struct *predicates;
 	size_t predcount;
 	size_t predsize;
+	/* The bucket that cached nquads should be stored in */
+	S3BUCKET *bucket;
+	int s3_verbose;
 };
 
 struct spindle_classmatch_struct

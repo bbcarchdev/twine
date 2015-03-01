@@ -20,9 +20,11 @@ EXTRA_DIST = README TODO proxy-data.ttl
 
 AM_CPPFLAGS = @AM_CPPFLAGS@ \
 	-I$(top_builddir)/libtwine -I$(top_srcdir)/libtwine \
-	-I$(top_builddir)/libsparqlclient -I$(top_srcdir)/libsparqlclient
+	-I$(top_builddir)/libsparqlclient -I$(top_srcdir)/libsparqlclient \
+	-I$(top_builddir)/libs3client -I$(top_srcdir)/libs3client
 
-LIBS = $(top_builddir)/libtwine/libtwine.la
+LIBS = $(top_builddir)/libtwine/libtwine.la \
+	$(top_builddir)/libs3client/libs3client.la
 
 moduledir = $(libdir)/twine
 
