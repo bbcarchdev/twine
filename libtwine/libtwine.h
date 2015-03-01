@@ -135,6 +135,7 @@ int twine_rdf_node_destroy(librdf_node *node);
 
 /* Serialise a model to a string */
 char *twine_rdf_model_ntriples(librdf_model *model, size_t *buflen);
+char *twine_rdf_model_nquads(librdf_model *model, size_t *buflen);
 
 /* Serialise a stream to a string */
 char *twine_rdf_stream_ntriples(librdf_stream *model, size_t *buflen);

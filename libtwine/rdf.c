@@ -311,7 +311,35 @@ twine_rdf_model_ntriples(librdf_model *model, size_t *buflen)
 		twine_logf(LOG_ERR, "failed to create ntriples serializer\n");
 		return NULL;
 	}
-	buflen = 0;
+	buf = (char *) librdf_serializer_serialize_model_to_counted_string(serializer, NULL, model, buflen);
+	if(!buf)
+	{
+		librdf_free_serializer(serializer);
+		twine_logf(LOG_ERR, "failed to serialise model to buffer\n");
+		return NULL;
+	}
+	librdf_free_serializer(serializer);
+	return buf;
+}
+
+/* Serialise a model to a string - the result should be freed by
+ * librdf_free_memory()
+ */
+char *
+twine_rdf_model_nquads(librdf_model *model, size_t *buflen)
+{
+	char *buf;
+	librdf_world *world;
+	librdf_serializer *serializer;
+
+	*buflen = 0;
+	world = twine_rdf_world();
+	serializer = librdf_new_serializer(world, "nquads", NULL, NULL);
+	if(!serializer)
+	{
+		twine_logf(LOG_ERR, "failed to create nquads serializer\n");
+		return NULL;
+	}
 	buf = (char *) librdf_serializer_serialize_model_to_counted_string(serializer, NULL, model, buflen);
 	if(!buf)
 	{
