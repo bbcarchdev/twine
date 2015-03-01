@@ -44,6 +44,10 @@ static int spindle_pred_set_expecttype_(struct spindle_predicatemap_struct *entr
 static int spindle_pred_set_proxyonly_(struct spindle_predicatemap_struct *entry, librdf_statement *statement);
 static int spindle_pred_dump_(SPINDLE *spindle);
 
+static int spindle_cachepred_add_(SPINDLE *spindle, const char *uri);
+static int spindle_cachepred_dump_(SPINDLE *spindle);
+static int spindle_cachepred_compare_(const void *ptra, const void *ptrb);
+
 int
 spindle_rulebase_init(SPINDLE *spindle)
 {
@@ -52,6 +56,8 @@ spindle_rulebase_init(SPINDLE *spindle)
 	librdf_stream *stream;
 	librdf_statement *statement;
 
+	spindle_cachepred_add_(spindle, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+	spindle_cachepred_add_(spindle, "http://www.w3.org/2002/07/owl#sameAs");
 	model = twine_rdf_model_create();
 	if(!model)
 	{
@@ -88,8 +94,10 @@ spindle_rulebase_init(SPINDLE *spindle)
 	librdf_free_model(model);
 	qsort(spindle->classes, spindle->classcount, sizeof(struct spindle_classmatch_struct), spindle_class_compare_);
 	qsort(spindle->predicates, spindle->predcount, sizeof(struct spindle_predicatemap_struct), spindle_pred_compare_);
+	qsort(spindle->cachepreds, spindle->cpcount, sizeof(char *), spindle_cachepred_compare_);
 	spindle_class_dump_(spindle);
 	spindle_pred_dump_(spindle);
+	spindle_cachepred_dump_(spindle);
 	return 0;
 }
 
@@ -767,6 +775,10 @@ spindle_pred_add_matchnode_(SPINDLE *spindle, librdf_model *model, const char *m
 	{
 		return 0;
 	}
+	if(spindle_cachepred_add_(spindle, matchuri))
+	{
+		return -1;
+	}
 	if(!hasdomain)
 	{
 		/* This isn't a domain-specific mapping; just add the target
@@ -807,6 +819,10 @@ spindle_pred_add_(SPINDLE *spindle, const char *preduri)
 	size_t c;
 	struct spindle_predicatemap_struct *p;
 
+	if(spindle_cachepred_add_(spindle, preduri))
+	{
+		return NULL;
+	}
 	for(c = 0; c < spindle->predcount; c++)
 	{
 		if(!strcmp(spindle->predicates[c].target, preduri))
@@ -897,4 +913,64 @@ spindle_pred_add_match_(struct spindle_predicatemap_struct *map, const char *mat
 	p->priority = score;
 	map->matchcount++;
 	return 1;
+}
+
+static int
+spindle_cachepred_add_(SPINDLE *spindle, const char *uri)
+{
+	size_t c;
+	char **p;
+
+	for(c = 0; c < spindle->cpcount; c++)
+	{
+		if(!strcmp(uri, spindle->cachepreds[c]))
+		{
+			return 0;
+		}
+	}
+	if(spindle->cpcount + 1 >= spindle->cpsize)
+	{
+		p = (char **) realloc(spindle->cachepreds, sizeof(char *) * (spindle->cpsize + 8 + 1));
+		if(!p)
+		{
+			twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to expand cached predicates list\n");
+			return -1;
+		}
+		spindle->cachepreds = p;
+		memset(&(p[spindle->cpcount]), 0, sizeof(char *) * (8 + 1));
+		spindle->cpsize += 8;
+	}
+	p = &(spindle->cachepreds[spindle->cpcount]);
+	p[0] = strdup(uri);
+	if(!p[0])
+	{
+		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to duplicate cached predicate URI\n");
+		return -1;
+	}
+	spindle->cpcount++;
+	return 0;
+}
+
+static int
+spindle_cachepred_dump_(SPINDLE *spindle)
+{
+	size_t c;
+
+	twine_logf(LOG_DEBUG, PLUGIN_NAME ": cached predicates set (%d entries):\n", (int) spindle->cpcount);
+	for(c = 0; c < spindle->cpcount; c++)
+	{
+		twine_logf(LOG_DEBUG, PLUGIN_NAME ": %d: <%s>\n", (int) c, spindle->cachepreds[c]);
+	}
+	return 0;
+}
+
+static int
+spindle_cachepred_compare_(const void *ptra, const void *ptrb)
+{
+	char **a, **b;
+	
+	a = (char **) ptra;
+	b = (char **) ptrb;
+	
+	return strcmp(*a, *b);
 }

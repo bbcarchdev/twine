@@ -75,6 +75,10 @@ struct spindle_context_struct
 	struct spindle_predicatemap_struct *predicates;
 	size_t predcount;
 	size_t predsize;
+	/* Predicates which are cached */
+	char **cachepreds;
+	size_t cpcount;
+	size_t cpsize;
 	/* The bucket that cached nquads should be stored in */
 	S3BUCKET *bucket;
 	int s3_verbose;
