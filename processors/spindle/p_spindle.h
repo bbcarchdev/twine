@@ -156,6 +156,7 @@ struct spindle_cache_struct
 	const char *classname;
 	librdf_model *sourcedata;
 	librdf_model *proxydata;
+	librdf_model *extradata;
 	librdf_node *graph;
 	librdf_node *self;
 	librdf_node *sameas;

@@ -40,6 +40,7 @@ static int spindle_cache_source_clean_(SPINDLECACHE *data);
 static int spindle_cache_strset_refs_(SPINDLECACHE *data, struct spindle_strset_struct *set);
 static size_t spindle_cache_s3_read_(char *buffer, size_t size, size_t nitems, void *userdata);
 static int spindle_cache_describedby_(SPINDLECACHE *data);
+static int spindle_cache_extra_(SPINDLECACHE *data);
 
 /* Re-build the cached data for a set of proxies */
 int
@@ -106,6 +107,12 @@ spindle_cache_update(SPINDLE *spindle, const char *localname, struct spindle_str
 	}
 	/* Fetch information about the documents describing the entities */
 	if(spindle_cache_describedby_(&data) < 0)
+	{
+		spindle_cache_cleanup_(&data);
+		return -1;
+	}
+	/* Fetch data about related resources */
+	if(spindle_cache_extra_(&data) < 0)
 	{
 		spindle_cache_cleanup_(&data);
 		return -1;
@@ -314,6 +321,49 @@ spindle_cache_describedby_(SPINDLECACHE *data)
 	return 0;
 }
 
+static int
+spindle_cache_extra_(SPINDLECACHE *data)
+{
+	librdf_iterator *iterator;
+	librdf_node *context;
+	librdf_uri *uri;
+	const char *uristr;
+
+	/* Cache information about external resources related to this
+	 * entity
+	 */
+	if(sparql_queryf_model(data->spindle->sparql, data->extradata,
+						   "SELECT DISTINCT ?s ?p ?o ?g\n"
+						   " WHERE {\n"
+						   "  GRAPH %V {\n"
+						   "   %V ?p1 ?s .\n"
+						   "  }\n"
+						   "  GRAPH ?g {\n"
+						   "   ?s ?p ?o .\n"
+						   "  }\n"
+						   "  FILTER(?g != %V && ?g != %V)\n"
+						   "}",
+						   data->graph, data->self, data->graph, data->spindle->rootgraph))
+	{
+		return -1;
+	}
+	/* Remove anything in a local graph */
+	iterator = librdf_model_get_contexts(data->extradata);
+	while(!librdf_iterator_end(iterator))
+	{
+		context = librdf_iterator_get_object(iterator);
+		uri = librdf_node_get_uri(context);
+		uristr = (const char *) librdf_uri_as_string(uri);
+		if(!strncmp(uristr, data->spindle->root, strlen(data->spindle->root)))
+		{
+			librdf_model_context_remove_statements(data->extradata, context);
+		}
+		librdf_iterator_next(iterator);
+	}
+	librdf_free_iterator(iterator);
+	return 0;
+}
+
 /* Write changes to a proxy entity back to the store */
 static int
 spindle_cache_store_(SPINDLECACHE *data)
@@ -348,8 +398,8 @@ spindle_cache_store_(SPINDLECACHE *data)
 static int
 spindle_cache_store_s3_(SPINDLECACHE *data)
 {
-	char *proxy, *source, *urlbuf, *t;
-	size_t proxylen, sourcelen;
+	char *proxy, *source, *extra, *urlbuf, *t;
+	size_t proxylen, sourcelen, extralen, l;
 	char nqlenstr[256];
 	S3REQUEST *req;
 	CURL *ch;
@@ -375,28 +425,46 @@ spindle_cache_store_s3_(SPINDLECACHE *data)
 		librdf_free_memory(proxy);
 		return -1;
 	}
+	extra = twine_rdf_model_nquads(data->extradata, &extralen);
+	if(!extra)
+	{
+		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to serialise extra model as N-Quads\n");
+		librdf_free_memory(proxy);
+		librdf_free_memory(source);
+		return -1;
+	}
 	memset(&s3data, 0, sizeof(struct s3_upload_struct));
-	s3data.bufsize = proxylen + sourcelen + 1;
-	s3data.buf = (char *) malloc(s3data.bufsize + 2);
+	s3data.bufsize = proxylen + sourcelen + extralen + 3;
+	s3data.buf = (char *) malloc(s3data.bufsize + 1);
 	if(!s3data.buf)
 	{
 		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to allocate buffer for consolidated N-Quads\n");
 		librdf_free_memory(proxy);
 		librdf_free_memory(source);
+		librdf_free_memory(extra);
 		return -1;
 	}
-	memcpy(s3data.buf, proxy, proxylen);
-	s3data.buf[proxylen] = '\n';
-	memcpy(&(s3data.buf[proxylen + 1]), source, sourcelen);
-	s3data.buf[s3data.bufsize] = 0;
+	l = 0;
+	memcpy(&(s3data.buf[l]), proxy, proxylen);
+	s3data.buf[l + proxylen] = '\n';
+	l += proxylen + 1;
+
+	memcpy(&(s3data.buf[l]), source, sourcelen);
+	s3data.buf[l + sourcelen] = '\n';
+	l += sourcelen + 1;
+	
+	memcpy(&(s3data.buf[l]), extra, extralen);
+	s3data.buf[l + extralen] = '\n';
+	l += extralen + 1;
+	
+	s3data.buf[l] = 0;
 	librdf_free_memory(proxy);
 	librdf_free_memory(source);
+	librdf_free_memory(extra);
 	urlbuf = (char *) malloc(1 + strlen(data->localname) + 4 + 1);
 	if(!urlbuf)
 	{
 		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to allocate memory for URL\n");
-		librdf_free_memory(proxy);
-		librdf_free_memory(source);
 		return -1;
 	}
 	urlbuf[0] = '/';
@@ -578,6 +646,10 @@ spindle_cache_init_(SPINDLECACHE *data, SPINDLE *spindle, const char *localname)
 	{
 		return -1;
 	}
+	if(!(data->extradata = twine_rdf_model_create()))
+	{
+		return -1;
+	}
 	return 0;
 }
 
@@ -592,6 +664,10 @@ spindle_cache_cleanup_(SPINDLECACHE *data)
 	if(data->sourcedata)
 	{
 		librdf_free_model(data->sourcedata);
+	}
+	if(data->extradata)
+	{
+		librdf_free_model(data->extradata);
 	}
 	if(data->graph && data->graph != data->spindle->rootgraph)
 	{
