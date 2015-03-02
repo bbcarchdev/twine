@@ -328,11 +328,6 @@ spindle_cache_store_s3_(SPINDLECACHE *data)
 	{
 		*t = 0;
 	}
-	else
-	{
-		t = strchr(t, 0);
-	}
-	strcpy(t, ".nq");
 	twine_logf(LOG_DEBUG, "bucket-relative URL is <%s>\n", urlbuf);
 	req = s3_request_create(data->spindle->bucket, urlbuf, "PUT");
 	ch = s3_request_curl(req);
