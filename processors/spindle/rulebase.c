@@ -277,6 +277,7 @@ spindle_class_add_(SPINDLE *spindle, const char *uri)
 	}
 	p->score = 100;
 	spindle->classcount++;
+	spindle_class_add_match_(p, uri);
 	return p;
 }
 
