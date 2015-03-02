@@ -46,7 +46,7 @@ spindle_postproc(twine_graph *graph, void *data)
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to extract co-references from previous graph state\n");
 		return -1;
 	}
-	newset = spindle_coref_extract(spindle, graph->pristine, graph->uri);
+	newset = spindle_coref_extract(spindle, graph->store ? graph->store : graph->pristine, graph->uri);
 	if(!newset)
 	{
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to extract co-references from new graph state\n");
