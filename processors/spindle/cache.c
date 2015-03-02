@@ -244,6 +244,7 @@ spindle_cache_describedby_(SPINDLECACHE *data)
 	librdf_stream *stream;
 	librdf_node *node, *subject;
 	librdf_statement *st, *statement;
+	const char *uri;
 
 	/* Find all of the triples related to all of the graphs describing
 	 * source data.
@@ -252,6 +253,12 @@ spindle_cache_describedby_(SPINDLECACHE *data)
 	while(!librdf_iterator_end(iter))
 	{
 		node = librdf_iterator_get_object(iter);
+		uri = (const char *) librdf_uri_as_string(librdf_node_get_uri(node));
+		if(!strncmp(uri, data->spindle->root, strlen(data->spindle->root)))
+		{
+			librdf_iterator_next(iter);
+			continue;
+		}
 		if(sparql_queryf_model(data->spindle->sparql, data->sourcedata,
 							   "SELECT DISTINCT ?s ?p ?o ?g\n"
 							   " WHERE {\n"
