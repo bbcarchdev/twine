@@ -205,6 +205,32 @@ twine_rdf_model_parse(librdf_model *model, const char *mime, const char *buf, si
 	return twine_rdf_model_parse_base(model, mime, buf, buflen, base);
 }
 
+/* Add a statement to a model, provided it doesn't already exist */
+int
+twine_rdf_model_add_st(librdf_model *model, librdf_statement *statement, librdf_node *ctx)
+{
+	librdf_stream *st;
+
+	if(ctx)
+	{
+		st = librdf_model_find_statements_with_options(model, statement, ctx, NULL);
+	}
+	else
+	{
+		st = librdf_model_find_statements(model, statement);
+	}
+	if(!librdf_stream_end(st))
+	{
+		librdf_free_stream(st);
+		return 0;
+	}
+	if(ctx)
+	{
+		return librdf_model_context_add_statement(model, ctx, statement);
+	}
+	return librdf_model_add_statement(model, statement);
+}
+
 /* Create a new statement */
 librdf_statement *
 twine_rdf_st_create(void)

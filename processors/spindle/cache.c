@@ -39,6 +39,7 @@ static int spindle_cache_source_sameas_(SPINDLECACHE *data);
 static int spindle_cache_source_clean_(SPINDLECACHE *data);
 static int spindle_cache_strset_refs_(SPINDLECACHE *data, struct spindle_strset_struct *set);
 static size_t spindle_cache_s3_read_(char *buffer, size_t size, size_t nitems, void *userdata);
+static int spindle_cache_describedby_(SPINDLECACHE *data);
 
 /* Re-build the cached data for a set of proxies */
 int
@@ -99,6 +100,12 @@ spindle_cache_update(SPINDLE *spindle, const char *localname, struct spindle_str
 	}
 	/* Update proxy properties */
 	if(spindle_prop_update(&data) < 0)
+	{
+		spindle_cache_cleanup_(&data);
+		return -1;
+	}
+	/* Fetch information about the documents describing the entities */
+	if(spindle_cache_describedby_(&data) < 0)
 	{
 		spindle_cache_cleanup_(&data);
 		return -1;
@@ -226,6 +233,77 @@ spindle_cache_source_clean_(SPINDLECACHE *data)
 	{
 		librdf_model_context_remove_statements(data->sourcedata, data->spindle->rootgraph);
 	}
+	return 0;
+}
+
+/* Cache information about the digital objects describing the entity */
+static int
+spindle_cache_describedby_(SPINDLECACHE *data)
+{
+	librdf_iterator *iter;
+	librdf_stream *stream;
+	librdf_node *node, *subject;
+	librdf_statement *st, *statement;
+
+	/* Find all of the triples related to all of the graphs describing
+	 * source data.
+	 */
+	iter = librdf_model_get_contexts(data->sourcedata);
+	while(!librdf_iterator_end(iter))
+	{
+		node = librdf_iterator_get_object(iter);
+		if(sparql_queryf_model(data->spindle->sparql, data->sourcedata,
+							   "SELECT DISTINCT ?s ?p ?o ?g\n"
+							   " WHERE {\n"
+							   "  GRAPH ?g {\n"
+							   "   ?s ?p ?o .\n"
+							   "   FILTER (?g = %V)\n"
+							   "   FILTER (?s = ?g)\n"
+							   "  }\n"
+							   "}",
+							   node))
+		{
+			return -1;
+		}
+		/* Add triples, in our graph, stating that:
+		 *   ex:graphuri rdf:type foaf:Document .
+		 *   ex:subject wdrs:describedBy ex:graphuri .
+		 */
+		st = twine_rdf_st_create();
+		librdf_statement_set_subject(st, librdf_new_node_from_node(node));
+		librdf_statement_set_predicate(st, twine_rdf_node_createuri("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"));
+		librdf_statement_set_object(st, twine_rdf_node_createuri("http://xmlns.com/foaf/0.1/Document"));
+		twine_rdf_model_add_st(data->proxydata, st, data->graph);
+		librdf_free_statement(st);
+		
+		stream = librdf_model_context_as_stream(data->sourcedata, node);
+		while(!librdf_stream_end(stream))
+		{
+			statement = librdf_stream_get_object(stream);
+			subject = librdf_statement_get_subject(statement);
+			if(!librdf_node_is_resource(subject))
+			{
+				librdf_stream_next(stream);
+				continue;
+			}
+			if(librdf_node_equals(node, subject))
+			{
+				librdf_stream_next(stream);
+				continue;
+			}
+			
+			st = twine_rdf_st_create();
+			librdf_statement_set_subject(st, librdf_new_node_from_node(subject));
+			librdf_statement_set_predicate(st, twine_rdf_node_createuri("http://www.w3.org/2007/05/powder-s#describedBy"));
+			librdf_statement_set_object(st, librdf_new_node_from_node(node));
+			twine_rdf_model_add_st(data->proxydata, st, data->graph);
+			librdf_free_statement(st);			
+			librdf_stream_next(stream);
+		}
+
+		librdf_iterator_next(iter);
+	}
+	librdf_free_iterator(iter);
 	return 0;
 }
 
