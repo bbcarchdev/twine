@@ -29,7 +29,7 @@ writerd_sparql_init(void)
 	int debug;
 	char *query, *update, *data;
 
-	debug = config_get_bool("sparql:debug", 1);
+	debug = config_get_bool("sparql:debug", 0);
 	query = config_geta("sparql:query", "http://localhost/query/");
 	update = config_geta("sparql:update", "http://localhost/update/");
 	data = config_geta("sparql:data", "http://localhost/data/");
