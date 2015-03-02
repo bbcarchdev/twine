@@ -414,6 +414,24 @@ dct:isPartOf spindle:property [
 	spindle:expressedAs dct:isPartOf
 ] .
 
+## dct:hasVersion
+
+dct:hasVersion
+	a spindle:Property ;
+	olo:index 10 ;
+	spindle:expect rdfs:Resource ;
+	spindle:proxyOnly true .
+
+dct:hasVersion spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs dct:hasVersion
+] .
+po:version spindle:property [
+	olo:index 0 ;
+	spindle:expressedAs dct:hasVersion ;
+	rdfs:domain frbr:Work
+] .
+
 ## gn:locatedIn
 
 gn:locatedIn
