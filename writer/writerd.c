@@ -178,7 +178,8 @@ writerd_process_args(int argc, char **argv)
 		case 'd':
 			config_set("log:level", "debug");
 			config_set("log:stderr", "1");
-			config_set("sparql:debug", "1");
+			config_set("sparql:verbose", "1");
+			config_set("s3:verbose", "1");
 			config_set(TWINE_APP_NAME ":detach", "0");
 			break;
 		case 't':
