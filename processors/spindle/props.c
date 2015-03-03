@@ -84,7 +84,6 @@ spindle_prop_update(SPINDLECACHE *cache)
 	struct propdata_struct data;
 	int r;
 
-	twine_logf(LOG_DEBUG, PLUGIN_NAME ": updating properties for <%s>\n", cache->localname);
 	if(spindle_prop_init_(&data, cache))
 	{
 		return -1;
