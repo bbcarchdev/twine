@@ -172,7 +172,7 @@ spindle_cache_source_sameas_(SPINDLECACHE *data)
 {
 	librdf_statement *query, *st;
 	librdf_node *node;
-	librdf_stream *stream, *qstream;
+	librdf_stream *stream;
 	
 	query = twine_rdf_st_create();
 	if(!query)
@@ -413,6 +413,11 @@ spindle_cache_store_s3_(SPINDLECACHE *data)
 	if(!data->spindle->bucket)
 	{
 		return 0;
+	}
+	if(data->spindle->multigraph)
+	{
+		/* Remove the root graph from the proxy data model */
+		librdf_model_context_remove_statements(data->proxydata, data->spindle->rootgraph);
 	}
 	proxy = twine_rdf_model_nquads(data->proxydata, &proxylen);
 	if(!proxy)

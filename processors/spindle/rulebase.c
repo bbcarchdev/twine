@@ -42,6 +42,7 @@ static int spindle_pred_set_score_(struct spindle_predicatemap_struct *map, libr
 static int spindle_pred_set_expect_(struct spindle_predicatemap_struct *entry, librdf_statement *statement);
 static int spindle_pred_set_expecttype_(struct spindle_predicatemap_struct *entry, librdf_statement *statement);
 static int spindle_pred_set_proxyonly_(struct spindle_predicatemap_struct *entry, librdf_statement *statement);
+static int spindle_pred_set_indexed_(struct spindle_predicatemap_struct *entry, librdf_statement *statement);
 static int spindle_pred_dump_(SPINDLE *spindle);
 
 static int spindle_cachepred_add_(SPINDLE *spindle, const char *uri);
@@ -554,6 +555,11 @@ spindle_pred_add_node_(SPINDLE *spindle, librdf_model *model, const char *uri, l
 		{
 			r = spindle_pred_set_proxyonly_(predentry, statement);
 		}
+		/* ex:predicate spindle:indexed "true"^^xsd:boolean */
+		if(!strcmp(preduri, "http://bbcarchdev.github.io/ns/spindle#indexed"))
+		{
+			r = spindle_pred_set_indexed_(predentry, statement);
+		}
 		if(r < 0)
 		{
 			break;
@@ -688,6 +694,40 @@ spindle_pred_set_proxyonly_(struct spindle_predicatemap_struct *entry, librdf_st
 	else
 	{
 		entry->proxyonly = 0;
+	}
+	return 1;
+}
+
+static int
+spindle_pred_set_indexed_(struct spindle_predicatemap_struct *entry, librdf_statement *statement)
+{
+	librdf_node *object;
+	librdf_uri *dt;
+	const char *dturi, *objstr;
+	
+	object = librdf_statement_get_object(statement);
+	if(!librdf_node_is_literal(object))
+	{
+		return 0;
+	}
+	dt = librdf_node_get_literal_value_datatype_uri(object);
+	if(!dt)
+	{
+		return 0;
+	}
+	dturi = (const char *) librdf_uri_as_string(dt);
+	if(strcmp(dturi, "http://www.w3.org/2001/XMLSchema#boolean"))
+	{
+		return 0;
+	}
+	objstr = (const char *) librdf_node_get_literal_value(object);
+	if(!strcmp(objstr, "true"))
+	{
+		entry->indexed = 1;
+	}
+	else
+	{
+		entry->indexed = 0;
 	}
 	return 1;
 }

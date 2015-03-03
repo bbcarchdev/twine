@@ -192,7 +192,8 @@ schema:Article spindle:expressedAs foaf:Document .
 rdfs:label
 	a spindle:Property ;
 	spindle:expect rdfs:Literal ;
-	olo:index 1 .
+	olo:index 1 ;
+	spindle:indexed true .
 
 skos08:prefLabel spindle:property [
 	olo:index 20 ;
@@ -274,7 +275,8 @@ geo:long
 	a spindle:Property ;
 	olo:index 3 ;
 	spindle:expect rdfs:Literal ;
-	spindle:expectType xsd:decimal .
+	spindle:expectType xsd:decimal ;
+	spindle:indexed true .
 
 geo:long spindle:property [
 	olo:index 50 ;
@@ -287,7 +289,8 @@ geo:lat
 	a spindle:Property ;
 	olo:index 4 ;
 	spindle:expect rdfs:Literal ;
-	spindle:expectType xsd:decimal .
+	spindle:expectType xsd:decimal ;
+	spindle:indexed true .
 
 geo:lat spindle:property [
 	olo:index 50 ;

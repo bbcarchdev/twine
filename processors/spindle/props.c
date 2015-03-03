@@ -196,6 +196,11 @@ spindle_prop_modified_(struct propdata_struct *data)
 	}
 	librdf_statement_set_object(st, obj);
 	librdf_model_context_add_statement(data->proxymodel, data->context, st);
+	if(data->spindle->multigraph)
+	{
+		/* Also add the statement to the root graph */
+		librdf_model_context_add_statement(data->proxymodel, data->spindle->rootgraph, st);
+	}
 	twine_rdf_st_destroy(st);
 	return 0;
 }
@@ -282,6 +287,14 @@ spindle_prop_apply_(struct propdata_struct *data)
 				twine_logf(LOG_ERR, PLUGIN_NAME ": failed to add statement to model\n");
 				r = -1;
 			}
+			if(!r && data->matches[c].map->indexed && data->spindle->multigraph)
+			{
+				if(librdf_model_context_add_statement(data->proxymodel, data->spindle->rootgraph, pst))		
+				{
+					twine_logf(LOG_ERR, PLUGIN_NAME ": failed to add statement to model\n");
+					r = -1;
+				}
+			}
 		}
 		else
 		{
@@ -299,6 +312,14 @@ spindle_prop_apply_(struct propdata_struct *data)
 				{
 					twine_logf(LOG_ERR, PLUGIN_NAME ": failed to add statement to model\n");
 					r = -1;
+				}
+				if(!r && data->matches[c].map->indexed && data->spindle->multigraph)
+				{
+					if(librdf_model_context_add_statement(data->proxymodel, data->spindle->rootgraph, lpst))		
+					{
+						twine_logf(LOG_ERR, PLUGIN_NAME ": failed to add statement to model\n");
+						r = -1;
+					}
 				}
 				librdf_free_statement(lpst);
 			}

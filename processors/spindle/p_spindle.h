@@ -112,6 +112,7 @@ struct spindle_predicatemap_struct
 	size_t matchsize;
 	raptor_term_type expected;
 	char *datatype;
+	int indexed;
 	int proxyonly;
 	int score;
 };
