@@ -49,6 +49,16 @@ static int spindle_cachepred_add_(SPINDLE *spindle, const char *uri);
 static int spindle_cachepred_dump_(SPINDLE *spindle);
 static int spindle_cachepred_compare_(const void *ptra, const void *ptrb);
 
+static int spindle_coref_add_matchnode_(SPINDLE *spindle, const char *predicate, librdf_node *node);
+static int spindle_coref_add_(SPINDLE *spindle, const char *predicate, struct coref_match_struct *match);
+
+static struct coref_match_struct coref_match_types[] = 
+{
+	{ "http://bbcarchdev.github.io/ns/spindle#resourceMatch", spindle_match_sameas },
+	{ "http://bbcarchdev.github.io/ns/spindle#wikipediaMatch", spindle_match_wikipedia },
+	{ NULL, NULL }
+};
+
 int
 spindle_rulebase_init(SPINDLE *spindle)
 {
@@ -457,7 +467,76 @@ spindle_rulebase_add_statement_(SPINDLE *spindle, librdf_model *model, librdf_st
 		}
 		return spindle_pred_add_matchnode_(spindle, model, subjuri, object);
 	}
+	/* ex:predicate spindle:coref spindle:foo */
+	if(!strcmp(preduri, "http://bbcarchdev.github.io/ns/spindle#coref"))
+	{
+		return spindle_coref_add_matchnode_(spindle, subjuri, object);
+	}
 	return 0;
+}
+
+/* Add a spindle:coref statement to the coreference matching ruleset */
+static int
+spindle_coref_add_matchnode_(SPINDLE *spindle, const char *predicate, librdf_node *node)
+{
+	librdf_uri *uri;
+	const char *uristr;
+	size_t c;
+
+	if(!librdf_node_is_resource(node))
+	{
+		twine_logf(LOG_ERR, PLUGIN_NAME ": spindle:coref statement expected a resource object\n");
+		return 0;
+	}
+	uri = librdf_node_get_uri(node);
+	uristr = (const char *) librdf_uri_as_string(uri);
+	for(c = 0; coref_match_types[c].predicate; c++)
+	{
+		if(!strcmp(uristr, coref_match_types[c].predicate))
+		{
+			spindle_cachepred_add_(spindle, predicate);
+			return spindle_coref_add_(spindle, predicate, &(coref_match_types[c]));
+		}
+	}
+	twine_logf(LOG_ERR, PLUGIN_NAME ": co-reference match type <%s> is not supported\n", uristr);
+	return 0;
+}
+
+static int
+spindle_coref_add_(SPINDLE *spindle, const char *predicate, struct coref_match_struct *match)
+{
+	struct coref_match_struct *p;
+	size_t c;
+
+	for(c = 0; c < spindle->corefcount; c++)
+	{
+		if(!strcmp(predicate, spindle->coref[c].predicate))
+		{
+			spindle->coref[c].callback = match->callback;
+			return 0;
+		}
+	}
+	if(spindle->corefcount + 1 > spindle->corefsize)
+	{
+		p = (struct coref_match_struct *) realloc(spindle->coref, sizeof(struct coref_match_struct) * (spindle->corefsize + 4 + 1));
+		if(!p)
+		{
+			twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to resize co-reference match type list\n");
+			return -1;
+		}
+		spindle->coref = p;
+		spindle->corefsize += 4;
+	}
+	p = &(spindle->coref[spindle->corefcount]);
+	p->predicate = strdup(predicate);
+	if(!p->predicate)
+	{
+		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to duplicate co-reference predicate URI\n");
+		return -1;
+	}
+	p->callback = match->callback;
+	spindle->corefcount++;
+	return 1;
 }
 
 /* Given an instance of a spindle:Class, add it to the rulebase */

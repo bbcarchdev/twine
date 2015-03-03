@@ -48,6 +48,23 @@
 @prefix xhtml: <http://www.w3.org/1999/xhtml/vocab#> .
 @prefix schema: <http://schema.org/> .
 
+#### Co-reference predicates
+
+## owl:sameAs-style direct co-reference predicates:
+##
+##   ex:predicate spindle:coref spindle:resourceMatch .
+##
+## Wikipedia page URL predicates:
+##
+##   ex:predicate spindle:coref spindle:wikipediaMatch .
+
+owl:sameAs spindle:coref spindle:resourceMatch .
+<http://www.bbc.co.uk/ontologies/coreconcepts/sameAs> spindle:coref spindle:resourceMatch .
+skos:exactMatch spindle:coref spindle:resourceMatch .
+skos08:exactMatch spindle:coref spindle:resourceMatch .
+gn:wikipediaArticle spindle:coref spindle:wikipediaMatch .
+foaf:isPrimaryTopicOf spindle:coref spindle:wikipediaMatch .
+
 #### Class rules
 
 ## Class rules take the form:

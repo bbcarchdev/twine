@@ -79,6 +79,10 @@ struct spindle_context_struct
 	char **cachepreds;
 	size_t cpcount;
 	size_t cpsize;
+	/* Co-reference match types */
+	struct coref_match_struct *coref;
+	size_t corefcount;
+	size_t corefsize;
 	/* The bucket that cached nquads should be stored in */
 	S3BUCKET *bucket;
 	int s3_verbose;
@@ -139,6 +143,12 @@ struct spindle_corefset_struct
 	struct spindle_coref_struct *refs;
 	size_t refcount;
 	size_t size;
+};
+
+struct coref_match_struct
+{
+	const char *predicate;
+	int (*callback)(struct spindle_corefset_struct *set, const char *subject, const char *object);
 };
 
 struct spindle_strset_struct
@@ -218,5 +228,10 @@ int spindle_class_update(SPINDLECACHE *cache);
 
 /* Update the properties of a proxy */
 int spindle_prop_update(SPINDLECACHE *cache);
+
+/* Co-reference matching functions */
+int spindle_match_sameas(struct spindle_corefset_struct *set, const char *subject, const char *object);
+int spindle_match_wikipedia(struct spindle_corefset_struct *set, const char *subject, const char *object);
+
 
 #endif /*!P_SPINDLE_H_*/

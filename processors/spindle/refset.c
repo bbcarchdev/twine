@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2015 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -22,26 +22,6 @@
 #endif
 
 #include "p_spindle.h"
-
-struct coref_match_struct
-{
-	const char *predicate;
-	int (*callback)(struct spindle_corefset_struct *set, const char *subject, const char *object);
-};
-
-static int match_sameas(struct spindle_corefset_struct *set, const char *subject, const char *object);
-static int match_wikipedia(struct spindle_corefset_struct *set, const char *subject, const char *object);
-
-static struct coref_match_struct matches[] = 
-{
-	{ "http://www.w3.org/2002/07/owl#sameAs", match_sameas },
-	{ "http://www.bbc.co.uk/ontologies/coreconcepts/sameAs", match_sameas },
-	{ "http://www.w3.org/2004/02/skos/core#exactMatch", match_sameas },
-	{ "http://www.w3.org/2008/05/skos#exactMatch", match_sameas },
-	{ "http://www.geonames.org/ontology#wikipediaArticle", match_wikipedia },
-	{ "http://www.xmlns.com/foaf/0.1/isPrimaryTopicOf", match_wikipedia },
-	{ NULL, NULL }
-};
 
 /* Extract a list of co-references from a librdf model */
 struct spindle_corefset_struct *
@@ -63,10 +43,10 @@ spindle_coref_extract(SPINDLE *spindle, librdf_model *model, const char *graphur
 		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to allocate memory for new coreference set\n");
 		return NULL;
 	}
-	for(c = 0; matches[c].predicate; c++)
+	for(c = 0; c < spindle->corefcount; c++)
 	{
 		query = librdf_new_statement(spindle->world);
-		pred = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) matches[c].predicate);
+		pred = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) spindle->coref[c].predicate);
 		librdf_statement_set_predicate(query, pred);
 		/* pred is now owned by query */
 		pred = NULL;
@@ -82,7 +62,7 @@ spindle_coref_extract(SPINDLE *spindle, librdf_model *model, const char *graphur
 				l = librdf_uri_as_string(uri);
 				uri = librdf_node_get_uri(obj);
 				r = librdf_uri_as_string(uri);
-				if(matches[c].callback(set, (const char *) l, (const char *) r))
+				if(spindle->coref[c].callback(set, (const char *) l, (const char *) r))
 				{
 					spindle_coref_destroy(set);
 					set = NULL;
@@ -180,7 +160,8 @@ spindle_coref_destroy(struct spindle_corefset_struct *set)
 }
 
 /* Callback invoked when owl:sameAs references are found */
-static int match_sameas(struct spindle_corefset_struct *set, const char *subject, const char *object)
+int
+spindle_match_sameas(struct spindle_corefset_struct *set, const char *subject, const char *object)
 {
 	if(spindle_coref_add(set, subject, object))
 	{
@@ -189,7 +170,8 @@ static int match_sameas(struct spindle_corefset_struct *set, const char *subject
 	return 0;		   	
 }
 
-static int match_wikipedia(struct spindle_corefset_struct *set, const char *subject, const char *object)
+int
+spindle_match_wikipedia(struct spindle_corefset_struct *set, const char *subject, const char *object)
 {
 	char *buf;
 
