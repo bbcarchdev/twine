@@ -26,14 +26,14 @@
 int
 writerd_sparql_init(void)
 {
-	int debug;
+	int verbose;
 	char *query, *update, *data;
 
-	debug = config_get_bool("sparql:debug", 0);
+	verbose = config_get_bool("sparql:verbose", 0);
 	query = config_geta("sparql:query", "http://localhost/query/");
 	update = config_geta("sparql:update", "http://localhost/update/");
 	data = config_geta("sparql:data", "http://localhost/data/");
-	twine_sparql_defaults_(query, update, data, debug);
+	twine_sparql_defaults_(query, update, data, verbose);
 	free(query);
 	free(update);
 	free(data);
