@@ -134,12 +134,108 @@ spindle_cache_update(SPINDLE *spindle, const char *localname, struct spindle_str
 	return 0;
 }
 
+/* Initialise a data structure used to hold state while an individual proxy
+ * entity is updated to reflect modified source data.
+ */
+static int
+spindle_cache_init_(SPINDLECACHE *data, SPINDLE *spindle, const char *localname)
+{	
+	char *t;
+
+	memset(data, 0, sizeof(SPINDLECACHE));
+	data->spindle = spindle;
+	data->sparql = spindle->sparql;
+	data->localname = localname;
+	data->self = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) localname);
+	if(!data->self)
+	{
+		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create node for <%s>\n", localname);
+		return -1;
+	}
+	if(spindle->multigraph)
+	{
+		data->graphname = strdup(localname);		
+		t = strchr(data->graphname, '#');
+		if(t)
+		{
+			*t = 0;
+		}
+		data->graph = librdf_new_node_from_uri_string(spindle->world, (unsigned const char *) data->graphname);
+	}
+	else
+	{
+		data->graphname = strdup(spindle->root);
+		data->graph = spindle->rootgraph;
+	}
+	data->sameas = spindle->sameas;
+	/* The rootdata model holds proxy data which is stored in the root
+	 * graph for convenience
+	 */
+	if(!(data->rootdata = twine_rdf_model_create()))
+	{
+		return -1;
+	}
+	/* The sourcedata model holds data from the external data sources */
+	if(!(data->sourcedata = twine_rdf_model_create()))
+	{
+		return -1;
+	}
+	/* The proxydata model holds the contents of the proxy graph */
+	if(!(data->proxydata = twine_rdf_model_create()))
+	{
+		return -1;
+	}
+	/* The extradata model holds graphs which are related to this subject,
+	 * and are fetched and cached in an S3 bucket if available.
+	 */
+	if(!(data->extradata = twine_rdf_model_create()))
+	{
+		return -1;
+	}
+	return 0;
+}
+
+/* Clean up the proxy entity update state data structure */
+static int
+spindle_cache_cleanup_(SPINDLECACHE *data)
+{
+	if(data->rootdata)
+	{
+		librdf_free_model(data->rootdata);
+	}
+	if(data->proxydata)
+	{
+		librdf_free_model(data->proxydata);
+	}
+	if(data->sourcedata)
+	{
+		librdf_free_model(data->sourcedata);
+	}
+	if(data->extradata)
+	{
+		librdf_free_model(data->extradata);
+	}
+	if(data->graph && data->graph != data->spindle->rootgraph)
+	{
+		librdf_free_node(data->graph);
+	}
+	if(data->self)
+	{
+		librdf_free_node(data->self);
+	}
+	free(data->graphname);
+	return 0;
+}
+
 /* Obtain cached source data for processing */
 static int
 spindle_cache_source_(SPINDLECACHE *data)
 {
 	/* Find all of the triples related to all of the subjects linked to the
 	 * proxy.
+	 *
+	 * Note that this includes data in both the root and proxy graphs,
+	 * but they will be removed by spindle_cache_source_clean_().
 	 */
 	if(sparql_queryf_model(data->spindle->sparql, data->sourcedata,
 						   "SELECT DISTINCT ?s ?p ?o ?g\n"
@@ -166,7 +262,9 @@ spindle_cache_source_(SPINDLECACHE *data)
 	return 0;
 }
 
-/* Copy any of our own owl:sameAs references into the proxy graph */
+/* Copy any owl:sameAs references into the proxy graph from the root
+ * graph.
+ */
 static int
 spindle_cache_source_sameas_(SPINDLECACHE *data)
 {
@@ -193,7 +291,9 @@ spindle_cache_source_sameas_(SPINDLECACHE *data)
 		return -1;
 	}
 	librdf_statement_set_object(query, node);
-	/* Create a stream querying for (?s owl:sameAs <self>) in the root graph */
+	/* Create a stream querying for (?s owl:sameAs <self>) in the root graph
+	 * from the source data
+	 */
 	stream = librdf_model_find_statements_with_options(data->sourcedata, query, data->spindle->rootgraph, NULL);
 	if(!stream)
 	{
@@ -204,6 +304,7 @@ spindle_cache_source_sameas_(SPINDLECACHE *data)
 	while(!librdf_stream_end(stream))
 	{
 		st = librdf_stream_get_object(stream);
+		/* Add the statement to the proxy graph */
 		if(twine_rdf_model_add_st(data->proxydata, st, data->graph))
 		{
 			twine_logf(LOG_ERR, PLUGIN_NAME ": failed to add statement to proxy model\n");
@@ -222,11 +323,24 @@ spindle_cache_source_sameas_(SPINDLECACHE *data)
 static int
 spindle_cache_source_clean_(SPINDLECACHE *data)
 {
-	librdf_model_context_remove_statements(data->sourcedata, data->graph);
-	if(data->graph != data->spindle->rootgraph)
+	librdf_iterator *iterator;
+	librdf_node *node;
+	librdf_uri *uri;
+	const char *uristr;
+
+	iterator = librdf_model_get_contexts(data->sourcedata);
+	while(!librdf_iterator_end(iterator))
 	{
-		librdf_model_context_remove_statements(data->sourcedata, data->spindle->rootgraph);
+		node = librdf_iterator_get_object(iterator);
+		uri = librdf_node_get_uri(node);
+		uristr = (const char *) librdf_uri_to_string(uri);
+		if(!strncmp(uristr, data->spindle->root, strlen(data->spindle->root)))
+		{
+			librdf_model_context_remove_statements(data->sourcedata, node);
+		}
+		librdf_iterator_next(iterator);
 	}
+	librdf_free_iterator(iterator);
 	return 0;
 }
 
@@ -253,6 +367,10 @@ spindle_cache_describedby_(SPINDLECACHE *data)
 			librdf_iterator_next(iter);
 			continue;
 		}
+		twine_logf(LOG_DEBUG, PLUGIN_NAME ": fetching information about graph <%s>\n", uri);
+		/* Fetch triples from graph G where the subject of each
+		 * triple is also graph G
+		 */
 		if(sparql_queryf_model(data->spindle->sparql, data->sourcedata,
 							   "SELECT DISTINCT ?s ?p ?o ?g\n"
 							   " WHERE {\n"
@@ -267,7 +385,6 @@ spindle_cache_describedby_(SPINDLECACHE *data)
 		}
 		/* Add triples, in our graph, stating that:
 		 *   ex:graphuri rdf:type foaf:Document .
-		 *   ex:subject wdrs:describedBy ex:graphuri .
 		 */
 		st = twine_rdf_st_create();
 		librdf_statement_set_subject(st, librdf_new_node_from_node(node));
@@ -276,6 +393,9 @@ spindle_cache_describedby_(SPINDLECACHE *data)
 		twine_rdf_model_add_st(data->proxydata, st, data->graph);
 		librdf_free_statement(st);
 		
+		/* For each subject in the graph, add triples stating that:
+		 *   ex:subject wdrs:describedBy ex:graphuri .
+		 */
 		stream = librdf_model_context_as_stream(data->sourcedata, node);
 		while(!librdf_stream_end(stream))
 		{
@@ -365,20 +485,15 @@ spindle_cache_extra_(SPINDLECACHE *data)
 static int
 spindle_cache_store_(SPINDLECACHE *data)
 {
-	/* Delete the old cache triples.
-	 * Note that our owl:sameAs statements take the form
+	char *triples;
+	size_t triplen;
+
+	/* First update the root graph */
+
+	/* Note that our owl:sameAs statements take the form
 	 * <external> owl:sameAs <proxy>, so we can delete <proxy> ?p ?o with
 	 * impunity.
-	 */	
-	if(sparql_updatef(data->spindle->sparql,
-					  "WITH %V\n"
-					  " DELETE { %V ?p ?o }\n"
-					  " WHERE { %V ?p ?o }",
-					  data->graph, data->self, data->self))
-	{
-		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to delete previously-cached triples\n");
-		return -1;
-	}
+	 */
 	if(sparql_updatef(data->spindle->sparql,
 					  "WITH %V\n"
 					  " DELETE { %V ?p ?o }\n"
@@ -388,11 +503,41 @@ spindle_cache_store_(SPINDLECACHE *data)
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to delete previously-cached triples\n");
 		return -1;
 	}
-	/* Insert the new proxy triples, if any */
-	if(sparql_insert_model(data->spindle->sparql, data->proxydata))
+	if(sparql_insert_model(data->spindle->sparql, data->rootdata))
 	{
-		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to push new proxy data into the store\n");
+		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to push new proxy data into the root graph of the store\n");
 		return -1;
+	}
+
+	/* Now update the proxy data */
+	if(data->spindle->multigraph)
+	{
+		triples = twine_rdf_model_ntriples(data->proxydata, &triplen);
+		if(sparql_put(data->spindle->sparql, data->graphname, triples, triplen))
+		{
+			twine_logf(LOG_ERR, PLUGIN_NAME ": failed to push new proxy data into the store\n");
+			librdf_free_memory(triples);
+			return -1;
+		}
+		librdf_free_memory(triples);
+	}
+	else
+	{
+		if(sparql_updatef(data->spindle->sparql,
+						  "WITH %V\n"
+						  " DELETE { %V ?p ?o }\n"
+						  " WHERE { %V ?p ?o }",
+						  data->graph, data->self, data->self))
+		{
+			twine_logf(LOG_ERR, PLUGIN_NAME ": failed to delete previously-cached triples\n");
+			return -1;
+		}
+		/* Insert the new proxy triples, if any */
+		if(sparql_insert_model(data->spindle->sparql, data->proxydata))
+		{
+			twine_logf(LOG_ERR, PLUGIN_NAME ": failed to push new proxy data into the store\n");
+			return -1;
+		}
 	}
 	return 0;
 }
@@ -432,6 +577,7 @@ spindle_cache_store_s3_(SPINDLECACHE *data)
 		librdf_free_memory(proxy);
 		return -1;
 	}
+
 	extra = twine_rdf_model_nquads(data->extradata, &extralen);
 	if(!extra)
 	{
@@ -441,8 +587,8 @@ spindle_cache_store_s3_(SPINDLECACHE *data)
 		return -1;
 	}
 	memset(&s3data, 0, sizeof(struct s3_upload_struct));
-	s3data.bufsize = proxylen + sourcelen + extralen + 3;
-	s3data.buf = (char *) malloc(s3data.bufsize + 1);
+	s3data.bufsize = proxylen + sourcelen + extralen + 3 + 128;
+	s3data.buf = (char *) calloc(1, s3data.bufsize + 1);
 	if(!s3data.buf)
 	{
 		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to allocate buffer for consolidated N-Quads\n");
@@ -451,20 +597,30 @@ spindle_cache_store_s3_(SPINDLECACHE *data)
 		librdf_free_memory(extra);
 		return -1;
 	}
-	l = 0;
-	memcpy(&(s3data.buf[l]), proxy, proxylen);
-	s3data.buf[l + proxylen] = '\n';
-	l += proxylen + 1;
+	strcpy(s3data.buf, "## Proxy:\n");
+	l = strlen(s3data.buf);
 
-	memcpy(&(s3data.buf[l]), source, sourcelen);
-	s3data.buf[l + sourcelen] = '\n';
-	l += sourcelen + 1;
+	if(proxylen)
+	{
+		memcpy(&(s3data.buf[l]), proxy, proxylen);
+	}
+	strcpy(&(s3data.buf[l + proxylen]), "\n## Source:\n");
+	l = strlen(s3data.buf);
+
+	if(sourcelen)
+	{
+		memcpy(&(s3data.buf[l]), source, sourcelen);
+	}
+	strcpy(&(s3data.buf[l + sourcelen]), "\n## Extra:\n");
+	l = strlen(s3data.buf);
 	
-	memcpy(&(s3data.buf[l]), extra, extralen);
-	s3data.buf[l + extralen] = '\n';
-	l += extralen + 1;
-	
-	s3data.buf[l] = 0;
+	if(extralen)
+	{
+		memcpy(&(s3data.buf[l]), extra, extralen);
+	}
+	strcpy(&(s3data.buf[l + extralen]), "\n## End\n");
+	s3data.bufsize = strlen(s3data.buf);
+
 	librdf_free_memory(proxy);
 	librdf_free_memory(source);
 	librdf_free_memory(extra);
@@ -612,76 +768,3 @@ spindle_cache_strset_refs_(SPINDLECACHE *data, struct spindle_strset_struct *set
 	return 0;
 }
 
-/* Initialise a data structure used to hold state while an individual proxy
- * entity is updated to reflect modified source data.
- */
-static int
-spindle_cache_init_(SPINDLECACHE *data, SPINDLE *spindle, const char *localname)
-{	
-	const char *t;
-
-	memset(data, 0, sizeof(SPINDLECACHE));
-	data->spindle = spindle;
-	data->sparql = spindle->sparql;
-	data->localname = localname;
-	data->self = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) localname);
-	if(!data->self)
-	{
-		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create node for <%s>\n", localname);
-		return -1;
-	}
-	if(spindle->multigraph)
-	{
-		t = strchr(localname, '#');
-		if(!t)
-		{
-			t = strchr(localname, 0);
-		}
-		data->graph = librdf_new_node_from_counted_uri_string(spindle->world, (unsigned const char *) localname, t - localname);
-	}
-	else
-	{
-		data->graph = spindle->rootgraph;
-	}
-	data->sameas = spindle->sameas;
-	if(!(data->sourcedata = twine_rdf_model_create()))
-	{
-		return -1;
-	}
-	if(!(data->proxydata = twine_rdf_model_create()))
-	{
-		return -1;
-	}
-	if(!(data->extradata = twine_rdf_model_create()))
-	{
-		return -1;
-	}
-	return 0;
-}
-
-/* Clean up the proxy entity update state data structure */
-static int
-spindle_cache_cleanup_(SPINDLECACHE *data)
-{
-	if(data->proxydata)
-	{
-		librdf_free_model(data->proxydata);
-	}
-	if(data->sourcedata)
-	{
-		librdf_free_model(data->sourcedata);
-	}
-	if(data->extradata)
-	{
-		librdf_free_model(data->extradata);
-	}
-	if(data->graph && data->graph != data->spindle->rootgraph)
-	{
-		librdf_free_node(data->graph);
-	}
-	if(data->self)
-	{
-		librdf_free_node(data->self);
-	}
-	return 0;
-}

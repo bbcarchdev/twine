@@ -131,7 +131,7 @@ spindle_class_update(SPINDLECACHE *cache)
 		}
 		if(cache->spindle->multigraph && cache->classname && !strcmp(cache->classname, classes->strings[c]))
 		{
-			librdf_model_context_add_statement(cache->proxydata, cache->spindle->rootgraph, st);
+			librdf_model_context_add_statement(cache->rootdata, cache->spindle->rootgraph, st);
 		}
 		librdf_free_statement(st);
 	}

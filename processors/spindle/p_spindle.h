@@ -153,8 +153,10 @@ struct spindle_cache_struct
 {
 	SPINDLE *spindle;
 	SPARQL *sparql;
+	char *graphname;
 	const char *localname;
 	const char *classname;
+	librdf_model *rootdata;
 	librdf_model *sourcedata;
 	librdf_model *proxydata;
 	librdf_model *extradata;

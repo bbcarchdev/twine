@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2015 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -62,6 +62,7 @@ struct propdata_struct
 	librdf_node *context;
 	librdf_model *source;
 	librdf_model *proxymodel;
+	librdf_model *rootmodel;
 	struct spindle_predicatemap_struct *maps;
 	struct propmatch_struct *matches;
 };
@@ -115,6 +116,7 @@ spindle_prop_init_(struct propdata_struct *data, SPINDLECACHE *cache)
 	data->localname = cache->localname;
 	data->classname = cache->classname;
 	data->proxymodel = cache->proxydata;
+	data->rootmodel = cache->rootdata;
 	data->context = cache->graph;
 	data->maps = cache->spindle->predicates;
 	data->matches = (struct propmatch_struct *) calloc(cache->spindle->predcount + 1, sizeof(struct propmatch_struct));
@@ -195,11 +197,11 @@ spindle_prop_modified_(struct propdata_struct *data)
 		return -1;
 	}
 	librdf_statement_set_object(st, obj);
-	librdf_model_context_add_statement(data->proxymodel, data->context, st);
+	twine_rdf_model_add_st(data->proxymodel, st, data->context);
 	if(data->spindle->multigraph)
 	{
 		/* Also add the statement to the root graph */
-		librdf_model_context_add_statement(data->proxymodel, data->spindle->rootgraph, st);
+		twine_rdf_model_add_st(data->rootmodel, st, data->spindle->rootgraph);
 	}
 	twine_rdf_st_destroy(st);
 	return 0;
@@ -282,14 +284,14 @@ spindle_prop_apply_(struct propdata_struct *data)
 		{
 			librdf_statement_set_object(pst, data->matches[c].resource);
 			data->matches[c].resource = NULL;
-			if(librdf_model_context_add_statement(data->proxymodel, data->context, pst))
+			if(twine_rdf_model_add_st(data->proxymodel, pst, data->context))
 			{
 				twine_logf(LOG_ERR, PLUGIN_NAME ": failed to add statement to model\n");
 				r = -1;
 			}
 			if(!r && data->matches[c].map->indexed && data->spindle->multigraph)
 			{
-				if(librdf_model_context_add_statement(data->proxymodel, data->spindle->rootgraph, pst))		
+				if(twine_rdf_model_add_st(data->rootmodel, pst, data->spindle->rootgraph))
 				{
 					twine_logf(LOG_ERR, PLUGIN_NAME ": failed to add statement to model\n");
 					r = -1;
@@ -308,14 +310,14 @@ spindle_prop_apply_(struct propdata_struct *data)
 				}
 				librdf_statement_set_object(lpst, data->matches[c].literals[d].node);
 				data->matches[c].literals[d].node = NULL;
-				if(librdf_model_context_add_statement(data->proxymodel, data->context, lpst))
+				if(twine_rdf_model_add_st(data->proxymodel, lpst, data->context))
 				{
 					twine_logf(LOG_ERR, PLUGIN_NAME ": failed to add statement to model\n");
 					r = -1;
 				}
 				if(!r && data->matches[c].map->indexed && data->spindle->multigraph)
 				{
-					if(librdf_model_context_add_statement(data->proxymodel, data->spindle->rootgraph, lpst))		
+					if(twine_rdf_model_add_st(data->rootmodel, lpst, data->spindle->rootgraph))
 					{
 						twine_logf(LOG_ERR, PLUGIN_NAME ": failed to add statement to model\n");
 						r = -1;
@@ -469,7 +471,7 @@ spindle_prop_candidate_uri_(struct propdata_struct *data, struct propmatch_struc
 			}
 			librdf_statement_set_object(newst, node);
 		}
-		librdf_model_context_add_statement(data->proxymodel, data->context, newst);
+		twine_rdf_model_add_st(data->proxymodel, newst, data->context);
 		twine_rdf_st_destroy(newst);
 		return 1;
 	}
