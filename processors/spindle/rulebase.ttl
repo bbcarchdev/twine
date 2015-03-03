@@ -46,6 +46,7 @@
 @prefix mrss: <http://search.yahoo.com/mrss/> .
 @prefix cc: <http://creativecommons.org/ns#> .
 @prefix xhtml: <http://www.w3.org/1999/xhtml/vocab#> .
+@prefix schema: <http://schema.org/> .
 
 #### Class rules
 
@@ -151,7 +152,7 @@ dcmitype:Collection
 		rdfs:label "Collection"@en .
 
 void:Dataset spindle:expressedAs dcmitype:Collection .
-<http://schema.org/Dataset> spindle:expressedAs dcmitype:Collection .
+schema:Dataset spindle:expressedAs dcmitype:Collection .
 
 ## Creative works
 
@@ -170,7 +171,7 @@ po:Series spindle:expressedAs frbr:Work .
 po:ProgrammeItem spindle:expressedAs frbr:Work .
 <http://www.tate.org.uk/ontologies/collection#Artwork> spindle:expressedAs frbr:Work .
 <http://dbpedia.org/ontology/Work> spindle:expressedAs frbr:Work .
-<http://schema.org/CreativeWork> spindle:expressedAs frbr:Work .
+schema:CreativeWork spindle:expressedAs frbr:Work .
 
 ## Digital objects
 
@@ -182,7 +183,7 @@ foaf:Document
 foaf:Image spindle:expressedAs foaf:Document .
 dcmitype:Image spindle:expressedAs foaf:Document .
 dcmitype:Text spindle:expressedAs foaf:Document .
-<http://schema.org/Article> spindle:expressedAs foaf:Document .
+schema:Article spindle:expressedAs foaf:Document .
 
 #### Property rules
 
@@ -393,7 +394,7 @@ foaf:primaryTopic spindle:property [
 	spindle:expressedAs foaf:topic
 ] .
 
-<http://www.schema.org/about> spindle:property [
+schema:about spindle:property [
 	olo:index 0 ;
 	spindle:expressedAs foaf:topic
 ] .
