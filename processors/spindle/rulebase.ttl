@@ -151,6 +151,7 @@ dcmitype:Collection
 		rdfs:label "Collection"@en .
 
 void:Dataset spindle:expressedAs dcmitype:Collection .
+<http://schema.org/Dataset> spindle:expressedAs dcmitype:Collection .
 
 ## Creative works
 
@@ -181,6 +182,7 @@ foaf:Document
 foaf:Image spindle:expressedAs foaf:Document .
 dcmitype:Image spindle:expressedAs foaf:Document .
 dcmitype:Text spindle:expressedAs foaf:Document .
+<http://schema.org/Article> spindle:expressedAs foaf:Document .
 
 #### Property rules
 
@@ -391,12 +393,7 @@ foaf:primaryTopic spindle:property [
 	spindle:expressedAs foaf:topic
 ] .
 
-dct:terms spindle:property [
-	olo:index 0 ;
-	spindle:expressedAs foaf:topic
-] .
-
-dc:terms spindle:property [
+<http://www.schema.org/about> spindle:property [
 	olo:index 0 ;
 	spindle:expressedAs foaf:topic
 ] .
