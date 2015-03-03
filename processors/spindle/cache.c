@@ -79,7 +79,7 @@ spindle_cache_update(SPINDLE *spindle, const char *localname, struct spindle_str
 		spindle_cache_cleanup_(&data);
 		return -1;
 	}
-	twine_logf(LOG_INFO, PLUGIN_NAME ": updating <%s>\n", localname);
+	twine_logf(LOG_INFO, PLUGIN_NAME ": updating cache for <%s>\n", localname);
 	/* Obtain cached source data */
 	if(spindle_cache_source_(&data))
 	{
@@ -111,18 +111,25 @@ spindle_cache_update(SPINDLE *spindle, const char *localname, struct spindle_str
 		spindle_cache_cleanup_(&data);
 		return -1;
 	}
-	/* Fetch data about related resources */
-	if(spindle_cache_extra_(&data) < 0)
-	{
-		spindle_cache_cleanup_(&data);
-		return -1;
-	}
 	/* Store the resulting model */
 	if(spindle_cache_store_(&data) < 0)
 	{
 		spindle_cache_cleanup_(&data);
 		return -1;
 	}
+	/* Fetch data about related resources */
+	if(spindle_cache_extra_(&data) < 0)
+	{
+		spindle_cache_cleanup_(&data);
+		return -1;
+	}
+	/* Store consolidated graphs in an S3 bucket */
+	if(spindle_cache_store_s3_(&data) < 0)
+	{
+		spindle_cache_cleanup_(&data);
+		return -1;
+	}
+	twine_logf(LOG_DEBUG, PLUGIN_NAME ": cache update complete for <%s>\n", localname);
 	spindle_cache_cleanup_(&data);
 	return 0;
 }
@@ -197,27 +204,7 @@ spindle_cache_source_sameas_(SPINDLECACHE *data)
 	while(!librdf_stream_end(stream))
 	{
 		st = librdf_stream_get_object(stream);
-		/* Check if the owl:sameAs statement is already present in the proxy
-		 * data graph
-		 */
-		qstream = librdf_model_find_statements_with_options(data->proxydata, st, data->graph, NULL);
-		if(!qstream)
-		{
-			twine_logf(LOG_ERR, PLUGIN_NAME ": failed to query model\n");
-			librdf_free_stream(stream);
-			twine_rdf_st_destroy(query);
-			return -1;
-		}
-		if(!librdf_stream_end(qstream))
-		{
-			/* If so, skip to the next item */
-			librdf_free_stream(qstream);
-			librdf_stream_next(stream);
-			continue;
-		}
-		librdf_free_stream(qstream);
-		/* Add the owl:sameAs statement to the proxy data graph */
-		if(librdf_model_context_add_statement(data->proxydata, data->graph, st))
+		if(twine_rdf_model_add_st(data->proxydata, st, data->graph))
 		{
 			twine_logf(LOG_ERR, PLUGIN_NAME ": failed to add statement to proxy model\n");
 			librdf_free_stream(stream);
@@ -271,8 +258,7 @@ spindle_cache_describedby_(SPINDLECACHE *data)
 							   " WHERE {\n"
 							   "  GRAPH ?g {\n"
 							   "   ?s ?p ?o .\n"
-							   "   FILTER (?g = %V)\n"
-							   "   FILTER (?s = ?g)\n"
+							   "   FILTER (?g = %V && ?s = ?g)\n"
 							   "  }\n"
 							   "}",
 							   node))
@@ -329,14 +315,25 @@ spindle_cache_extra_(SPINDLECACHE *data)
 	librdf_uri *uri;
 	const char *uristr;
 
+	/* If there's no S3 bucket, the extradata model won't be used, so
+	 * there's nothing to do here
+	 */
+	if(!data->spindle->bucket)
+	{
+		return 0;
+	}
 	/* Cache information about external resources related to this
-	 * entity
+	 * entity, restricted by the predicate used for the relation
 	 */
 	if(sparql_queryf_model(data->spindle->sparql, data->extradata,
 						   "SELECT DISTINCT ?s ?p ?o ?g\n"
 						   " WHERE {\n"
 						   "  GRAPH %V {\n"
 						   "   %V ?p1 ?s .\n"
+						   "   FILTER("
+						   "     ?p1 = <http://xmlns.com/foaf/0.1/page> || "
+						   "     ?p1 = <http://search.yahoo.com/mrss/player> "
+						   "   )\n"
 						   "  }\n"
 						   "  GRAPH ?g {\n"
 						   "   ?s ?p ?o .\n"
@@ -382,14 +379,19 @@ spindle_cache_store_(SPINDLECACHE *data)
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to delete previously-cached triples\n");
 		return -1;
 	}
+	if(sparql_updatef(data->spindle->sparql,
+					  "WITH %V\n"
+					  " DELETE { %V ?p ?o }\n"
+					  " WHERE { %V ?p ?o }",
+					  data->spindle->rootgraph, data->self, data->self))
+	{
+		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to delete previously-cached triples\n");
+		return -1;
+	}
 	/* Insert the new proxy triples, if any */
 	if(sparql_insert_model(data->spindle->sparql, data->proxydata))
 	{
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to push new proxy data into the store\n");
-		return -1;
-	}
-	if(spindle_cache_store_s3_(data))
-	{
 		return -1;
 	}
 	return 0;
@@ -481,7 +483,6 @@ spindle_cache_store_s3_(SPINDLECACHE *data)
 	{
 		*t = 0;
 	}
-	twine_logf(LOG_DEBUG, "bucket-relative URL is <%s>\n", urlbuf);
 	req = s3_request_create(data->spindle->bucket, urlbuf, "PUT");
 	ch = s3_request_curl(req);
 	curl_easy_setopt(ch, CURLOPT_NOSIGNAL, 1);
