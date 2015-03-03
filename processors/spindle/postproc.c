@@ -33,7 +33,7 @@ spindle_postproc(twine_graph *graph, void *data)
 	size_t c;
 
 	spindle = (SPINDLE *) data;
-	twine_logf(LOG_DEBUG, PLUGIN_NAME ": processing updated graph <%s>\n", graph->uri);
+	twine_logf(LOG_INFO, PLUGIN_NAME ": evaluating updated graph <%s>\n", graph->uri);
 	changes = spindle_strset_create();
 	if(!changes)
 	{
@@ -77,7 +77,7 @@ spindle_postproc(twine_graph *graph, void *data)
 	twine_logf(LOG_DEBUG, PLUGIN_NAME ": updating caches for <%s>\n", graph->uri);
 	spindle_cache_update_set(spindle, changes);
 	spindle_strset_destroy(changes);
-	twine_logf(LOG_DEBUG, PLUGIN_NAME ": completed <%s>\n", graph->uri);
+	twine_logf(LOG_INFO, PLUGIN_NAME ": processing complete for graph <%s>\n", graph->uri);
 	return 0;
 }
 
