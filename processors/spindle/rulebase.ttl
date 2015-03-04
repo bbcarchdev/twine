@@ -89,7 +89,8 @@ foaf:isPrimaryTopicOf spindle:coref spindle:wikipediaMatch .
 foaf:Person
 		a spindle:Class ;
 		olo:index 10 ;
-		rdfs:label "Person"@en .
+		rdfs:label "Person"@en ;
+		spindle:prominence 20 .
 
 po:Person spindle:expressedAs foaf:Person .
 
@@ -98,7 +99,8 @@ po:Person spindle:expressedAs foaf:Person .
 foaf:Group
 		a spindle:Class ;
 		olo:index 20 ;
-		rdfs:label "Group"@en .
+		rdfs:label "Group"@en ;
+		spindle:prominence 10 .
 
 foaf:Organization spindle:expressedAs foaf:Group .
 po:Broadcaster spindle:expressedAs foaf:Group .
@@ -178,13 +180,22 @@ frbr:Work
 		olo:index 80 ;
 		rdfs:label "Creative work"@en .
 
-po:Clip spindle:expressedAs frbr:Work .
-po:Episode spindle:expressedAs frbr:Work .
-po:Version spindle:expressedAs frbr:Work .
+po:Clip
+	spindle:expressedAs frbr:Work ;
+	spindle:prominence 15 .
+po:Episode
+	spindle:expressedAs frbr:Work ;
+	spindle:prominence 25 .
+po:Version
+	spindle:expressedAs frbr:Work ;
+	spindle:prominence -50 .
 po:OriginalVersion spindle:expressedAs frbr:Work .
 po:Programme spindle:expressedAs frbr:Work .
-po:Brand spindle:expressedAs frbr:Work .
-po:Series spindle:expressedAs frbr:Work .
+po:Brand
+	spindle:expressedAs frbr:Work ;
+	spindle:prominence 30 .
+po:Series spindle:expressedAs frbr:Work ;
+	spindle:prominence 30 .
 po:ProgrammeItem spindle:expressedAs frbr:Work .
 <http://www.tate.org.uk/ontologies/collection#Artwork> spindle:expressedAs frbr:Work .
 <http://dbpedia.org/ontology/Work> spindle:expressedAs frbr:Work .
@@ -210,23 +221,25 @@ rdfs:label
 	a spindle:Property ;
 	spindle:expect rdfs:Literal ;
 	olo:index 1 ;
+	spindle:prominence 20 ;
 	spindle:indexed true .
 
-skos08:prefLabel spindle:property [
+skos:prefLabel spindle:property [
 	olo:index 20 ;
 	spindle:expressedAs rdfs:label
 ] .
-skos:prefLabel spindle:property [
+skos08:prefLabel spindle:property [
 	olo:index 21 ;
 	spindle:expressedAs rdfs:label
 ] .
+
 skos:prefLabel spindle:property [
 	olo:index 30 ;
 	rdfs:domain foaf:Person, foaf:Group, foaf:Agent ;
 	spindle:expressedAs rdfs:label
 ] .
 gn:name spindle:property [
-	olo:index 30 ;
+	olo:index 20 ;
 	rdfs:domain geo:SpatialThing ;
 	spindle:expressedAs rdfs:label
 ] .
@@ -269,6 +282,7 @@ rdfs:label spindle:property [
 dct:description
 	a spindle:Property ;
 	olo:index 2 ;
+	spindle:prominence 15 ;
 	spindle:expect rdfs:Literal .
 
 dct:description spindle:property [
@@ -297,7 +311,8 @@ geo:long
 
 geo:long spindle:property [
 	olo:index 50 ;
-	spindle:expressedAs geo:long
+	spindle:expressedAs geo:long ;
+	rdfs:domain geo:SpatialThing
 ] .
 
 ## geo:lat
@@ -311,7 +326,8 @@ geo:lat
 
 geo:lat spindle:property [
 	olo:index 50 ;
-	spindle:expressedAs geo:lat
+	spindle:expressedAs geo:lat ;
+	rdfs:domain geo:SpatialThing
 ] .
 
 ## foaf:depiction
@@ -319,6 +335,7 @@ geo:lat spindle:property [
 foaf:depiction
 	a spindle:Property ;
 	olo:index 5 ;
+	spindle:prominence 25 ;
 	spindle:expect rdfs:Resource ;
 	spindle:proxyOnly false .
 
@@ -424,6 +441,7 @@ schema:about spindle:property [
 dct:isPartOf
 	a spindle:Property ;
 	olo:index 10 ;
+	spindle:prominence -1 ;
 	spindle:expect rdfs:Resource ;
 	spindle:proxyOnly true .
 
@@ -491,11 +509,13 @@ gn:parentADM2 spindle:property [
 
 gn:parentADM3 spindle:property [
 	olo:index 0 ;
+	spindle:prominence -15 ;
 	spindle:expressedAs gn:locatedIn
 ] .
 
 gn:parentADM4 spindle:property [
 	olo:index 0 ;
+	spindle:prominence -30 ;
 	spindle:expressedAs gn:locatedIn
 ] .
 
@@ -505,6 +525,7 @@ event:place
 	a spindle:Property ;
 	olo:index 12 ;
 	spindle:expect rdfs:Resource ;
+	spindle:prominence 5 ;
 	spindle:proxyOnly true .
 
 event:place spindle:property [
@@ -525,6 +546,7 @@ foaf:page
 	a spindle:Property ;
 	olo:index 13 ;
 	spindle:expect rdfs:Resource ;
+	spindle:prominence 5 ;
 	spindle:proxyOnly false .
 
 foaf:page spindle:property [
@@ -624,6 +646,7 @@ xhtml:license spindle:property [
 mrss:player
 	a spindle:Property ;
 	olo:index 16 ;
+	spindle:prominence 10 ;
 	spindle:expect rdfs:Resource ;
 	spindle:proxyOnly false .
 
@@ -631,3 +654,4 @@ mrss:player spindle:property [
 	olo:index 0 ;
 	spindle:expressedAs mrss:player
 ] .
+

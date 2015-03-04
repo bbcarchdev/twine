@@ -133,6 +133,9 @@ librdf_statement *twine_rdf_st_clone(librdf_statement *src);
 /* Destroy a statement */
 int twine_rdf_st_destroy(librdf_statement *statement);
 
+/* Obtain the integer value of the object of a statement */
+int twine_rdf_st_obj_intval(librdf_statement *statement, long *value);
+
 /* Clone a node */
 librdf_node *twine_rdf_node_clone(librdf_node *node);
 
@@ -141,6 +144,12 @@ librdf_node *twine_rdf_node_createuri(const char *uri);
 
 /* Destroy a node */
 int twine_rdf_node_destroy(librdf_node *node);
+
+/* Check if a node is an integer type */
+int twine_rdf_node_isint(librdf_node *node);
+
+/* Obtain the integer value of a node */
+int twine_rdf_node_intval(librdf_node *node, long *value);
 
 /* Serialise a model to a string */
 char *twine_rdf_model_ntriples(librdf_model *model, size_t *buflen);

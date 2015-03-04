@@ -33,8 +33,10 @@ spindle_class_match(SPINDLECACHE *cache, struct spindle_strset_struct *classes)
 	librdf_uri *uri;
 	unsigned char *uristr;
 	size_t c, d;
-	const char *match;
+	struct spindle_classmap_struct *mapentry;
+	struct spindle_classmatch_struct *match;
 
+	mapentry = NULL;
 	match = NULL;
 	node = librdf_new_node_from_uri_string(cache->spindle->world, (const unsigned char *) "http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
 	query = librdf_new_statement(cache->spindle->world);
@@ -56,14 +58,15 @@ spindle_class_match(SPINDLECACHE *cache, struct spindle_strset_struct *classes)
 			{
 				for(c = 0; c < cache->spindle->classcount; c++)
 				{
-					for(d = 0; cache->spindle->classes[c].match && cache->spindle->classes[c].match[d]; d++)
+					for(d = 0; d < cache->spindle->classes[c].matchcount; d++)
 					{
-						if(!strcmp((const char *) uristr, cache->spindle->classes[c].match[d]))
+						if(!strcmp((const char *) uristr, cache->spindle->classes[c].match[d].uri))
 						{
-							match = cache->spindle->classes[c].uri;
+							mapentry = &(cache->spindle->classes[c]);
+							match = &(cache->spindle->classes[c].match[d]);
 							if(classes)
 							{
-								spindle_strset_add(classes, match);
+								spindle_strset_add(classes, mapentry->uri);
 							}
 							break;
 						}
@@ -89,7 +92,16 @@ spindle_class_match(SPINDLECACHE *cache, struct spindle_strset_struct *classes)
 		cache->classname = NULL;
 		return 0;
 	}
-	cache->classname = match;
+	twine_logf(LOG_DEBUG, "==> Class is <%s>\n", mapentry->uri);
+	if(match->prominence)
+	{
+		cache->score -= match->prominence;
+	}
+	else
+	{
+		cache->score -= mapentry->prominence;
+	}
+	cache->classname = mapentry->uri;
 	return 1;
 }
 
@@ -118,6 +130,7 @@ spindle_class_update(SPINDLECACHE *cache)
 	librdf_statement_set_predicate(base, node);
 	for(c = 0; c < classes->count; c++)
 	{
+		twine_logf(LOG_DEBUG, "--> Adding class <%s>\n", classes->strings[c]);
 		st = librdf_new_statement_from_statement(base);
 		node = librdf_new_node_from_uri_string(cache->spindle->world, (const unsigned char *) classes->strings[c]);
 		librdf_statement_set_object(st, node);

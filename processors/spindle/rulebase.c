@@ -28,17 +28,18 @@ static int spindle_rulebase_add_statement_(SPINDLE *spindle, librdf_model *model
 
 static int spindle_class_add_node_(SPINDLE *spindle, librdf_model *model, const char *uri, librdf_node *node);
 static int spindle_class_compare_(const void *ptra, const void *ptrb);
-static struct spindle_classmatch_struct *spindle_class_add_(SPINDLE *spindle, const char *uri);
-static int spindle_class_add_match_(struct spindle_classmatch_struct *match, const char *uri);
-static int spindle_class_set_score_(struct spindle_classmatch_struct *entry, librdf_statement *statement);
+static struct spindle_classmap_struct *spindle_class_add_(SPINDLE *spindle, const char *uri);
+static int spindle_class_add_match_(struct spindle_classmap_struct *match, const char *uri, int prominence);
+static int spindle_class_set_score_(struct spindle_classmap_struct *entry, librdf_statement *statement);
 static int spindle_class_dump_(SPINDLE *spindle);
 
 static int spindle_pred_add_node_(SPINDLE *spindle, librdf_model *model, const char *uri, librdf_node *node);
 static int spindle_pred_add_matchnode_(SPINDLE *spindle, librdf_model *model, const char *preduri, librdf_node *matchnode);
 static int spindle_pred_compare_(const void *ptra, const void *ptrb);
 static struct spindle_predicatemap_struct *spindle_pred_add_(SPINDLE *spindle, const char *preduri);
-static int spindle_pred_add_match_(struct spindle_predicatemap_struct *map, const char *matchuri, const char *classuri, int score);
+static int spindle_pred_add_match_(struct spindle_predicatemap_struct *map, const char *matchuri, const char *classuri, int score, int prominence);
 static int spindle_pred_set_score_(struct spindle_predicatemap_struct *map, librdf_statement *statement);
+static int spindle_pred_set_prominence_(struct spindle_predicatemap_struct *map, librdf_statement *statement);
 static int spindle_pred_set_expect_(struct spindle_predicatemap_struct *entry, librdf_statement *statement);
 static int spindle_pred_set_expecttype_(struct spindle_predicatemap_struct *entry, librdf_statement *statement);
 static int spindle_pred_set_proxyonly_(struct spindle_predicatemap_struct *entry, librdf_statement *statement);
@@ -103,7 +104,7 @@ spindle_rulebase_init(SPINDLE *spindle)
 	}
 	librdf_free_stream(stream);
 	librdf_free_model(model);
-	qsort(spindle->classes, spindle->classcount, sizeof(struct spindle_classmatch_struct), spindle_class_compare_);
+	qsort(spindle->classes, spindle->classcount, sizeof(struct spindle_classmap_struct), spindle_class_compare_);
 	qsort(spindle->predicates, spindle->predcount, sizeof(struct spindle_predicatemap_struct), spindle_pred_compare_);
 	qsort(spindle->cachepreds, spindle->cpcount, sizeof(char *), spindle_cachepred_compare_);
 	spindle_class_dump_(spindle);
@@ -121,9 +122,9 @@ spindle_class_dump_(SPINDLE *spindle)
 	for(c = 0; c < spindle->classcount; c++)
 	{
 		twine_logf(LOG_DEBUG, PLUGIN_NAME ": %d: <%s>\n", spindle->classes[c].score, spindle->classes[c].uri);
-		for(d = 0; spindle->classes[c].match && spindle->classes[c].match[d]; d++)
+		for(d = 0; d < spindle->classes[c].matchcount; d++)
 		{
-			twine_logf(LOG_DEBUG, PLUGIN_NAME "  +--> <%s>\n", spindle->classes[c].match[d]);
+			twine_logf(LOG_DEBUG, PLUGIN_NAME "  +--> <%s>\n", spindle->classes[c].match[d].uri);
 		}
 	}
 	return 0;
@@ -232,10 +233,10 @@ spindle_loadfile_(const char *filename)
 static int
 spindle_class_compare_(const void *ptra, const void *ptrb)
 {
-	struct spindle_classmatch_struct *a, *b;
+	struct spindle_classmap_struct *a, *b;
 	
-	a = (struct spindle_classmatch_struct *) ptra;
-	b = (struct spindle_classmatch_struct *) ptrb;
+	a = (struct spindle_classmap_struct *) ptra;
+	b = (struct spindle_classmap_struct *) ptrb;
 	
 	return a->score - b->score;
 }
@@ -254,11 +255,11 @@ spindle_pred_compare_(const void *ptra, const void *ptrb)
 /* Note that the return value from this function is only valid until the next
  * call, because it may reallocate the block of memory into which it points
  */
-static struct spindle_classmatch_struct *
+static struct spindle_classmap_struct *
 spindle_class_add_(SPINDLE *spindle, const char *uri)
 {
 	size_t c;
-	struct spindle_classmatch_struct *p;
+	struct spindle_classmap_struct *p;
 
 	for(c = 0; c < spindle->classcount; c++)
 	{
@@ -269,7 +270,7 @@ spindle_class_add_(SPINDLE *spindle, const char *uri)
 	}
 	if(spindle->classcount + 1 >= spindle->classsize)
 	{
-		p = (struct spindle_classmatch_struct *) realloc(spindle->classes, sizeof(struct spindle_classmatch_struct) * (spindle->classsize + 4));
+		p = (struct spindle_classmap_struct *) realloc(spindle->classes, sizeof(struct spindle_classmap_struct) * (spindle->classsize + 4));
 		if(!p)
 		{
 			twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to expand class-match list\n");
@@ -279,7 +280,7 @@ spindle_class_add_(SPINDLE *spindle, const char *uri)
 		spindle->classsize += 4;
 	}
 	p = &(spindle->classes[spindle->classcount]);
-	memset(p, 0, sizeof(struct spindle_classmatch_struct));
+	memset(p, 0, sizeof(struct spindle_classmap_struct));
 	p->uri = strdup(uri);
 	if(!p->uri)
 	{
@@ -288,33 +289,30 @@ spindle_class_add_(SPINDLE *spindle, const char *uri)
 	}
 	p->score = 100;
 	spindle->classcount++;
-	spindle_class_add_match_(p, uri);
+	spindle_class_add_match_(p, uri, 0);
 	return p;
 }
 
 static int
-spindle_class_add_match_(struct spindle_classmatch_struct *match, const char *uri)
+spindle_class_add_match_(struct spindle_classmap_struct *match, const char *uri, int prominence)
 {
 	size_t c;
-	char **p;
+	struct spindle_classmatch_struct *p;
 
-	for(c = 0; c < match->matchsize; c++)
+	for(c = 0; c < match->matchcount; c++)
 	{
-		if(match->match[c])
+		if(!strcmp(match->match[c].uri, uri))
 		{
-			if(!strcmp(match->match[c], uri))
+			if(prominence)
 			{
-				return 0;
+				match->match[c].prominence = prominence;
 			}
+			return 0;
 		}
-		else
-		{
-			break;
-		}
-	}
-	if(c >= match->matchsize)
+	}	
+	if(match->matchcount + 1 > match->matchsize)
 	{
-		p = (char **) realloc(match->match, sizeof(char *) * (match->matchsize + 4 + 1));
+		p = (struct spindle_classmatch_struct *) realloc(match->match, sizeof(struct spindle_classmatch_struct) * (match->matchsize + 4 + 1));
 		if(!p)
 		{
 			twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to expand match URI list\n");
@@ -324,44 +322,32 @@ spindle_class_add_match_(struct spindle_classmatch_struct *match, const char *ur
 		memset(&(p[match->matchsize]), 0, sizeof(char *) * (4 + 1));
 		match->matchsize += 4;
 	}
-	match->match[c] = strdup(uri);
-	if(!match->match[c])
+	p = &(match->match[match->matchcount]);
+	p->uri = strdup(uri);
+	if(!p->uri)
 	{
 		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to duplicate match URI\n");
 		return -1;
 	}
+	p->prominence = prominence;
+	match->matchcount++;
 	return 1;
 }
 
 static int
-spindle_class_set_score_(struct spindle_classmatch_struct *entry, librdf_statement *statement)
+spindle_class_set_score_(struct spindle_classmap_struct *entry, librdf_statement *statement)
 {
-	librdf_node *object;
-	librdf_uri *dt;
-	const char *dturi;
-	int score;
+	long score;
 
-	object = librdf_statement_get_object(statement);			
-	if(!librdf_node_is_literal(object))
+	if(twine_rdf_st_obj_intval(statement, &score) <= 0)
 	{
 		return 0;
 	}
-	dt = librdf_node_get_literal_value_datatype_uri(object);
-	if(!dt)
-	{
-		return 0;
-	}
-	dturi = (const char *) librdf_uri_as_string(dt);
-	if(strcmp(dturi, "http://www.w3.org/2001/XMLSchema#integer"))
-	{
-		return 0;
-	}
-	score = atoi((const char *) librdf_node_get_literal_value(object));
 	if(score <= 0)
 	{
 		return 0;
 	}
-	entry->score = score;
+	entry->score = (int) score;
 	return 1;
 }
 
@@ -370,8 +356,12 @@ spindle_rulebase_add_statement_(SPINDLE *spindle, librdf_model *model, librdf_st
 {
 	librdf_node *subject, *predicate, *object;
 	librdf_uri *subj, *pred, *obj;
+	librdf_statement *query, *subst;
+	librdf_stream *st;
+	int prominence;
+	long i;
 	const char *subjuri, *preduri, *objuri;
-	struct spindle_classmatch_struct *classentry;
+	struct spindle_classmap_struct *classentry;
 
 	/* ex:Class rdf:type spindle:Class =>
 	 *    Add class to match list if not present.
@@ -446,13 +436,30 @@ spindle_rulebase_add_statement_(SPINDLE *spindle, librdf_model *model, librdf_st
 		{
 			return 0;
 		}
+		prominence = 0;
 		obj = librdf_node_get_uri(object);
 		objuri = (const char *) librdf_uri_as_string(obj);
 		if(!(classentry = spindle_class_add_(spindle, objuri)))
 		{
 			return -1;
 		}
-		if(spindle_class_add_match_(classentry, subjuri) < 0)
+		query = twine_rdf_st_create();
+		librdf_statement_set_subject(query, librdf_new_node_from_node(subject));
+		librdf_statement_set_predicate(query, twine_rdf_node_createuri("http://bbcarchdev.github.io/ns/spindle#prominence"));
+		st = librdf_model_find_statements(model, query);
+		while(!librdf_stream_end(st))
+		{
+			subst = librdf_stream_get_object(st);
+			if(twine_rdf_st_obj_intval(subst, &i) > 0)
+			{
+				prominence = (int) i;
+				break;
+			}
+			librdf_stream_next(st);
+		}
+		librdf_free_stream(st);
+		librdf_free_statement(query);
+		if(spindle_class_add_match_(classentry, subjuri, prominence) < 0)
 		{
 			return -1;
 		}
@@ -549,7 +556,7 @@ spindle_class_add_node_(SPINDLE *spindle, librdf_model *model, const char *uri, 
 	librdf_stream *stream;
 	const char *preduri;
 	int r;
-	struct spindle_classmatch_struct *classentry;
+	struct spindle_classmap_struct *classentry;
 	
 	if(!(classentry = spindle_class_add_(spindle, uri)))
 	{
@@ -639,6 +646,11 @@ spindle_pred_add_node_(SPINDLE *spindle, librdf_model *model, const char *uri, l
 		{
 			r = spindle_pred_set_indexed_(predentry, statement);
 		}
+		/* ex:predicate spindle:prominence nnn */
+		if(!strcmp(preduri, "http://bbcarchdev.github.io/ns/spindle#prominence"))
+		{
+			r = spindle_pred_set_prominence_(predentry, statement);
+		}
 		if(r < 0)
 		{
 			break;
@@ -657,32 +669,34 @@ spindle_pred_add_node_(SPINDLE *spindle, librdf_model *model, const char *uri, l
 static int
 spindle_pred_set_score_(struct spindle_predicatemap_struct *entry, librdf_statement *statement)
 {
-	librdf_node *object;
-	librdf_uri *dt;
-	const char *dturi;
-	int score;
+	long score;
 
-	object = librdf_statement_get_object(statement);			
-	if(!librdf_node_is_literal(object))
+	if(twine_rdf_st_obj_intval(statement, &score) <= 0)
 	{
 		return 0;
 	}
-	dt = librdf_node_get_literal_value_datatype_uri(object);
-	if(!dt)
-	{
-		return 0;
-	}
-	dturi = (const char *) librdf_uri_as_string(dt);
-	if(strcmp(dturi, "http://www.w3.org/2001/XMLSchema#integer"))
-	{
-		return 0;
-	}
-	score = atoi((const char *) librdf_node_get_literal_value(object));
 	if(score <= 0)
 	{
 		return 0;
 	}
-	entry->score = score;
+	entry->score = (int) score;
+	return 1;
+}
+
+static int
+spindle_pred_set_prominence_(struct spindle_predicatemap_struct *entry, librdf_statement *statement)
+{
+	long score;
+
+	if(twine_rdf_st_obj_intval(statement, &score) <= 0)
+	{
+		return 0;
+	}
+	if(!score)
+	{
+		return 0;
+	}
+	entry->prominence = score;
 	return 1;
 }
 
@@ -815,12 +829,13 @@ static int
 spindle_pred_add_matchnode_(SPINDLE *spindle, librdf_model *model, const char *matchuri, librdf_node *matchnode)
 {
 	librdf_node *s, *predicate, *p, *object;
-	librdf_uri *pred, *obj, *dt;
+	librdf_uri *pred, *obj;
 	librdf_statement *query, *statement;
 	librdf_stream *stream;
-	const char *preduri, *objuri, *dturi;
+	const char *preduri, *objuri;
 	struct spindle_predicatemap_struct *entry;
-	int r, hasdomain, score, i;
+	int r, hasdomain, score, prominence;
+	long i;
 
 	/* Find triples whose subject is <matchnode>, which are expected to take
 	 * the form:
@@ -833,6 +848,7 @@ spindle_pred_add_matchnode_(SPINDLE *spindle, librdf_model *model, const char *m
 	query = librdf_new_statement_from_nodes(spindle->world, s, NULL, NULL);
 	stream = librdf_model_find_statements(model, query);
 	score = 100;
+	prominence = 0;
 	r = 0;
 	hasdomain = 0;
 	entry = NULL;
@@ -854,18 +870,16 @@ spindle_pred_add_matchnode_(SPINDLE *spindle, librdf_model *model, const char *m
 		}
 		else if(!strcmp(preduri, "http://purl.org/ontology/olo/core#index"))
 		{
-			if(librdf_node_is_literal(object) &&
-			   (dt = librdf_node_get_literal_value_datatype_uri(object)))
+			if(twine_rdf_node_intval(object, &i) > 0 && i >= 0)
 			{
-				dturi = (const char *) librdf_uri_as_string(dt);
-				if(!strcmp(dturi, "http://www.w3.org/2001/XMLSchema#integer"))
-				{
-					i = atoi((const char *) librdf_node_get_literal_value(object));
-					if(i >= 0)
-					{
-						score = i;
-					}
-				}
+				score = (int) i;
+			}
+		}
+		else if(!strcmp(preduri, "http://bbcarchdev.github.io/ns/spindle#prominence"))
+		{
+			if(twine_rdf_node_intval(object, &i) > 0 && i != 0)
+			{
+				prominence = (int) i;
 			}
 		}
 		else if(!strcmp(preduri, "http://bbcarchdev.github.io/ns/spindle#expressedAs"))
@@ -904,7 +918,7 @@ spindle_pred_add_matchnode_(SPINDLE *spindle, librdf_model *model, const char *m
 		/* This isn't a domain-specific mapping; just add the target
 		 * predicate <matchuri> to entry's match list.
 		 */
-		spindle_pred_add_match_(entry, matchuri, NULL, score);
+		spindle_pred_add_match_(entry, matchuri, NULL, score, prominence);
 		return 0;
 	}
 	/* For each rdfs:domain, add the target predicate <matchuri> along with
@@ -925,7 +939,7 @@ spindle_pred_add_matchnode_(SPINDLE *spindle, librdf_model *model, const char *m
 		}
 		obj = librdf_node_get_uri(object);
 		objuri = (const char *) librdf_uri_as_string(obj);
-		spindle_pred_add_match_(entry, matchuri, objuri, score);	
+		spindle_pred_add_match_(entry, matchuri, objuri, score, prominence);
 		librdf_stream_next(stream);
 	}
 	librdf_free_stream(stream);
@@ -977,7 +991,7 @@ spindle_pred_add_(SPINDLE *spindle, const char *preduri)
 }
 
 static int
-spindle_pred_add_match_(struct spindle_predicatemap_struct *map, const char *matchuri, const char *classuri, int score)
+spindle_pred_add_match_(struct spindle_predicatemap_struct *map, const char *matchuri, const char *classuri, int score, int prominence)
 {
 	size_t c;
 	struct spindle_predicatematch_struct *p;
@@ -998,6 +1012,7 @@ spindle_pred_add_match_(struct spindle_predicatemap_struct *map, const char *mat
 			continue;
 		}
 		map->matches[c].priority = score;
+		map->matches[c].prominence = prominence;
 		return 1;
 	}
 	if(map->matchcount + 1 >= map->matchsize)
@@ -1031,6 +1046,7 @@ spindle_pred_add_match_(struct spindle_predicatemap_struct *map, const char *mat
 		}
 	}
 	p->priority = score;
+	p->prominence = prominence;
 	map->matchcount++;
 	return 1;
 }

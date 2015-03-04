@@ -47,6 +47,7 @@ struct propmatch_struct
 {
 	struct spindle_predicatemap_struct *map;
 	int priority;
+	int prominence;
 	librdf_node *resource;
 	struct literal_struct *literals;
 	size_t nliterals;
@@ -265,6 +266,7 @@ spindle_prop_apply_(struct propdata_struct *data)
 	r = 0;
 	for(c = 0; !r && data->matches[c].map && data->matches[c].map->target; c++)
 	{
+		data->cache->score -= data->matches[c].prominence;
 		pst = twine_rdf_st_clone(base);
 		if(!pst)
 		{
@@ -279,7 +281,7 @@ spindle_prop_apply_(struct propdata_struct *data)
 			break;
 		}
 		librdf_statement_set_predicate(pst, node);		
-
+		twine_logf(LOG_DEBUG, "==> Property <%s>\n", data->matches[c].map->target);
 		if(data->matches[c].resource)
 		{
 			librdf_statement_set_object(pst, data->matches[c].resource);
@@ -455,6 +457,7 @@ spindle_prop_candidate_uri_(struct propdata_struct *data, struct propmatch_struc
 			twine_rdf_st_destroy(newst);
 			return -1;
 		}
+		twine_logf(LOG_DEBUG, "==> Property <%s>\n", match->map->target);
 		librdf_statement_set_predicate(newst, node);
 		if(newobj)
 		{
@@ -473,6 +476,14 @@ spindle_prop_candidate_uri_(struct propdata_struct *data, struct propmatch_struc
 		}
 		twine_rdf_model_add_st(data->proxymodel, newst, data->context);
 		twine_rdf_st_destroy(newst);
+		if(criteria->prominence)
+		{
+			data->cache->score -= criteria->prominence;
+		}
+		else
+		{
+			data->cache->score -= match->map->prominence;
+		}
 		return 1;
 	}
 	if(newobj)
@@ -491,6 +502,14 @@ spindle_prop_candidate_uri_(struct propdata_struct *data, struct propmatch_struc
 	twine_rdf_node_destroy(match->resource);
 	match->resource = node;
 	match->priority = criteria->priority;
+	if(criteria->prominence)
+	{
+		match->prominence = criteria->prominence;
+	}
+	else
+	{
+		match->prominence = match->map->prominence;
+	}
 	return 1;
 }
 
@@ -580,6 +599,14 @@ spindle_prop_candidate_literal_(struct propdata_struct *data, struct propmatch_s
 		twine_rdf_node_destroy(match->resource);
 		match->resource = node;
 		match->priority = criteria->priority;
+		if(criteria->prominence)
+		{
+			match->prominence = criteria->prominence;
+		}
+		else
+		{
+			match->prominence = match->map->prominence;
+		}
 		return 1;
 	}
 	return 0;
@@ -632,5 +659,13 @@ spindle_prop_candidate_lang_(struct propdata_struct *data, struct propmatch_stru
 	twine_rdf_node_destroy(entry->node);
 	entry->node = node;
 	entry->priority = criteria->priority;
+	if(criteria->prominence)
+	{
+		match->prominence = criteria->prominence;
+	}
+	else
+	{
+		match->prominence = match->map->prominence;
+	}
 	return 1;
 }

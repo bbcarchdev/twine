@@ -32,6 +32,7 @@ struct s3_upload_struct
 
 static int spindle_cache_init_(SPINDLECACHE *data, SPINDLE *spindle, const char *localname);
 static int spindle_cache_cleanup_(SPINDLECACHE *data);
+static int spindle_cache_score_(SPINDLECACHE *data);
 static int spindle_cache_store_(SPINDLECACHE *data);
 static int spindle_cache_store_s3_(SPINDLECACHE *data);
 static int spindle_cache_source_(SPINDLECACHE *data);
@@ -105,6 +106,12 @@ spindle_cache_update(SPINDLE *spindle, const char *localname, struct spindle_str
 		spindle_cache_cleanup_(&data);
 		return -1;
 	}
+	/* Update the proxy score */
+	if(spindle_cache_score_(&data) < 0)
+	{
+		spindle_cache_cleanup_(&data);
+		return -1;
+	}
 	/* Fetch information about the documents describing the entities */
 	if(spindle_cache_describedby_(&data) < 0)
 	{
@@ -146,6 +153,7 @@ spindle_cache_init_(SPINDLECACHE *data, SPINDLE *spindle, const char *localname)
 	data->spindle = spindle;
 	data->sparql = spindle->sparql;
 	data->localname = localname;
+	data->score = 50;
 	data->self = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) localname);
 	if(!data->self)
 	{
@@ -224,6 +232,34 @@ spindle_cache_cleanup_(SPINDLECACHE *data)
 		librdf_free_node(data->self);
 	}
 	free(data->graphname);
+	return 0;
+}
+
+/* Apply the cached score to the proxy */
+static int
+spindle_cache_score_(SPINDLECACHE *data)
+{
+	char scorebuf[64];
+	librdf_world *world;
+	librdf_statement *st;
+	librdf_uri *dturi;
+	librdf_node *node;
+
+	if(data->score < 1)
+	{
+		data->score = 1;
+	}
+	twine_logf(LOG_NOTICE, PLUGIN_NAME ": score is %d\n", data->score);
+	sprintf(scorebuf, "%d", data->score);
+	world = twine_rdf_world();
+	st = twine_rdf_st_create();
+	librdf_statement_set_subject(st, twine_rdf_node_clone(data->self));
+	librdf_statement_set_predicate(st, twine_rdf_node_createuri("http://bbcarchdev.github.io/ns/spindle#score"));	
+	dturi = librdf_new_uri(world, (const unsigned char *) "http://www.w3.org/2001/XMLSchema#integer");
+	node = librdf_new_node_from_typed_literal(world, (const unsigned char *) scorebuf, NULL, dturi);
+	librdf_statement_set_object(st, node);
+	twine_rdf_model_add_st(data->rootdata, st, data->spindle->rootgraph);
+	twine_rdf_st_destroy(st);
 	return 0;
 }
 
@@ -561,7 +597,7 @@ spindle_cache_store_s3_(SPINDLECACHE *data)
 	}
 	if(data->spindle->multigraph)
 	{
-		/* Remove the root graph from the proxy data model */
+		/* Remove the root graph from the proxy data model, if it's present */
 		librdf_model_context_remove_statements(data->proxydata, data->spindle->rootgraph);
 	}
 	proxy = twine_rdf_model_nquads(data->proxydata, &proxylen);

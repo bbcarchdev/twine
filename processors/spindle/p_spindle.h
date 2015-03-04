@@ -68,7 +68,7 @@ struct spindle_context_struct
 	/* Whether to store each proxy in its own graph */
 	int multigraph;
 	/* Class-matching data */
-	struct spindle_classmatch_struct *classes;
+	struct spindle_classmap_struct *classes;
 	size_t classcount;
 	size_t classsize;
 	/* Predicate-matching data */
@@ -88,12 +88,27 @@ struct spindle_context_struct
 	int s3_verbose;
 };
 
+/* Mapping data for a class. 'uri' is the full class URI which will be
+ * applied to the proxy; 'match' is a list of other classes which
+ * when encountered will map to this one; 'score' is the matching priority
+ * for this rule; and 'prominence' specifies the prominence which will be
+ * subtracted from the proxy's score if the proxy is an instance of this
+ * class.
+ */
+struct spindle_classmap_struct
+{
+	char *uri;
+	struct spindle_classmatch_struct *match;
+	size_t matchcount;
+	size_t matchsize;
+	int score;
+	int prominence;
+};
+
 struct spindle_classmatch_struct
 {
 	char *uri;
-	char **match;
-	size_t matchsize;
-	int score;
+	int prominence;
 };
 
 /* Mapping data for a predicate. 'target' is the predicate which should be
@@ -119,6 +134,7 @@ struct spindle_predicatemap_struct
 	int indexed;
 	int proxyonly;
 	int score;
+	int prominence;
 };
 
 /* A single predicate which should be matched; optionally matching is restricted
@@ -130,6 +146,7 @@ struct spindle_predicatematch_struct
 	int priority;
 	char *predicate;
 	char *onlyfor;
+	int prominence;
 };
 
 struct spindle_coref_struct
@@ -159,6 +176,7 @@ struct spindle_strset_struct
 	size_t size;
 };
 
+/* State used while generating a single proxy entry */
 struct spindle_cache_struct
 {
 	SPINDLE *spindle;
@@ -173,6 +191,7 @@ struct spindle_cache_struct
 	librdf_node *graph;
 	librdf_node *self;
 	librdf_node *sameas;
+	int score;
 };
 
 /* Pre-process an updated graph */

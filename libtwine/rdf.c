@@ -272,6 +272,19 @@ twine_rdf_st_destroy(librdf_statement *statement)
 	return 0;
 }
 
+int
+twine_rdf_st_obj_intval(librdf_statement *statement, long *value)
+{
+	librdf_node *node;
+
+	node = librdf_statement_get_object(statement);
+	if(!node)
+	{
+		return 0;
+	}
+	return twine_rdf_node_intval(node, value);
+}
+
 /* Clone a node */
 librdf_node *
 twine_rdf_node_clone(librdf_node *node)
@@ -309,6 +322,67 @@ twine_rdf_node_destroy(librdf_node *node)
 	if(node)
 	{
 		librdf_free_node(node);
+	}
+	return 0;
+}
+
+/* Check if a node's datatype URI is an integer */
+int
+twine_rdf_node_isint(librdf_node *node)
+{
+	librdf_uri *uri;
+	const char *dtstr;
+
+	uri = librdf_node_get_literal_value_datatype_uri(node);
+	if(!uri)
+	{
+		return 0;
+	}
+	dtstr = (const char *) librdf_uri_to_string(uri);
+	if(strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#integer") &&
+	   strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#long") &&
+	   strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#short") &&
+	   strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#byte") &&
+	   strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#int") &&
+	   strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#nonPositiveInteger") &&
+	   strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#nonNegativeInteger") &&
+	   strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#negativeInteger") &&
+	   strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#positiveInteger") &&
+	   strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#unsignedLong") &&
+	   strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#unsignedInt") &&
+	   strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#unsignedShort") &&
+	   strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#unsignedByte"))
+	{
+		return 0;
+	}
+	return 1;
+}
+
+/* Get the integer value of a node */
+int
+twine_rdf_node_intval(librdf_node *node, long *value)
+{
+	const char *str;
+	char *endp;
+
+	if(!librdf_node_is_literal(node))
+	{
+		return 0;
+	}
+	if(!twine_rdf_node_isint(node))
+	{
+		return 0;
+	}
+	str = (const char *) librdf_node_get_literal_value(node);
+	if(!str || !*str)
+	{
+		return 0;
+	}
+	endp = NULL;
+	*value = strtol(str, &endp, 10);
+	if(!endp || !*endp)
+	{
+		return 1;
 	}
 	return 0;
 }
