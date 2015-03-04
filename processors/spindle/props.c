@@ -281,9 +281,9 @@ spindle_prop_apply_(struct propdata_struct *data)
 			break;
 		}
 		librdf_statement_set_predicate(pst, node);		
-		twine_logf(LOG_DEBUG, "==> Property <%s>\n", data->matches[c].map->target);
 		if(data->matches[c].resource)
 		{
+			twine_logf(LOG_DEBUG, "==> Property <%s>\n", data->matches[c].map->target);		
 			librdf_statement_set_object(pst, data->matches[c].resource);
 			data->matches[c].resource = NULL;
 			if(twine_rdf_model_add_st(data->proxymodel, pst, data->context))
@@ -302,6 +302,10 @@ spindle_prop_apply_(struct propdata_struct *data)
 		}
 		else
 		{
+			if(!r && data->matches[c].nliterals)
+			{
+				twine_logf(LOG_DEBUG, "==> Property <%s>\n", data->matches[c].map->target);
+			}
 			for(d = 0; !r && d < data->matches[c].nliterals; d++)
 			{
 				lpst = twine_rdf_st_clone(pst);
