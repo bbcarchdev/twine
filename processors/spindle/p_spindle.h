@@ -22,21 +22,24 @@
 
 # define _BSD_SOURCE
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-#include <errno.h>
-#include <uuid/uuid.h>
-#include <libs3client.h>
+# include <stdio.h>
+# include <stdlib.h>
+# include <string.h>
+# include <ctype.h>
+# include <errno.h>
+# include <uuid/uuid.h>
+# include <libs3client.h>
 
-#include "libtwine.h"
+# include "libtwine.h"
 
 /* The name of this plug-in */
-#define PLUGIN_NAME                     "spindle"
+# define PLUGIN_NAME                    "spindle"
 
 /* The number of co-references allocated at a time when extending a set */
-#define SET_BLOCKSIZE                   4
+# define SET_BLOCKSIZE                  4
+
+/* The number of entries in the graph cache */
+# define SPINDLE_GRAPHCACHE_SIZE        16
 
 /* Flags on strsets */
 # define SF_NONE                        0
@@ -86,6 +89,8 @@ struct spindle_context_struct
 	/* The bucket that cached nquads should be stored in */
 	S3BUCKET *bucket;
 	int s3_verbose;
+	/* Cached information about graphs */
+	struct spindle_graphcache_struct *graphcache;
 };
 
 /* Mapping data for a class. 'uri' is the full class URI which will be
@@ -194,6 +199,12 @@ struct spindle_cache_struct
 	int score;
 };
 
+struct spindle_graphcache_struct
+{
+	char *uri;
+	librdf_model *model;
+};
+
 /* Pre-process an updated graph */
 int spindle_preproc(twine_graph *graph, void *data);
 
@@ -252,5 +263,8 @@ int spindle_prop_update(SPINDLECACHE *cache);
 int spindle_match_sameas(struct spindle_corefset_struct *set, const char *subject, const char *object);
 int spindle_match_wikipedia(struct spindle_corefset_struct *set, const char *subject, const char *object);
 
+/* Graph cache */
+int spindle_graph_discard(SPINDLE *spindle, const char *uri);
+int spindle_graph_description_node(SPINDLE *spindle, librdf_model *target, librdf_node *graph);
 
 #endif /*!P_SPINDLE_H_*/

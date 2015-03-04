@@ -407,15 +407,7 @@ spindle_cache_describedby_(SPINDLECACHE *data)
 		/* Fetch triples from graph G where the subject of each
 		 * triple is also graph G
 		 */
-		if(sparql_queryf_model(data->spindle->sparql, data->sourcedata,
-							   "SELECT DISTINCT ?s ?p ?o ?g\n"
-							   " WHERE {\n"
-							   "  GRAPH ?g {\n"
-							   "   ?s ?p ?o .\n"
-							   "   FILTER (?g = %V && ?s = ?g)\n"
-							   "  }\n"
-							   "}",
-							   node))
+		if(spindle_graph_description_node(data->spindle, data->sourcedata, node))
 		{
 			return -1;
 		}
@@ -453,7 +445,7 @@ spindle_cache_describedby_(SPINDLECACHE *data)
 			librdf_statement_set_predicate(st, twine_rdf_node_createuri("http://www.w3.org/2007/05/powder-s#describedBy"));
 			librdf_statement_set_object(st, librdf_new_node_from_node(node));
 			twine_rdf_model_add_st(data->proxydata, st, data->graph);
-			librdf_free_statement(st);			
+			librdf_free_statement(st);
 			librdf_stream_next(stream);
 		}
 

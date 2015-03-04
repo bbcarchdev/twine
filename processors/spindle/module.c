@@ -142,12 +142,15 @@ spindle_s3_init_(SPINDLE *spindle)
 		free(t);
 	}
 	spindle->s3_verbose = twine_config_get_bool("s3:verbose", 0);
+	spindle->graphcache = (struct spindle_graphcache_struct *) calloc(SPINDLE_GRAPHCACHE_SIZE, sizeof(struct spindle_graphcache_struct));
 	return 0;
 }
 
 static int
 spindle_cleanup_(SPINDLE *spindle)
 {
+	size_t c;
+
 	if(spindle->sparql)
 	{
 		sparql_destroy(spindle->sparql);
@@ -176,5 +179,102 @@ spindle_cleanup_(SPINDLE *spindle)
 	{
 		librdf_free_uri(spindle->xsd_dateTime);
 	}
+	for(c = 0; spindle->graphcache && c < SPINDLE_GRAPHCACHE_SIZE; c++)
+	{
+		if(!spindle->graphcache[c].uri)
+		{
+			continue;
+		}
+		twine_rdf_model_destroy(spindle->graphcache[c].model);
+		free(spindle->graphcache[c].uri);
+	}
+	free(spindle->graphcache);
+	return 0;
+}
+
+/* Discard cached information about a graph */
+int
+spindle_graph_discard(SPINDLE *spindle, const char *uri)
+{
+	size_t c;
+
+	for(c = 0; c < SPINDLE_GRAPHCACHE_SIZE; c++)
+	{
+		if(!spindle->graphcache[c].uri)
+		{
+			continue;
+		}
+		if(!strcmp(spindle->graphcache[c].uri, uri))
+		{
+			twine_rdf_model_destroy(spindle->graphcache[c].model);
+			free(spindle->graphcache[c].uri);
+			memset(&(spindle->graphcache[c]), 0, sizeof(struct spindle_graphcache_struct));
+			return 0;
+		}
+	}
+	return 0;
+}
+
+/* Fetch information about a graph */
+int
+spindle_graph_description_node(SPINDLE *spindle, librdf_model *target, librdf_node *graph)
+{
+	size_t c;
+	librdf_stream *stream;
+	librdf_uri *uri;
+	const char *uristr;
+
+	uri = librdf_node_get_uri(graph);
+	uristr = (const char *) librdf_uri_as_string(uri);
+	for(c = 0; c < SPINDLE_GRAPHCACHE_SIZE; c++)
+	{
+		if(!spindle->graphcache[c].uri)
+		{
+			continue;
+		}
+		if(!strcmp(spindle->graphcache[c].uri, uristr))
+		{
+			stream = librdf_model_context_as_stream(spindle->graphcache[c].model, graph);
+			librdf_model_context_add_statements(target, graph, stream);
+			librdf_free_stream(stream);
+			return 0;
+		}
+	}
+	for(c = 0; c < SPINDLE_GRAPHCACHE_SIZE; c++)
+	{
+		if(!spindle->graphcache[c].uri)
+		{
+			break;
+		}
+	}
+	if(c == SPINDLE_GRAPHCACHE_SIZE)
+	{
+		twine_rdf_model_destroy(spindle->graphcache[0].model);
+		free(spindle->graphcache[0].uri);
+		memmove(&(spindle->graphcache[0]), &(spindle->graphcache[1]),
+				sizeof(struct spindle_graphcache_struct) * (SPINDLE_GRAPHCACHE_SIZE - 1));
+		c = SPINDLE_GRAPHCACHE_SIZE - 1;
+		spindle->graphcache[c].model = NULL;
+		spindle->graphcache[c].uri = NULL;
+	}
+	spindle->graphcache[c].model = twine_rdf_model_create();
+	spindle->graphcache[c].uri = strdup(uristr);
+	if(sparql_queryf_model(spindle->sparql, spindle->graphcache[c].model,
+						   "SELECT DISTINCT ?s ?p ?o ?g\n"
+						   " WHERE {\n"
+						   "  GRAPH ?g {\n"
+						   "   ?s ?p ?o .\n"
+						   "   FILTER (?g = %V && ?s = ?g)\n"
+						   "  }\n"
+						   "}",
+						   graph))
+	{
+		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to fetch a graph description\n");
+		return -1;
+	}
+	twine_logf(LOG_DEBUG, PLUGIN_NAME ": added graph <%s> to cache\n", uristr);
+	stream = librdf_model_context_as_stream(spindle->graphcache[c].model, graph);
+	librdf_model_context_add_statements(target, graph, stream);
+	librdf_free_stream(stream);
 	return 0;
 }

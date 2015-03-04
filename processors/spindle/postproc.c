@@ -34,6 +34,7 @@ spindle_postproc(twine_graph *graph, void *data)
 
 	spindle = (SPINDLE *) data;
 	twine_logf(LOG_INFO, PLUGIN_NAME ": evaluating updated graph <%s>\n", graph->uri);
+	spindle_graph_discard(spindle, graph->uri);
 	changes = spindle_strset_create();
 	if(!changes)
 	{
