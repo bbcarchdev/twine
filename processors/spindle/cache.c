@@ -32,7 +32,6 @@ struct s3_upload_struct
 
 static int spindle_cache_init_(SPINDLECACHE *data, SPINDLE *spindle, const char *localname);
 static int spindle_cache_cleanup_(SPINDLECACHE *data);
-static int spindle_cache_score_(SPINDLECACHE *data);
 static int spindle_cache_store_(SPINDLECACHE *data);
 static int spindle_cache_store_s3_(SPINDLECACHE *data);
 static int spindle_cache_source_(SPINDLECACHE *data);
@@ -42,6 +41,12 @@ static int spindle_cache_strset_refs_(SPINDLECACHE *data, struct spindle_strset_
 static size_t spindle_cache_s3_read_(char *buffer, size_t size, size_t nitems, void *userdata);
 static int spindle_cache_describedby_(SPINDLECACHE *data);
 static int spindle_cache_extra_(SPINDLECACHE *data);
+static int spindle_cache_doc_(SPINDLECACHE *data);
+static int spindle_cache_doc_modified_(SPINDLECACHE *data);
+static int spindle_cache_doc_type_(SPINDLECACHE *data);
+static int spindle_cache_doc_label_(SPINDLECACHE *data);
+static int spindle_cache_doc_topic_(SPINDLECACHE *data);
+static int spindle_cache_doc_score_(SPINDLECACHE *data);
 
 /* Re-build the cached data for a set of proxies */
 int
@@ -106,14 +111,14 @@ spindle_cache_update(SPINDLE *spindle, const char *localname, struct spindle_str
 		spindle_cache_cleanup_(&data);
 		return -1;
 	}
-	/* Update the proxy score */
-	if(spindle_cache_score_(&data) < 0)
+	/* Fetch information about the documents describing the entities */
+	if(spindle_cache_describedby_(&data) < 0)
 	{
 		spindle_cache_cleanup_(&data);
 		return -1;
 	}
-	/* Fetch information about the documents describing the entities */
-	if(spindle_cache_describedby_(&data) < 0)
+	/* Describe the document itself */
+	if(spindle_cache_doc_(&data) < 0)
 	{
 		spindle_cache_cleanup_(&data);
 		return -1;
@@ -160,15 +165,17 @@ spindle_cache_init_(SPINDLECACHE *data, SPINDLE *spindle, const char *localname)
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create node for <%s>\n", localname);
 		return -1;
 	}
+	data->docname = strdup(localname);		
+	t = strchr(data->docname, '#');
+	if(t)
+	{
+		*t = 0;
+	}
+	data->doc = librdf_new_node_from_uri_string(spindle->world, (unsigned const char *) data->docname);
 	if(spindle->multigraph)
 	{
-		data->graphname = strdup(localname);		
-		t = strchr(data->graphname, '#');
-		if(t)
-		{
-			*t = 0;
-		}
-		data->graph = librdf_new_node_from_uri_string(spindle->world, (unsigned const char *) data->graphname);
+		data->graphname = strdup(data->docname);
+		data->graph = data->doc;
 	}
 	else
 	{
@@ -223,43 +230,16 @@ spindle_cache_cleanup_(SPINDLECACHE *data)
 	{
 		librdf_free_model(data->extradata);
 	}
-	if(data->graph && data->graph != data->spindle->rootgraph)
-	{
-		librdf_free_node(data->graph);
-	}
+	librdf_free_node(data->doc);
+	/* Never free data->graph */
 	if(data->self)
 	{
 		librdf_free_node(data->self);
 	}
+	free(data->title);
+	free(data->title_en);
+	free(data->docname);
 	free(data->graphname);
-	return 0;
-}
-
-/* Apply the cached score to the proxy */
-static int
-spindle_cache_score_(SPINDLECACHE *data)
-{
-	char scorebuf[64];
-	librdf_world *world;
-	librdf_statement *st;
-	librdf_uri *dturi;
-	librdf_node *node;
-
-	if(data->score < 1)
-	{
-		data->score = 1;
-	}
-	twine_logf(LOG_NOTICE, PLUGIN_NAME ": score is %d\n", data->score);
-	sprintf(scorebuf, "%d", data->score);
-	world = twine_rdf_world();
-	st = twine_rdf_st_create();
-	librdf_statement_set_subject(st, twine_rdf_node_clone(data->self));
-	librdf_statement_set_predicate(st, twine_rdf_node_createuri("http://bbcarchdev.github.io/ns/spindle#score"));	
-	dturi = librdf_new_uri(world, (const unsigned char *) "http://www.w3.org/2001/XMLSchema#integer");
-	node = librdf_new_node_from_typed_literal(world, (const unsigned char *) scorebuf, NULL, dturi);
-	librdf_statement_set_object(st, node);
-	twine_rdf_model_add_st(data->rootdata, st, data->spindle->rootgraph);
-	twine_rdf_st_destroy(st);
 	return 0;
 }
 
@@ -796,3 +776,264 @@ spindle_cache_strset_refs_(SPINDLECACHE *data, struct spindle_strset_struct *set
 	return 0;
 }
 
+/* Cache information about the document containing the proxy */
+static int 
+spindle_cache_doc_(SPINDLECACHE *cache)
+{
+	if(spindle_cache_doc_modified_(cache))
+	{
+		return -1;
+	}
+	if(spindle_cache_doc_topic_(cache))
+	{
+		return -1;
+	}
+	if(spindle_cache_doc_type_(cache))
+	{
+		return -1;
+	}
+	if(spindle_cache_doc_label_(cache))
+	{
+		return -1;
+	}
+	if(spindle_cache_doc_score_(cache))
+	{
+		return -1;
+	}
+	return 0;
+}
+
+static int
+spindle_cache_doc_modified_(SPINDLECACHE *cache)
+{
+	librdf_node *obj;
+	librdf_statement *st;
+	char tbuf[64];
+	time_t t;
+	struct tm now;
+
+	/* Add <doc> dct:modified "now"^^xsd:dateTime */
+	t = time(NULL);
+	gmtime_r(&t, &now);
+	strftime(tbuf, sizeof(tbuf) - 1, "%Y-%m-%dT%H:%M:%SZ", &now);
+	st = twine_rdf_st_create();
+	if(!st) return -1;
+	obj = twine_rdf_node_clone(cache->doc);
+	if(!obj)
+	{
+		twine_rdf_st_destroy(st);
+		return -1;
+	}
+	librdf_statement_set_subject(st, obj);
+	obj = twine_rdf_node_clone(cache->spindle->modified);
+	if(!obj)
+	{
+		twine_rdf_st_destroy(st);
+		return -1;
+	}
+	librdf_statement_set_predicate(st, obj);
+	obj = librdf_new_node_from_typed_literal(cache->spindle->world, (const unsigned char *) tbuf, NULL, cache->spindle->xsd_dateTime);
+	if(!obj)
+	{
+		twine_logf(LOG_CRIT, "failed to create new node for \"%s\"^^xsd:dateTime\n");
+		twine_rdf_st_destroy(st);
+		return -1;
+	}
+	librdf_statement_set_object(st, obj);
+	twine_rdf_model_add_st(cache->proxydata, st, cache->graph);
+	if(cache->spindle->multigraph)
+	{
+		/* Also add the statement to the root graph */
+		twine_rdf_model_add_st(cache->rootdata, st, cache->spindle->rootgraph);
+	}
+	twine_rdf_st_destroy(st);
+	return 0;
+}
+
+static int
+spindle_cache_doc_topic_(SPINDLECACHE *cache)
+{
+	librdf_node *obj;
+	librdf_statement *st;
+
+	/* Add a statement stating that <doc> foaf:primaryTopic <self> */
+	st = twine_rdf_st_create();
+	if(!st) return -1;
+	obj = twine_rdf_node_clone(cache->doc);
+	if(!obj)
+	{
+		twine_rdf_st_destroy(st);
+		return -1;
+	}
+	librdf_statement_set_subject(st, obj);
+	obj = twine_rdf_node_createuri("http://xmlns.com/foaf/0.1/primaryTopic");
+	if(!obj)
+	{
+		twine_rdf_st_destroy(st);
+		return -1;
+	}
+	librdf_statement_set_predicate(st, obj);
+	obj = twine_rdf_node_clone(cache->self);
+	if(!obj)
+	{
+		twine_rdf_st_destroy(st);
+		return -1;
+	}
+	librdf_statement_set_object(st, obj);
+	twine_rdf_model_add_st(cache->proxydata, st, cache->graph);
+	if(cache->spindle->multigraph)
+	{
+		/* Also add the statement to the root graph */
+		twine_rdf_model_add_st(cache->rootdata, st, cache->spindle->rootgraph);
+	}
+	twine_rdf_st_destroy(st);
+	return 0;
+}
+
+static int
+spindle_cache_doc_type_(SPINDLECACHE *cache)
+{
+	librdf_node *obj;
+	librdf_statement *st;
+
+	/* Add a statement stating that <doc> rdf:type foaf:Document */
+	st = twine_rdf_st_create();
+	if(!st) return -1;
+	obj = twine_rdf_node_clone(cache->doc);
+	if(!obj)
+	{
+		twine_rdf_st_destroy(st);
+		return -1;
+	}
+	librdf_statement_set_subject(st, obj);
+	obj = twine_rdf_node_clone(cache->spindle->rdftype);
+	if(!obj)
+	{
+		twine_rdf_st_destroy(st);
+		return -1;
+	}
+	librdf_statement_set_predicate(st, obj);
+	obj = twine_rdf_node_createuri("http://xmlns.com/foaf/0.1/Document");
+	if(!obj)
+	{
+		twine_rdf_st_destroy(st);
+		return -1;
+	}
+	librdf_statement_set_object(st, obj);
+	twine_rdf_model_add_st(cache->proxydata, st, cache->graph);
+	if(cache->spindle->multigraph)
+	{
+		/* Also add the statement to the root graph */
+		twine_rdf_model_add_st(cache->rootdata, st, cache->spindle->rootgraph);
+	}
+	twine_rdf_st_destroy(st);
+	return 0;
+}
+
+static int
+spindle_cache_doc_label_(SPINDLECACHE *cache)
+{
+	librdf_node *obj;
+	librdf_statement *st;
+	char *strbuf;
+	const char *s;
+	size_t l;
+
+	/* Add a statement stating that <doc> rdfs:label "Information about 'foo' */
+	if(cache->title)
+	{
+		s = cache->title;
+	}
+	else if(cache->title_en)
+	{
+		s = cache->title_en;
+	}
+	else
+	{
+		l = strlen(cache->spindle->root);
+		if(!strncmp(cache->localname, cache->spindle->root, l))
+		{
+			s = &(cache->localname[l]);
+			if(s[0] != '/' && s > cache->localname)
+			{
+				s--;
+				if(s[0] != '/')
+				{
+					s = cache->localname;
+				}
+			}
+		}
+		else
+		{
+			s = cache->localname;
+		}
+	}
+	strbuf = (char *) calloc(1, strlen(s) + 32);
+	if(!strbuf)
+	{
+		return -1;
+	}
+	sprintf(strbuf, "Information about '%s'", s);
+	st = twine_rdf_st_create();
+	if(!st) return -1;
+	obj = twine_rdf_node_clone(cache->doc);
+	if(!obj)
+	{
+		twine_rdf_st_destroy(st);
+		return -1;
+	}
+	librdf_statement_set_subject(st, obj);
+	obj = twine_rdf_node_createuri("http://www.w3.org/2000/01/rdf-schema#label");
+	if(!obj)
+	{
+		twine_rdf_st_destroy(st);
+		free(strbuf);
+		return -1;
+	}
+	librdf_statement_set_predicate(st, obj);
+	obj = librdf_new_node_from_literal(cache->spindle->world, (const unsigned char *) strbuf, "en", 0);
+	if(!obj)
+	{
+		twine_rdf_st_destroy(st);
+		free(strbuf);
+		return -1;
+	}
+	librdf_statement_set_object(st, obj);
+	twine_rdf_model_add_st(cache->proxydata, st, cache->graph);
+	if(cache->spindle->multigraph)
+	{
+		/* Also add the statement to the root graph */
+		twine_rdf_model_add_st(cache->rootdata, st, cache->spindle->rootgraph);
+	}
+	twine_rdf_st_destroy(st);
+	free(strbuf);
+	return 0;
+}
+
+static int
+spindle_cache_doc_score_(SPINDLECACHE *data)
+{
+	char scorebuf[64];
+	librdf_world *world;
+	librdf_statement *st;
+	librdf_uri *dturi;
+	librdf_node *node;
+
+	if(data->score < 1)
+	{
+		data->score = 1;
+	}
+	twine_logf(LOG_NOTICE, PLUGIN_NAME ": score is %d\n", data->score);
+	sprintf(scorebuf, "%d", data->score);
+	world = twine_rdf_world();
+	st = twine_rdf_st_create();
+	librdf_statement_set_subject(st, twine_rdf_node_clone(data->doc));
+	librdf_statement_set_predicate(st, twine_rdf_node_createuri("http://bbcarchdev.github.io/ns/spindle#score"));	
+	dturi = librdf_new_uri(world, (const unsigned char *) "http://www.w3.org/2001/XMLSchema#integer");
+	node = librdf_new_node_from_typed_literal(world, (const unsigned char *) scorebuf, NULL, dturi);
+	librdf_statement_set_object(st, node);
+	/* This information's only added to the root graph */
+	twine_rdf_model_add_st(data->rootdata, st, data->spindle->rootgraph);
+	twine_rdf_st_destroy(st);
+	return 0;
+}

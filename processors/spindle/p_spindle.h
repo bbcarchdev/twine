@@ -187,15 +187,26 @@ struct spindle_cache_struct
 	SPINDLE *spindle;
 	SPARQL *sparql;
 	char *graphname;
+	char *docname;
+	char *title;
+	char *title_en;
 	const char *localname;
 	const char *classname;
 	librdf_model *rootdata;
 	librdf_model *sourcedata;
 	librdf_model *proxydata;
 	librdf_model *extradata;
+	/* The name of the graph we store information in */
 	librdf_node *graph;
+	/* The name of the information resource which contains the proxy (will
+	 * be the same as 'graph' if multigraph is true
+	 */
+	librdf_node *doc;
+	/* The name of the proxy, including the fragment */
 	librdf_node *self;
+	/* A precomposed owl:sameAs node */
 	librdf_node *sameas;
+	/* The proxy's prominence score */
 	int score;
 };
 

@@ -70,7 +70,6 @@ struct propdata_struct
 
 static int spindle_prop_init_(struct propdata_struct *data, SPINDLECACHE *cache);
 static int spindle_prop_cleanup_(struct propdata_struct *data);
-static int spindle_prop_modified_(struct propdata_struct *data);
 static int spindle_prop_loop_(struct propdata_struct *data);
 static int spindle_prop_test_(struct propdata_struct *data, librdf_statement *st, const char *predicate);
 static int spindle_prop_candidate_(struct propdata_struct *data, struct propmatch_struct *match, struct spindle_predicatematch_struct *criteria, librdf_statement *st, librdf_node *obj);
@@ -96,8 +95,6 @@ spindle_prop_update(SPINDLECACHE *cache)
 	{
 		r = spindle_prop_apply_(&data);
 	}
-
-	spindle_prop_modified_(&data);
 
 	spindle_prop_cleanup_(&data);
 
@@ -158,53 +155,6 @@ spindle_prop_cleanup_(struct propdata_struct *data)
 		}
 		free(data->matches);
 	}
-	return 0;
-}
-
-/* Add a dct:modified triple to the proxy data */
-static int 
-spindle_prop_modified_(struct propdata_struct *data)
-{
-	librdf_node *obj;
-	librdf_statement *st;
-	char tbuf[64];
-	time_t t;
-	struct tm now;
-
-	t = time(NULL);
-	gmtime_r(&t, &now);
-	strftime(tbuf, sizeof(tbuf) - 1, "%Y-%m-%dT%H:%M:%SZ", &now);
-	st = twine_rdf_st_create();
-	if(!st) return -1;
-	obj = twine_rdf_node_clone(data->cache->self);
-	if(!obj)
-	{
-		twine_rdf_st_destroy(st);
-		return -1;
-	}
-	librdf_statement_set_subject(st, obj);
-	obj = twine_rdf_node_clone(data->spindle->modified);
-	if(!obj)
-	{
-		twine_rdf_st_destroy(st);
-		return -1;
-	}
-	librdf_statement_set_predicate(st, obj);
-	obj = librdf_new_node_from_typed_literal(data->spindle->world, (const unsigned char *) tbuf, NULL, data->spindle->xsd_dateTime);
-	if(!obj)
-	{
-		twine_logf(LOG_CRIT, "failed to create new node for \"%s\"^^xsd:dateTime\n");
-		twine_rdf_st_destroy(st);
-		return -1;
-	}
-	librdf_statement_set_object(st, obj);
-	twine_rdf_model_add_st(data->proxymodel, st, data->context);
-	if(data->spindle->multigraph)
-	{
-		/* Also add the statement to the root graph */
-		twine_rdf_model_add_st(data->rootmodel, st, data->spindle->rootgraph);
-	}
-	twine_rdf_st_destroy(st);
 	return 0;
 }
 
@@ -670,6 +620,19 @@ spindle_prop_candidate_lang_(struct propdata_struct *data, struct propmatch_stru
 	else
 	{
 		match->prominence = match->map->prominence;
+	}
+	if(!strcmp(match->map->target, "http://www.w3.org/2000/01/rdf-schema#label"))
+	{
+		if(lang && !strcmp(lang, "en"))
+		{
+			free(data->cache->title_en);
+			data->cache->title_en = strdup((char *) librdf_node_get_literal_value(obj));
+		}
+		else if(!lang)
+		{
+			free(data->cache->title);
+			data->cache->title = strdup((char *) librdf_node_get_literal_value(obj));
+		}
 	}
 	return 1;
 }
