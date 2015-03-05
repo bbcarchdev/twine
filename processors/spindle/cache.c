@@ -426,6 +426,16 @@ spindle_cache_describedby_(SPINDLECACHE *data)
 			librdf_statement_set_object(st, librdf_new_node_from_node(node));
 			twine_rdf_model_add_st(data->proxydata, st, data->graph);
 			librdf_free_statement(st);
+
+			/* Add <doc> rdfs:seeAlso <source> */
+			st = twine_rdf_st_create();
+			librdf_statement_set_subject(st, librdf_new_node_from_node(data->doc));
+			librdf_statement_set_predicate(st, twine_rdf_node_createuri("http://www.w3.org/2000/01/rdf-schema#seeAlso"));
+			librdf_statement_set_object(st, librdf_new_node_from_node(node));
+			twine_rdf_model_add_st(data->proxydata, st, data->graph);
+			librdf_free_statement(st);
+			librdf_stream_next(stream);
+
 			librdf_stream_next(stream);
 		}
 
@@ -507,6 +517,15 @@ spindle_cache_store_(SPINDLECACHE *data)
 					  " DELETE { %V ?p ?o }\n"
 					  " WHERE { %V ?p ?o }",
 					  data->spindle->rootgraph, data->self, data->self))
+	{
+		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to delete previously-cached triples\n");
+		return -1;
+	}
+	if(sparql_updatef(data->spindle->sparql,
+					  "WITH %V\n"
+					  " DELETE { %V ?p ?o }\n"
+					  " WHERE { %V ?p ?o }",
+					  data->spindle->rootgraph, data->doc, data->doc))
 	{
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to delete previously-cached triples\n");
 		return -1;
@@ -940,13 +959,13 @@ spindle_cache_doc_label_(SPINDLECACHE *cache)
 	size_t l;
 
 	/* Add a statement stating that <doc> rdfs:label "Information about 'foo' */
-	if(cache->title)
-	{
-		s = cache->title;
-	}
-	else if(cache->title_en)
+	if(cache->title_en)
 	{
 		s = cache->title_en;
+	}
+	else if(cache->title)
+	{
+		s = cache->title;
 	}
 	else
 	{
@@ -1023,7 +1042,7 @@ spindle_cache_doc_score_(SPINDLECACHE *data)
 	{
 		data->score = 1;
 	}
-	twine_logf(LOG_NOTICE, PLUGIN_NAME ": score is %d\n", data->score);
+	twine_logf(LOG_DEBUG, PLUGIN_NAME ": proxy prominence score is %d\n", data->score);
 	sprintf(scorebuf, "%d", data->score);
 	world = twine_rdf_world();
 	st = twine_rdf_st_create();
