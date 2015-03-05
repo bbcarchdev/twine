@@ -47,6 +47,7 @@
 @prefix cc: <http://creativecommons.org/ns#> .
 @prefix xhtml: <http://www.w3.org/1999/xhtml/vocab#> .
 @prefix schema: <http://schema.org/> .
+@prefix gazetteer: <http://data.ordnancesurvey.co.uk/ontology/50kGazetteer/> .
 
 #### Co-reference predicates
 
@@ -124,6 +125,7 @@ geo:SpatialThing
 
 dct:Location spindle:expressedAs geo:SpatialThing .
 gn:Feature spindle:expressedAs geo:SpatialThing .
+gazetteer:NamedPlace spindle:expressedAs geo:SpatialThing .
 
 ## Events, timespans
 
