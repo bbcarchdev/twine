@@ -490,7 +490,7 @@ spindle_license_list_add_(struct licenselist_struct *list, const char *uri, cons
 		if(!strcmp(list->entries[c].source, source))
 		{
 			/* Only replace an entry with one of a higher score */
-			if(license->score > list->entries[c].score)
+			if(license && license->score > list->entries[c].score)
 			{
 				p = &(list->entries[c]);
 				/* A known item replaces an unknown one */
