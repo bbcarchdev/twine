@@ -84,6 +84,9 @@ spindle_prop_update(SPINDLECACHE *cache)
 {
 	struct propdata_struct data;
 	int r;
+	const char *s;
+	char *t;
+	size_t l;
 
 	if(spindle_prop_init_(&data, cache))
 	{
@@ -95,7 +98,42 @@ spindle_prop_update(SPINDLECACHE *cache)
 	{
 		r = spindle_prop_apply_(&data);
 	}
-
+	if(!r)
+	{
+		if(!cache->title && !cache->title_en)
+		{
+			l = strlen(cache->spindle->root);
+			if(!strncmp(cache->localname, cache->spindle->root, l))
+			{
+				s = &(cache->localname[l]);
+				if(s[0] != '/' && s > cache->localname)
+				{
+					s--;
+					if(s[0] != '/')
+					{
+						s = cache->localname;
+					}
+				}
+			}
+			else
+			{
+				s = cache->localname;
+			}
+			cache->title = strdup(s);
+			if(cache->title)
+			{
+				if(!(t = strchr(cache->title, '#')))
+				{
+					*t = 0;
+				}
+			}
+			else
+			{
+				twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to duplicate entity name\n");
+				r = -1;
+			}
+		}
+	}
 	spindle_prop_cleanup_(&data);
 
 	return r;
@@ -621,7 +659,7 @@ spindle_prop_candidate_lang_(struct propdata_struct *data, struct propmatch_stru
 	{
 		match->prominence = match->map->prominence;
 	}
-	if(!strcmp(match->map->target, "http://www.w3.org/2000/01/rdf-schema#label"))
+	if(data->spindle->titlepred && !strcmp(match->map->target, data->spindle->titlepred))
 	{
 		if(lang && !strcmp(lang, "en"))
 		{

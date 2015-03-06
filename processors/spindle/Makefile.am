@@ -20,8 +20,8 @@ EXTRA_DIST = README TODO proxy-data.ttl
 
 AM_CPPFLAGS = @AM_CPPFLAGS@ \
 	-I$(top_builddir)/libtwine -I$(top_srcdir)/libtwine \
-	-I$(top_builddir)/libsparqlclient -I$(top_srcdir)/libsparqlclient \
-	-I$(top_builddir)/libs3client -I$(top_srcdir)/libs3client
+	-I$(top_builddir)/libs3client -I$(top_srcdir)/libs3client \
+	@LIBSPARQLCLIENT_CPPFLAGS@ @LIBURI_CPPFLAGS@
 
 LIBS = $(top_builddir)/libtwine/libtwine.la \
 	$(top_builddir)/libs3client/libs3client.la
@@ -32,10 +32,11 @@ module_LTLIBRARIES = spindle.la
 
 spindle_la_SOURCES = p_spindle.h \
 	module.c preproc.c postproc.c proxy.c refset.c cache.c classes.c props.c \
-	strset.c rulebase.c
+	strset.c rulebase.c doc.c licenses.c
 
 spindle_la_LIBADD = \
-	@LIBUUID_LIBS@ @LIBUUID_LOCAL_LIBS@
+	@LIBUUID_LIBS@ @LIBUUID_LOCAL_LIBS@ \
+	@LIBURI_LIBS@ @LIBURI_LOCAL_LIBS@
 
 spindle_la_LDFLAGS = -no-undefined -module -avoid-version
 

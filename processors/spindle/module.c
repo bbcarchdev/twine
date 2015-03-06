@@ -106,6 +106,14 @@ spindle_init_(SPINDLE *spindle)
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to initialise S3 bucket\n");
 		return -1;
 	}
+	if(spindle_doc_init(spindle))
+	{
+		return -1;
+	}
+	if(spindle_license_init(spindle))
+	{
+		return -1;
+	}
 	return 0;
 }
 
@@ -189,6 +197,7 @@ spindle_cleanup_(SPINDLE *spindle)
 		free(spindle->graphcache[c].uri);
 	}
 	free(spindle->graphcache);
+	free(spindle->titlepred);
 	return 0;
 }
 
@@ -235,7 +244,7 @@ spindle_graph_description_node(SPINDLE *spindle, librdf_model *target, librdf_no
 		if(!strcmp(spindle->graphcache[c].uri, uristr))
 		{
 			stream = librdf_model_context_as_stream(spindle->graphcache[c].model, graph);
-			librdf_model_context_add_statements(target, graph, stream);
+			twine_rdf_model_add_stream(target, stream, graph);
 			librdf_free_stream(stream);
 			return 0;
 		}

@@ -231,6 +231,20 @@ twine_rdf_model_add_st(librdf_model *model, librdf_statement *statement, librdf_
 	return librdf_model_add_statement(model, statement);
 }
 
+/* Add a stream to a model, provided the statements don't already exist */
+int
+twine_rdf_model_add_stream(librdf_model *model, librdf_stream *stream, librdf_node *ctx)
+{
+	for(; !librdf_stream_end(stream); librdf_stream_next(stream))
+	{
+		if(twine_rdf_model_add_st(model, librdf_stream_get_object(stream), ctx))
+		{
+			return -1;
+		}
+	}
+	return 0;
+}
+
 /* Create a new statement */
 librdf_statement *
 twine_rdf_st_create(void)

@@ -28,6 +28,7 @@
 # include <ctype.h>
 # include <errno.h>
 # include <uuid/uuid.h>
+# include <liburi.h>
 # include <libs3client.h>
 
 # include "libtwine.h"
@@ -91,6 +92,11 @@ struct spindle_context_struct
 	int s3_verbose;
 	/* Cached information about graphs */
 	struct spindle_graphcache_struct *graphcache;
+	/* Names of specific predicates */
+	char *titlepred;
+	struct spindle_predicatemap_struct *licensepred;
+	struct spindle_license_struct *licenses;
+	size_t nlicenses;
 };
 
 /* Mapping data for a class. 'uri' is the full class URI which will be
@@ -192,14 +198,26 @@ struct spindle_cache_struct
 	char *title_en;
 	const char *localname;
 	const char *classname;
+	/* Data which will be inserted into the root graph, always in the form
+	 * <proxy> pred obj
+	 */
 	librdf_model *rootdata;
-	librdf_model *sourcedata;
+	/* Proxy data: all of the generated information about the proxy entity;
+	 * stored in the proxy graph.
+	 */
 	librdf_model *proxydata;
+	/* Data about the source graphs - only populated (and used) if we're
+	 * stashing data in an S3 bucket
+	 */
+	librdf_model *sourcedata;
+	/* Extra data: information about related entities, only used when caching
+	 * to an S3 bucket.
+	 */
 	librdf_model *extradata;
 	/* The name of the graph we store information in */
 	librdf_node *graph;
 	/* The name of the information resource which contains the proxy (will
-	 * be the same as 'graph' if multigraph is true
+	 * be the same as 'graph' if multigraph is true)
 	 */
 	librdf_node *doc;
 	/* The name of the proxy, including the fragment */
@@ -214,6 +232,16 @@ struct spindle_graphcache_struct
 {
 	char *uri;
 	librdf_model *model;
+};
+
+/* Information about a license */
+struct spindle_license_struct
+{
+	char *name;
+	char *title;
+	char **uris;
+	size_t uricount;
+	int score;
 };
 
 /* Pre-process an updated graph */
@@ -277,5 +305,13 @@ int spindle_match_wikipedia(struct spindle_corefset_struct *set, const char *sub
 /* Graph cache */
 int spindle_graph_discard(SPINDLE *spindle, const char *uri);
 int spindle_graph_description_node(SPINDLE *spindle, librdf_model *target, librdf_node *graph);
+
+/* Update the information resource describing the proxy */
+int spindle_doc_init(SPINDLE *spindle);
+int spindle_doc_apply(SPINDLECACHE *cache);
+
+/* Relay information about licensing */
+int spindle_license_init(SPINDLE *spindle);
+int spindle_license_apply(SPINDLECACHE *spindle);
 
 #endif /*!P_SPINDLE_H_*/

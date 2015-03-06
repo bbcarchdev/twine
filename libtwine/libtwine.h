@@ -123,7 +123,8 @@ int twine_rdf_model_parse_base(librdf_model *model, const char *mime, const char
 
 /* Add a statement to a model if it doesn't exist */
 int twine_rdf_model_add_st(librdf_model *model, librdf_statement *statement, librdf_node *ctx);
-
+/* Add a stream to a model, provided the statements don't already exist */
+int twine_rdf_model_add_stream(librdf_model *model, librdf_stream *stream, librdf_node *ctx);
 /* Create a new statement */
 librdf_statement *twine_rdf_st_create(void);
 
