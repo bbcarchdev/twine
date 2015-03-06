@@ -48,6 +48,18 @@
 # define SF_UPDATED                     (1<<1)
 # define SF_REFRESHED                   (1<<2)
 
+/* Namespaces */
+# define NS_RDF                         "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+# define NS_XSD                         "http://www.w3.org/2001/XMLSchema#"
+# define NS_RDFS                        "http://www.w3.org/2000/01/rdf-schema#"
+# define NS_FOAF                        "http://xmlns.com/foaf/0.1/"
+# define NS_POWDER                      "http://www.w3.org/2007/05/powder-s#"
+# define NS_MRSS                        "http://search.yahoo.com/mrss/"
+# define NS_OWL                         "http://www.w3.org/2002/07/owl#"
+# define NS_SPINDLE                     "http://bbcarchdev.github.io/ns/spindle#"
+# define NS_OLO                         "http://purl.org/ontology/olo/core#"
+# define NS_DCTERMS                     "http://purl.org/dc/terms/"
+
 typedef struct spindle_context_struct SPINDLE;
 typedef struct spindle_cache_struct SPINDLECACHE;
 

@@ -55,8 +55,8 @@ static int spindle_coref_add_(SPINDLE *spindle, const char *predicate, struct co
 
 static struct coref_match_struct coref_match_types[] = 
 {
-	{ "http://bbcarchdev.github.io/ns/spindle#resourceMatch", spindle_match_sameas },
-	{ "http://bbcarchdev.github.io/ns/spindle#wikipediaMatch", spindle_match_wikipedia },
+	{ NS_SPINDLE "resourceMatch", spindle_match_sameas },
+	{ NS_SPINDLE "wikipediaMatch", spindle_match_wikipedia },
 	{ NULL, NULL }
 };
 
@@ -68,8 +68,8 @@ spindle_rulebase_init(SPINDLE *spindle)
 	librdf_stream *stream;
 	librdf_statement *statement;
 
-	spindle_cachepred_add_(spindle, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
-	spindle_cachepred_add_(spindle, "http://www.w3.org/2002/07/owl#sameAs");
+	spindle_cachepred_add_(spindle, NS_RDF "type");
+	spindle_cachepred_add_(spindle, NS_OWL "sameAs");
 	model = twine_rdf_model_create();
 	if(!model)
 	{
@@ -403,7 +403,7 @@ spindle_rulebase_add_statement_(SPINDLE *spindle, librdf_model *model, librdf_st
 	/* ex:Class a spindle:Class
 	 * ex:predicate a spindle:Property
 	 */
-	if(!strcmp(preduri, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"))
+	if(!strcmp(preduri, NS_RDF "type"))
 	{
 		if(!librdf_node_is_resource(object))
 		{
@@ -411,7 +411,7 @@ spindle_rulebase_add_statement_(SPINDLE *spindle, librdf_model *model, librdf_st
 		}
 		obj = librdf_node_get_uri(object);
 		objuri = (const char *) librdf_uri_as_string(obj);
-		if(!strcmp(objuri, "http://bbcarchdev.github.io/ns/spindle#Class"))
+		if(!strcmp(objuri, NS_SPINDLE "Class"))
 		{
 			if(spindle_class_add_node_(spindle, model, subjuri, subject) < 0)
 			{
@@ -419,7 +419,7 @@ spindle_rulebase_add_statement_(SPINDLE *spindle, librdf_model *model, librdf_st
 			}
 			return 1;
 		}
-		if(!strcmp(objuri, "http://bbcarchdev.github.io/ns/spindle#Property"))
+		if(!strcmp(objuri, NS_SPINDLE "Property"))
 		{
 			if(spindle_pred_add_node_(spindle, model, subjuri, subject) < 0)
 			{
@@ -430,7 +430,7 @@ spindle_rulebase_add_statement_(SPINDLE *spindle, librdf_model *model, librdf_st
 		return 0;
 	}
 	/* ex:Class spindle:expressedAs ex:OtherClass */
-	if(!strcmp(preduri, "http://bbcarchdev.github.io/ns/spindle#expressedAs"))
+	if(!strcmp(preduri, NS_SPINDLE "expressedAs"))
 	{
 		if(!librdf_node_is_resource(object))
 		{
@@ -445,7 +445,7 @@ spindle_rulebase_add_statement_(SPINDLE *spindle, librdf_model *model, librdf_st
 		}
 		query = twine_rdf_st_create();
 		librdf_statement_set_subject(query, librdf_new_node_from_node(subject));
-		librdf_statement_set_predicate(query, twine_rdf_node_createuri("http://bbcarchdev.github.io/ns/spindle#prominence"));
+		librdf_statement_set_predicate(query, twine_rdf_node_createuri(NS_SPINDLE "prominence"));
 		st = librdf_model_find_statements(model, query);
 		while(!librdf_stream_end(st))
 		{
@@ -466,7 +466,7 @@ spindle_rulebase_add_statement_(SPINDLE *spindle, librdf_model *model, librdf_st
 		return 1;
 	}
 	/* ex:predicate spindle:property [ ... ] */
-	if(!strcmp(preduri, "http://bbcarchdev.github.io/ns/spindle#property"))
+	if(!strcmp(preduri, NS_SPINDLE "property"))
 	{
 		if(librdf_node_is_literal(object))
 		{
@@ -475,7 +475,7 @@ spindle_rulebase_add_statement_(SPINDLE *spindle, librdf_model *model, librdf_st
 		return spindle_pred_add_matchnode_(spindle, model, subjuri, object);
 	}
 	/* ex:predicate spindle:coref spindle:foo */
-	if(!strcmp(preduri, "http://bbcarchdev.github.io/ns/spindle#coref"))
+	if(!strcmp(preduri, NS_SPINDLE "coref"))
 	{
 		return spindle_coref_add_matchnode_(spindle, subjuri, object);
 	}
@@ -573,7 +573,7 @@ spindle_class_add_node_(SPINDLE *spindle, librdf_model *model, const char *uri, 
 		predicate = librdf_statement_get_predicate(statement);
 		pred = librdf_node_get_uri(predicate);
 		preduri = (const char *) librdf_uri_as_string(pred);
-		if(!strcmp(preduri, "http://purl.org/ontology/olo/core#index"))
+		if(!strcmp(preduri, NS_OLO "index"))
 		{
 			if((r = spindle_class_set_score_(classentry, statement)))
 			{
@@ -620,34 +620,34 @@ spindle_pred_add_node_(SPINDLE *spindle, librdf_model *model, const char *uri, l
 		pred = librdf_node_get_uri(predicate);
 		preduri = (const char *) librdf_uri_as_string(pred);
 		/* ex:predicate olo:index nnn */
-		if(!strcmp(preduri, "http://purl.org/ontology/olo/core#index"))
+		if(!strcmp(preduri, NS_OLO "index"))
 		{
 			r = spindle_pred_set_score_(predentry, statement);
 		}
 		/* ex:predicate spindle:expect rdfs:Literal
 		 * ex:predicate spindle:expect rdfs:Resource
 		 */
-		if(!strcmp(preduri, "http://bbcarchdev.github.io/ns/spindle#expect"))
+		if(!strcmp(preduri, NS_SPINDLE "expect"))
 		{
 			r = spindle_pred_set_expect_(predentry, statement);
 		}
 		/* ex:predicate spindle:expectType xsd:decimal */
-		if(!strcmp(preduri, "http://bbcarchdev.github.io/ns/spindle#expectType"))
+		if(!strcmp(preduri, NS_SPINDLE "expectType"))
 		{
 			r = spindle_pred_set_expecttype_(predentry, statement);
 		}
 		/* ex:predicate spindle:proxyOnly "true"^^xsd:boolean */
-		if(!strcmp(preduri, "http://bbcarchdev.github.io/ns/spindle#proxyOnly"))
+		if(!strcmp(preduri, NS_SPINDLE "proxyOnly"))
 		{
 			r = spindle_pred_set_proxyonly_(predentry, statement);
 		}
 		/* ex:predicate spindle:indexed "true"^^xsd:boolean */
-		if(!strcmp(preduri, "http://bbcarchdev.github.io/ns/spindle#indexed"))
+		if(!strcmp(preduri, NS_SPINDLE "indexed"))
 		{
 			r = spindle_pred_set_indexed_(predentry, statement);
 		}
 		/* ex:predicate spindle:prominence nnn */
-		if(!strcmp(preduri, "http://bbcarchdev.github.io/ns/spindle#prominence"))
+		if(!strcmp(preduri, NS_SPINDLE "prominence"))
 		{
 			r = spindle_pred_set_prominence_(predentry, statement);
 		}
@@ -714,12 +714,12 @@ spindle_pred_set_expect_(struct spindle_predicatemap_struct *entry, librdf_state
 	}
 	obj = librdf_node_get_uri(object);
 	objuri = (const char *) librdf_uri_as_string(obj);
-	if(!strcmp(objuri, "http://www.w3.org/2000/01/rdf-schema#Literal"))
+	if(!strcmp(objuri, NS_RDFS "Literal"))
 	{
 		entry->expected = RAPTOR_TERM_TYPE_LITERAL;
 		return 1;
 	}
-	if(!strcmp(objuri, "http://www.w3.org/2000/01/rdf-schema#Resource"))
+	if(!strcmp(objuri, NS_RDFS "Resource"))
 	{
 		entry->expected = RAPTOR_TERM_TYPE_URI;
 		return 1;
@@ -775,7 +775,7 @@ spindle_pred_set_proxyonly_(struct spindle_predicatemap_struct *entry, librdf_st
 		return 0;
 	}
 	dturi = (const char *) librdf_uri_as_string(dt);
-	if(strcmp(dturi, "http://www.w3.org/2001/XMLSchema#boolean"))
+	if(strcmp(dturi, NS_XSD "boolean"))
 	{
 		return 0;
 	}
@@ -809,7 +809,7 @@ spindle_pred_set_indexed_(struct spindle_predicatemap_struct *entry, librdf_stat
 		return 0;
 	}
 	dturi = (const char *) librdf_uri_as_string(dt);
-	if(strcmp(dturi, "http://www.w3.org/2001/XMLSchema#boolean"))
+	if(strcmp(dturi, NS_XSD "boolean"))
 	{
 		return 0;
 	}
@@ -864,25 +864,25 @@ spindle_pred_add_matchnode_(SPINDLE *spindle, librdf_model *model, const char *m
 		}
 		pred = librdf_node_get_uri(predicate);
 		preduri = (const char *) librdf_uri_as_string(pred);
-		if(!strcmp(preduri, "http://www.w3.org/2000/01/rdf-schema#domain"))
+		if(!strcmp(preduri, NS_RDFS "domain"))
 		{
 			hasdomain = 1;
 		}
-		else if(!strcmp(preduri, "http://purl.org/ontology/olo/core#index"))
+		else if(!strcmp(preduri, NS_OLO "index"))
 		{
 			if(twine_rdf_node_intval(object, &i) > 0 && i >= 0)
 			{
 				score = (int) i;
 			}
 		}
-		else if(!strcmp(preduri, "http://bbcarchdev.github.io/ns/spindle#prominence"))
+		else if(!strcmp(preduri, NS_SPINDLE "prominence"))
 		{
 			if(twine_rdf_node_intval(object, &i) > 0 && i != 0)
 			{
 				prominence = (int) i;
 			}
 		}
-		else if(!strcmp(preduri, "http://bbcarchdev.github.io/ns/spindle#expressedAs"))
+		else if(!strcmp(preduri, NS_SPINDLE "expressedAs"))
 		{
 			if(!librdf_node_is_resource(object))
 			{
@@ -925,7 +925,7 @@ spindle_pred_add_matchnode_(SPINDLE *spindle, librdf_model *model, const char *m
 	 * the listed domain to the entry's match list.
 	 */
 	s = librdf_new_node_from_node(matchnode);
-	p = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) "http://www.w3.org/2000/01/rdf-schema#domain");
+	p = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) NS_RDFS "domain");
 	query = librdf_new_statement_from_nodes(spindle->world, s, p, NULL);
 	stream = librdf_model_find_statements(model, query);
 	while(!librdf_stream_end(stream))

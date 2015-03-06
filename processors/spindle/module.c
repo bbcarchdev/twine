@@ -66,13 +66,13 @@ spindle_init_(SPINDLE *spindle)
 	{
 		return -1;
 	}
-	spindle->sameas = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) "http://www.w3.org/2002/07/owl#sameAs");
+	spindle->sameas = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) NS_OWL "sameAs");
 	if(!spindle->sameas)
 	{
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create node for owl:sameAs\n");
 		return -1;
 	}
-	spindle->rdftype = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) "http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+	spindle->rdftype = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) NS_RDF "type");
 	if(!spindle->rdftype)
 	{
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create node for rdf:type\n");
@@ -84,13 +84,13 @@ spindle_init_(SPINDLE *spindle)
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create node for <%s>\n", spindle->root);
 		return -1;
 	}	
-	spindle->modified = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) "http://purl.org/dc/terms/modified");
+	spindle->modified = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) NS_DCTERMS "modified");
 	if(!spindle->modified)
 	{
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create node for dct:modified\n");
 		return -1;
 	}
-	spindle->xsd_dateTime = librdf_new_uri(spindle->world, (const unsigned char *) "http://www.w3.org/2001/XMLSchema#dateTime");
+	spindle->xsd_dateTime = librdf_new_uri(spindle->world, (const unsigned char *) NS_XSD "dateTime");
 	if(!spindle->xsd_dateTime)
 	{
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create URI for xsd:dateTime\n");

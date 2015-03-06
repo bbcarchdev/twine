@@ -32,7 +32,7 @@ static int spindle_doc_score_(SPINDLECACHE *data);
 int
 spindle_doc_init(SPINDLE *spindle)
 {
-	spindle->titlepred = twine_config_geta("spindle:predicates:title", "http://www.w3.org/2000/01/rdf-schema#label");
+	spindle->titlepred = twine_config_geta("spindle:predicates:title", NS_RDFS "label");
 	return 0;
 }
 
@@ -126,7 +126,7 @@ spindle_doc_topic_(SPINDLECACHE *cache)
 		return -1;
 	}
 	librdf_statement_set_subject(st, obj);
-	obj = twine_rdf_node_createuri("http://xmlns.com/foaf/0.1/primaryTopic");
+	obj = twine_rdf_node_createuri(NS_FOAF "primaryTopic");
 	if(!obj)
 	{
 		twine_rdf_st_destroy(st);
@@ -173,7 +173,7 @@ spindle_doc_type_(SPINDLECACHE *cache)
 		return -1;
 	}
 	librdf_statement_set_predicate(st, obj);
-	obj = twine_rdf_node_createuri("http://xmlns.com/foaf/0.1/Document");
+	obj = twine_rdf_node_createuri(NS_FOAF "Document");
 	if(!obj)
 	{
 		twine_rdf_st_destroy(st);
@@ -222,7 +222,7 @@ spindle_doc_label_(SPINDLECACHE *cache)
 		return -1;
 	}
 	librdf_statement_set_subject(st, obj);
-	obj = twine_rdf_node_createuri("http://www.w3.org/2000/01/rdf-schema#label");
+	obj = twine_rdf_node_createuri(NS_RDFS "label");
 	if(!obj)
 	{
 		twine_rdf_st_destroy(st);
@@ -267,8 +267,8 @@ spindle_doc_score_(SPINDLECACHE *data)
 	world = twine_rdf_world();
 	st = twine_rdf_st_create();
 	librdf_statement_set_subject(st, twine_rdf_node_clone(data->doc));
-	librdf_statement_set_predicate(st, twine_rdf_node_createuri("http://bbcarchdev.github.io/ns/spindle#score"));	
-	dturi = librdf_new_uri(world, (const unsigned char *) "http://www.w3.org/2001/XMLSchema#integer");
+	librdf_statement_set_predicate(st, twine_rdf_node_createuri(NS_SPINDLE "score"));
+	dturi = librdf_new_uri(world, (const unsigned char *) NS_XSD "integer");
 	node = librdf_new_node_from_typed_literal(world, (const unsigned char *) scorebuf, NULL, dturi);
 	librdf_statement_set_object(st, node);
 	/* This information's only added to the root graph */

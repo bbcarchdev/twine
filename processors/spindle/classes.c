@@ -38,7 +38,7 @@ spindle_class_match(SPINDLECACHE *cache, struct spindle_strset_struct *classes)
 
 	mapentry = NULL;
 	match = NULL;
-	node = librdf_new_node_from_uri_string(cache->spindle->world, (const unsigned char *) "http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+	node = librdf_new_node_from_uri_string(cache->spindle->world, (const unsigned char *) NS_RDF "type");
 	query = librdf_new_statement(cache->spindle->world);
 	librdf_statement_set_predicate(query, node);
 	stream = librdf_model_find_statements(cache->sourcedata, query);

@@ -508,19 +508,19 @@ spindle_prop_candidate_uri_(struct propdata_struct *data, struct propmatch_struc
 static int
 spindle_dt_is_int(const char *dtstr)
 {
-	if(!strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#integer") ||
-	   !strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#long") ||
-	   !strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#short") ||
-	   !strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#byte") ||
-	   !strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#int") ||
-	   !strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#nonPositiveInteger") ||
-	   !strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#nonNegativeInteger") ||
-	   !strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#negativeInteger") ||
-	   !strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#positiveInteger") ||
-	   !strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#unsignedLong") ||
-	   !strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#unsignedInt") ||
-	   !strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#unsignedShort") ||
-	   !strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#unsignedByte"))
+	if(!strcmp(dtstr, NS_XSD "integer") ||
+	   !strcmp(dtstr, NS_XSD "long") ||
+	   !strcmp(dtstr, NS_XSD "short") ||
+	   !strcmp(dtstr, NS_XSD "byte") ||
+	   !strcmp(dtstr, NS_XSD "int") ||
+	   !strcmp(dtstr, NS_XSD "nonPositiveInteger") ||
+	   !strcmp(dtstr, NS_XSD "nonNegativeInteger") ||
+	   !strcmp(dtstr, NS_XSD "negativeInteger") ||
+	   !strcmp(dtstr, NS_XSD "positiveInteger") ||
+	   !strcmp(dtstr, NS_XSD "unsignedLong") ||
+	   !strcmp(dtstr, NS_XSD "unsignedInt") ||
+	   !strcmp(dtstr, NS_XSD "unsignedShort") ||
+	   !strcmp(dtstr, NS_XSD "unsignedByte"))
 	{
 		return 1;
 	}
@@ -563,7 +563,7 @@ spindle_prop_candidate_literal_(struct propdata_struct *data, struct propmatch_s
 	if(dtstr)
 	{
 		/* Coerce specific types */
-		if(!strcmp(match->map->datatype, "http://www.w3.org/2001/XMLSchema#decimal"))
+		if(!strcmp(match->map->datatype, NS_XSD "decimal"))
 		{
 			if(spindle_dt_is_int(dtstr))
 			{

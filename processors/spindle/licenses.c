@@ -55,7 +55,7 @@ spindle_license_init(SPINDLE *spindle)
 	char *pred;
 	size_t c;
 
-	pred = twine_config_geta("spindle:predicates:license", "http://purl.org/dc/terms/rights");
+	pred = twine_config_geta("spindle:predicates:license", NS_DCTERMS "rights");
 	for(c = 0; c < spindle->predcount; c++)
 	{
 		if(!strcmp(spindle->predicates[c].target, pred))
@@ -271,7 +271,7 @@ spindle_license_apply_context_(SPINDLECACHE *cache, struct licenselist_struct *l
 		{
 			if(cache->spindle->licensepred->matches[c].onlyfor &&
 			   strcmp(cache->spindle->licensepred->matches[c].onlyfor,
-					  "http://xmlns.com/foaf/0.1/Document"))
+					  NS_FOAF "Document"))
 			{
 				continue;
 			}
@@ -336,14 +336,14 @@ spindle_license_apply_list_(SPINDLECACHE *cache, struct licenselist_struct *list
 	
 	statement = twine_rdf_st_create();
 	librdf_statement_set_subject(statement, librdf_new_node_from_node(subject));
-	librdf_statement_set_predicate(statement, twine_rdf_node_createuri("http://www.w3.org/2000/01/rdf-schema#comment"));
+	librdf_statement_set_predicate(statement, twine_rdf_node_createuri(NS_RDFS "comment"));
 	librdf_statement_set_object(statement, librdf_new_node_from_literal(cache->spindle->world, (const unsigned char *) buf, "en", 0));
 	twine_rdf_model_add_st(cache->proxydata, statement, cache->graph);
 	librdf_free_statement(statement);
 	
 	statement = twine_rdf_st_create();
 	librdf_statement_set_subject(statement, librdf_new_node_from_node(cache->doc));
-	librdf_statement_set_predicate(statement, twine_rdf_node_createuri("http://purl.org/dc/terms/rights"));
+	librdf_statement_set_predicate(statement, twine_rdf_node_createuri(NS_DCTERMS "rights"));
 	librdf_statement_set_object(statement, librdf_new_node_from_node(subject));
 	twine_rdf_model_add_st(cache->proxydata, statement, cache->graph);
 	librdf_free_statement(statement);
@@ -383,7 +383,7 @@ spindle_license_label_(SPINDLECACHE *cache, librdf_node *subject)
 		return -1;
 	}
 	librdf_statement_set_subject(st, librdf_new_node_from_node(subject));
-	obj = twine_rdf_node_createuri("http://www.w3.org/2000/01/rdf-schema#label");
+	obj = twine_rdf_node_createuri(NS_RDFS "label");
 	if(!obj)
 	{
 		twine_rdf_st_destroy(st);
@@ -465,7 +465,7 @@ spindle_license_apply_st_(SPINDLECACHE *cache, librdf_node *graph, const char *g
 	/* Add <#license> rdfs:seeAlso <http://example.com/license> . */
 	st = twine_rdf_st_create();
 	librdf_statement_set_subject(st, librdf_new_node_from_node(graph));
-	librdf_statement_set_predicate(st, twine_rdf_node_createuri("http://www.w3.org/2000/01/rdf-schema#seeAlso"));
+	librdf_statement_set_predicate(st, twine_rdf_node_createuri(NS_RDFS "seeAlso"));
 	librdf_statement_set_object(st, librdf_new_node_from_node(object));
 	twine_rdf_model_add_st(cache->proxydata, st, cache->graph);
 	twine_rdf_st_destroy(st);

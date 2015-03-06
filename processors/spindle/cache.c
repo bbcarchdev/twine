@@ -396,8 +396,8 @@ spindle_cache_describedby_(SPINDLECACHE *data)
 		 */
 		st = twine_rdf_st_create();
 		librdf_statement_set_subject(st, librdf_new_node_from_node(node));
-		librdf_statement_set_predicate(st, twine_rdf_node_createuri("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"));
-		librdf_statement_set_object(st, twine_rdf_node_createuri("http://xmlns.com/foaf/0.1/Document"));
+		librdf_statement_set_predicate(st, twine_rdf_node_createuri(NS_RDF "type"));
+		librdf_statement_set_object(st, twine_rdf_node_createuri(NS_FOAF "Document"));
 		twine_rdf_model_add_st(data->proxydata, st, data->graph);
 		librdf_free_statement(st);
 		
@@ -422,7 +422,7 @@ spindle_cache_describedby_(SPINDLECACHE *data)
 			
 			st = twine_rdf_st_create();
 			librdf_statement_set_subject(st, librdf_new_node_from_node(subject));
-			librdf_statement_set_predicate(st, twine_rdf_node_createuri("http://www.w3.org/2007/05/powder-s#describedBy"));
+			librdf_statement_set_predicate(st, twine_rdf_node_createuri(NS_POWDER "describedBy"));
 			librdf_statement_set_object(st, librdf_new_node_from_node(node));
 			twine_rdf_model_add_st(data->proxydata, st, data->graph);
 			librdf_free_statement(st);
@@ -430,7 +430,7 @@ spindle_cache_describedby_(SPINDLECACHE *data)
 			/* Add <doc> rdfs:seeAlso <source> */
 			st = twine_rdf_st_create();
 			librdf_statement_set_subject(st, librdf_new_node_from_node(data->doc));
-			librdf_statement_set_predicate(st, twine_rdf_node_createuri("http://www.w3.org/2000/01/rdf-schema#seeAlso"));
+			librdf_statement_set_predicate(st, twine_rdf_node_createuri(NS_RDFS "seeAlso"));
 			librdf_statement_set_object(st, librdf_new_node_from_node(node));
 			twine_rdf_model_add_st(data->proxydata, st, data->graph);
 			librdf_free_statement(st);
@@ -469,8 +469,8 @@ spindle_cache_extra_(SPINDLECACHE *data)
 						   "  GRAPH %V {\n"
 						   "   %V ?p1 ?s .\n"
 						   "   FILTER("
-						   "     ?p1 = <http://xmlns.com/foaf/0.1/page> || "
-						   "     ?p1 = <http://search.yahoo.com/mrss/player> "
+						   "     ?p1 = <" NS_FOAF "page> || "
+						   "     ?p1 = <" NS_MRSS "player> "
 						   "   )\n"
 						   "  }\n"
 						   "  GRAPH ?g {\n"
@@ -765,7 +765,7 @@ spindle_cache_strset_refs_(SPINDLECACHE *data, struct spindle_strset_struct *set
 		res = sparql_queryf(data->spindle->sparql,
 							"SELECT ?local, ?s WHERE {\n"
 							" GRAPH %V {\n"
-							"  ?s <http://www.w3.org/2002/07/owl#sameAs> ?local .\n"
+							"  ?s <" NS_OWL "sameAs> ?local .\n"
 							" }\n"
 							" GRAPH ?g {\n"
 							"   ?s ?p <%s> .\n"

@@ -87,7 +87,7 @@ spindle_proxy_locate(SPINDLE *spindle, const char *uri)
 	{
 		return NULL;
 	}   
-	snprintf(qbuf, l, "SELECT DISTINCT ?o FROM <%s> WHERE { <%s> <http://www.w3.org/2002/07/owl#sameAs> ?o . }", spindle->root, uri);
+	snprintf(qbuf, l, "SELECT DISTINCT ?o FROM <%s> WHERE { <%s> <" NS_OWL "sameAs> ?o . }", spindle->root, uri);
 	res = sparql_query(spindle->sparql, qbuf, strlen(qbuf));
 	if(!res)
 	{
@@ -268,7 +268,7 @@ spindle_proxy_migrate(SPINDLE *spindle, const char *from, const char *to, char *
 	}
 	/* Generate an INSERT DATA for the new references */
 	qp = qbuf;
-	qp += sprintf(qp, "PREFIX owl: <http://www.w3.org/2002/07/owl#>\n"
+	qp += sprintf(qp, "PREFIX owl: <" NS_OWL ">\n"
 				  "INSERT DATA {\n"
 				  "GRAPH <%s> {\n", spindle->root);
 	for(c = 0; refs[c]; c++)
@@ -279,7 +279,7 @@ spindle_proxy_migrate(SPINDLE *spindle, const char *from, const char *to, char *
 	sparql_update(spindle->sparql, qbuf, strlen(qbuf));
 	/* Generate a DELETE DATA for the old references */
 	qp = qbuf;
-	qp += sprintf(qp, "PREFIX owl: <http://www.w3.org/2002/07/owl#>\n"
+	qp += sprintf(qp, "PREFIX owl: <" NS_OWL ">\n"
 				  "DELETE DATA {\n"
 				  "GRAPH <%s> {\n", spindle->root);
 	for(c = 0; refs[c]; c++)
@@ -320,7 +320,7 @@ spindle_proxy_refs(SPINDLE *spindle, const char *uri)
 		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to allocate SPARQL query string\n");
 		return NULL;
 	}
-	snprintf(qbuf, l, "SELECT DISTINCT ?s FROM <%s> WHERE { ?s <http://www.w3.org/2002/07/owl#sameAs> <%s> . }", spindle->root, uri);
+	snprintf(qbuf, l, "SELECT DISTINCT ?s FROM <%s> WHERE { ?s <" NS_OWL "sameAs> <%s> . }", spindle->root, uri);
 	res = sparql_query(spindle->sparql, qbuf, strlen(qbuf));
 	if(!res)
 	{
@@ -402,7 +402,7 @@ spindle_proxy_relate(SPINDLE *spindle, const char *remote, const char *local)
 		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to allocate SPARQL query buffer\n");
 		return -1;
 	}
-	snprintf(qbuf, l, "PREFIX owl: <http://www.w3.org/2002/07/owl#>\nINSERT DATA {\nGRAPH <%s> {\n<%s> owl:sameAs <%s> . } }", spindle->root, remote, local);
+	snprintf(qbuf, l, "PREFIX owl: <" NS_OWL ">\nINSERT DATA {\nGRAPH <%s> {\n<%s> owl:sameAs <%s> . } }", spindle->root, remote, local);
 	twine_logf(LOG_DEBUG, "%s\n", qbuf);
 	r = sparql_update(spindle->sparql, qbuf, strlen(qbuf));
 	free(qbuf);
