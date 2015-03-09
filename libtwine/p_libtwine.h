@@ -26,6 +26,7 @@
 # include <dlfcn.h>
 # include <errno.h>
 # include <string.h>
+# include <curl/curl.h>
 
 # include "libtwine-internal.h"
 
@@ -85,7 +86,10 @@ struct twine_callback_struct
 extern twine_log_fn twine_logger_;
 
 int twine_log_init_(twine_log_fn logfn);
+int twine_log_cleanup_(void);
 int twine_rdf_init_(void);
+int twine_rdf_cleanup_(void);
 int twine_graph_cleanup_(twine_graph *graph);
+int twine_plugin_unload_all_(void);
 
 #endif /*!P_LIBTWINE_H_*/

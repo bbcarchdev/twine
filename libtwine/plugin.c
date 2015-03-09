@@ -120,12 +120,13 @@ twine_plugin_unload_all_(void)
 			current = handle;
 			fn();
 			current = NULL;
-		}		
+		}
+		dlclose(handle);
 	}
 	free(callbacks);
 	callbacks = NULL;
 	cbcount = 0;
-	cbsize = 0;
+	cbsize = 0;   
 	twine_logf(LOG_INFO, "all plug-ins unregistered\n");
 	return 0;
 }

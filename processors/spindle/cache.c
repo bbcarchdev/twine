@@ -154,18 +154,21 @@ spindle_cache_init_(SPINDLECACHE *data, SPINDLE *spindle, const char *localname)
 {	
 	char *t;
 
-	twine_logf(LOG_DEBUG, "- cache init for <%s>\n", localname);
 	memset(data, 0, sizeof(SPINDLECACHE));
 	data->spindle = spindle;
 	data->sparql = spindle->sparql;
 	data->localname = localname;
 	data->score = 50;
+	data->sameas = spindle->sameas;
+	
+	/* Create a node representing the full URI of the proxy entity */
 	data->self = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) localname);
 	if(!data->self)
 	{
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create node for <%s>\n", localname);
 		return -1;
 	}
+	/* Create a node representing the full URI of the proxy resource */
 	data->docname = strdup(localname);		
 	t = strchr(data->docname, '#');
 	if(t)
@@ -173,6 +176,9 @@ spindle_cache_init_(SPINDLECACHE *data, SPINDLE *spindle, const char *localname)
 		*t = 0;
 	}
 	data->doc = librdf_new_node_from_uri_string(spindle->world, (unsigned const char *) data->docname);
+	/* Set data->graphname to the URI of the named graph which will contain the proxy data, and
+	 * data->graph to the corresponding node
+	 */
 	if(spindle->multigraph)
 	{
 		data->graphname = strdup(data->docname);
@@ -183,7 +189,7 @@ spindle_cache_init_(SPINDLECACHE *data, SPINDLE *spindle, const char *localname)
 		data->graphname = strdup(spindle->root);
 		data->graph = spindle->rootgraph;
 	}
-	data->sameas = spindle->sameas;
+
 	/* The rootdata model holds proxy data which is stored in the root
 	 * graph for convenience
 	 */
@@ -215,7 +221,14 @@ spindle_cache_init_(SPINDLECACHE *data, SPINDLE *spindle, const char *localname)
 static int
 spindle_cache_cleanup_(SPINDLECACHE *data)
 {
-	twine_logf(LOG_DEBUG, "- cache cleanup for <%s>\n", data->localname);
+	if(data->doc)
+	{
+		librdf_free_node(data->doc);
+	}
+	if(data->self)
+	{
+		librdf_free_node(data->self);
+	}
 	if(data->rootdata)
 	{
 		twine_rdf_model_destroy(data->rootdata);
@@ -231,14 +244,6 @@ spindle_cache_cleanup_(SPINDLECACHE *data)
 	if(data->extradata)
 	{
 		twine_rdf_model_destroy(data->extradata);
-	}
-	if(data->doc)
-	{
-		librdf_free_node(data->doc);
-	}
-	if(data->self)
-	{
-		librdf_free_node(data->self);
 	}
 	/* Never free data->graph - it is a pointer to data->doc or spindle->rootgraph */
 	free(data->title);

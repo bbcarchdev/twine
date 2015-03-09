@@ -32,6 +32,13 @@ twine_log_init_(twine_log_fn logfn)
 	return 0;
 }
 
+int
+twine_log_cleanup_(void)
+{
+	twine_logger_ = vsyslog;
+	return 0;
+}
+
 void
 twine_vlogf(int prio, const char *format, va_list args)
 {

@@ -26,7 +26,18 @@
 int
 twine_init_(twine_log_fn logger)
 {
+	curl_global_init(CURL_GLOBAL_ALL);
 	twine_log_init_(logger);
 	twine_rdf_init_();
+	return 0;
+}
+
+int
+twine_cleanup_(void)
+{
+	twine_log_cleanup_();
+	twine_plugin_unload_all_();
+	twine_rdf_cleanup_();
+	curl_global_cleanup();
 	return 0;
 }

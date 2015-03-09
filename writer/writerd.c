@@ -46,7 +46,7 @@ main(int argc, char **argv)
 	if(bulk_import)
 	{
 		r = writerd_import(bulk_import);
-		twine_plugin_unload_all_();
+		twine_cleanup_();
 		return r ? 1 : 0;
 	}
 	detach = config_get_bool(TWINE_APP_NAME ":detach", 1);
@@ -85,7 +85,7 @@ main(int argc, char **argv)
 	{
 		return 1;
 	}
-	twine_plugin_unload_all_();
+	twine_cleanup_();
 	return 0;
 }
 

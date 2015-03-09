@@ -45,6 +45,17 @@ twine_rdf_init_(void)
 	return 0;
 }
 
+int
+twine_rdf_cleanup_(void)
+{
+	if(twine_world)
+	{
+		librdf_free_world(twine_world);
+		twine_world = NULL;
+	}
+	return 0;
+}
+
 librdf_world *
 twine_rdf_world(void)
 {
