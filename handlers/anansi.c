@@ -684,9 +684,9 @@ ingest_link(librdf_world *world, librdf_model *model, const char *value, librdf_
 			/* Only process links which actually have a relation */
 			rel = librdf_new_uri(world, (const unsigned char *) relstr);
 			twine_logf(LOG_DEBUG, PLUGIN_NAME ": Link <%s> <%s> <%s>\n",
-					   (const char *) librdf_uri_to_string(anchor),
-					   (const char *) librdf_uri_to_string(rel),
-					   (const char *) librdf_uri_to_string(uri));
+					   (const char *) librdf_uri_as_string(anchor),
+					   (const char *) librdf_uri_as_string(rel),
+					   (const char *) librdf_uri_as_string(uri));
 			/* Create a new triple (content-location, relation, target) */
 			subject = librdf_new_node_from_uri(world, anchor);
 			predicate = librdf_new_node_from_uri(world, rel);

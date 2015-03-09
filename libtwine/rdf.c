@@ -352,7 +352,7 @@ twine_rdf_node_isint(librdf_node *node)
 	{
 		return 0;
 	}
-	dtstr = (const char *) librdf_uri_to_string(uri);
+	dtstr = (const char *) librdf_uri_as_string(uri);
 	if(strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#integer") &&
 	   strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#long") &&
 	   strcmp(dtstr, "http://www.w3.org/2001/XMLSchema#short") &&

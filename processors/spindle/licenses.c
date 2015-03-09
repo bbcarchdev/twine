@@ -252,7 +252,7 @@ spindle_license_apply_context_(SPINDLECACHE *cache, struct licenselist_struct *l
 	size_t c;
 
 	uri = librdf_node_get_uri(context);
-	uristr = (const char *) librdf_uri_to_string(uri);
+	uristr = (const char *) librdf_uri_as_string(uri);
 	query = twine_rdf_st_create();
 	librdf_statement_set_subject(query, librdf_new_node_from_node(context));
 	stream = librdf_model_find_statements_with_options(cache->sourcedata, query, context, NULL);
@@ -443,7 +443,7 @@ spindle_license_apply_st_(SPINDLECACHE *cache, librdf_node *graph, const char *g
 	}
 	object = librdf_statement_get_object(statement);
 	obj = librdf_node_get_uri(object);
-	objuri = (const char *) librdf_uri_to_string(obj);
+	objuri = (const char *) librdf_uri_as_string(obj);
 
 	license = NULL;
 	for(c = 0; c < cache->spindle->nlicenses; c++)

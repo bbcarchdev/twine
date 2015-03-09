@@ -349,7 +349,7 @@ spindle_cache_source_clean_(SPINDLECACHE *data)
 	{
 		node = librdf_iterator_get_object(iterator);
 		uri = librdf_node_get_uri(node);
-		uristr = (const char *) librdf_uri_to_string(uri);
+		uristr = (const char *) librdf_uri_as_string(uri);
 		if(!strncmp(uristr, data->spindle->root, strlen(data->spindle->root)))
 		{
 			librdf_model_context_remove_statements(data->sourcedata, node);
