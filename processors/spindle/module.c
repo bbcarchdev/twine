@@ -141,6 +141,7 @@ spindle_s3_init_(SPINDLE *spindle)
 		free(t);		
 		return -1;
 	}
+	s3_set_logger(spindle->bucket, twine_vlogf);
 	free(t);
 	if((t = twine_config_geta("s3:endpoint", NULL)))
 	{
