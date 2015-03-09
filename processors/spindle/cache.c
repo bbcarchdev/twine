@@ -579,7 +579,7 @@ spindle_cache_store_s3_(SPINDLECACHE *data)
 	CURL *ch;
 	struct curl_slist *headers;
 	struct s3_upload_struct s3data;
-	int r;
+	int r, e;
 	long status;
 
 	if(!data->spindle->bucket)
@@ -686,9 +686,9 @@ spindle_cache_store_s3_(SPINDLECACHE *data)
 	headers = curl_slist_append(headers, nqlenstr);
 	s3_request_set_headers(req, headers);
 	r = 0;
-	if(s3_request_perform(req))
+	if((e = s3_request_perform(req)))
 	{
-		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to upload N-Quads to bucket at <%s>\n", urlbuf);
+		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to upload N-Quads to bucket at <%s>: %s\n", urlbuf, curl_easy_strerror(e));
 		r = -1;
 	}
 	else

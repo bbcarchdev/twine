@@ -56,9 +56,10 @@ spindle_init_(SPINDLE *spindle)
 		return -1;
 	}
 	spindle->multigraph = twine_config_get_bool("spindle:multigraph", 0);
-	spindle->root = twine_config_geta("spindle:graph", "http://localhost/");
+	spindle->root = twine_config_geta("spindle:graph", NULL);
 	if(!spindle->root)
 	{
+		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to obtain Spindle root graph name\n");
 		return -1;
 	}
 	spindle->sparql = twine_sparql_create();
@@ -69,41 +70,47 @@ spindle_init_(SPINDLE *spindle)
 	spindle->sameas = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) NS_OWL "sameAs");
 	if(!spindle->sameas)
 	{
-		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create node for owl:sameAs\n");
+		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to create node for owl:sameAs\n");
 		return -1;
 	}
 	spindle->rdftype = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) NS_RDF "type");
 	if(!spindle->rdftype)
 	{
-		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create node for rdf:type\n");
+		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to create node for rdf:type\n");
 		return -1;
 	}
 	spindle->rootgraph = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) spindle->root);
 	if(!spindle->rootgraph)
 	{
-		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create node for <%s>\n", spindle->root);
+		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to create node for <%s>\n", spindle->root);
 		return -1;
 	}	
 	spindle->modified = librdf_new_node_from_uri_string(spindle->world, (const unsigned char *) NS_DCTERMS "modified");
 	if(!spindle->modified)
 	{
-		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create node for dct:modified\n");
+		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to create node for dct:modified\n");
 		return -1;
 	}
 	spindle->xsd_dateTime = librdf_new_uri(spindle->world, (const unsigned char *) NS_XSD "dateTime");
 	if(!spindle->xsd_dateTime)
 	{
-		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to create URI for xsd:dateTime\n");
+		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to create URI for xsd:dateTime\n");
+		return -1;
+	}
+	spindle->graphcache = (struct spindle_graphcache_struct *) calloc(SPINDLE_GRAPHCACHE_SIZE, sizeof(struct spindle_graphcache_struct));
+	if(!spindle->graphcache)
+	{
+		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to create graph cache\n");
 		return -1;
 	}
 	if(spindle_rulebase_init(spindle))
 	{
-		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to load rulebase\n");
+		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to load rulebase\n");
 		return -1;
 	}
 	if(spindle_s3_init_(spindle))
 	{
-		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to initialise S3 bucket\n");
+		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to initialise S3 bucket\n");
 		return -1;
 	}
 	if(spindle_doc_init(spindle))
@@ -130,6 +137,7 @@ spindle_s3_init_(SPINDLE *spindle)
 	spindle->bucket = s3_create(t);
 	if(!spindle->bucket)
 	{
+		twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to create S3 bucket object for <s3://%s>\n", t);
 		free(t);		
 		return -1;
 	}
@@ -150,7 +158,6 @@ spindle_s3_init_(SPINDLE *spindle)
 		free(t);
 	}
 	spindle->s3_verbose = twine_config_get_bool("s3:verbose", 0);
-	spindle->graphcache = (struct spindle_graphcache_struct *) calloc(SPINDLE_GRAPHCACHE_SIZE, sizeof(struct spindle_graphcache_struct));
 	return 0;
 }
 
