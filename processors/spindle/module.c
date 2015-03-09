@@ -46,6 +46,14 @@ twine_plugin_init(void)
 	return 0;
 }
 
+int
+twine_plugin_done(void)
+{
+	twine_logf(LOG_DEBUG, PLUGIN_NAME " plug-in: cleaning up\n");
+	spindle_cleanup_(&spindle);
+	return 0;
+}
+
 static int
 spindle_init_(SPINDLE *spindle)
 {
@@ -206,6 +214,7 @@ spindle_cleanup_(SPINDLE *spindle)
 	}
 	free(spindle->graphcache);
 	free(spindle->titlepred);
+	spindle_rulebase_cleanup(spindle);
 	return 0;
 }
 

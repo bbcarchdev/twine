@@ -301,6 +301,8 @@ int spindle_cache_update(SPINDLE *spindle, const char *localname, struct spindle
 
 /* Load the Spindle rulebase */
 int spindle_rulebase_init(SPINDLE *spindle);
+/* Destroy the Spindle rulebase */
+int spindle_rulebase_cleanup(SPINDLE *spindle);
 
 /* Determine the class of something (storing in cache->classname) */
 int spindle_class_match(SPINDLECACHE *cache, struct spindle_strset_struct *classes);

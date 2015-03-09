@@ -30,6 +30,7 @@
 # include "libtwine-internal.h"
 
 typedef int (*twine_plugin_init_fn)(void);
+typedef int (*twine_plugin_cleanup_fn)(void);
 
 typedef enum
 {

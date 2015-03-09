@@ -103,13 +103,53 @@ spindle_rulebase_init(SPINDLE *spindle)
 		librdf_stream_next(stream);
 	}
 	librdf_free_stream(stream);
-	librdf_free_model(model);
+	twine_rdf_model_destroy(model);
 	qsort(spindle->classes, spindle->classcount, sizeof(struct spindle_classmap_struct), spindle_class_compare_);
 	qsort(spindle->predicates, spindle->predcount, sizeof(struct spindle_predicatemap_struct), spindle_pred_compare_);
 	qsort(spindle->cachepreds, spindle->cpcount, sizeof(char *), spindle_cachepred_compare_);
 	spindle_class_dump_(spindle);
 	spindle_pred_dump_(spindle);
 	spindle_cachepred_dump_(spindle);
+	return 0;
+}
+
+int
+spindle_rulebase_cleanup(SPINDLE *spindle)
+{
+	size_t c, d;
+
+	for(c = 0; c < spindle->classcount; c++)
+	{
+		free(spindle->classes[c].uri);
+		for(d = 0; d < spindle->classes[c].matchcount; d++)
+		{
+			free(spindle->classes[c].match[d].uri);
+		}
+		free(spindle->classes[c].match);
+	}
+	free(spindle->classes);
+	spindle->classes = NULL;
+	
+	for(c = 0; c < spindle->predcount; c++)
+	{
+		free(spindle->predicates[c].target);
+		free(spindle->predicates[c].datatype);
+		for(d = 0; d < spindle->predicates[c].matchcount; d++)
+		{
+			free(spindle->predicates[c].matches[d].predicate);
+			free(spindle->predicates[c].matches[d].onlyfor);
+		}
+		free(spindle->predicates[c].matches);
+	}
+	free(spindle->predicates);
+	spindle->predicates = NULL;
+
+	for(c = 0; c < spindle->cpcount; c++)
+	{
+		free(spindle->cachepreds[c]);
+	}
+	free(spindle->cachepreds);
+	spindle->cachepreds = NULL;
 	return 0;
 }
 

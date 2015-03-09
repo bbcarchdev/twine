@@ -83,6 +83,9 @@ typedef int (*twine_postproc_fn)(twine_graph *graph, void *userdata);
 /* Twine plug-in entry-point */
 int twine_plugin_init(void);
 
+/* Twine plug-in clean-up entry-point */
+int twine_plugin_done(void);
+
 /* Register a processor callback for a given MIME type */
 int twine_plugin_register(const char *mimetype, const char *description, twine_processor_fn fn, void *data);
 

@@ -105,8 +105,15 @@ twine_rdf_model_clone(librdf_model *model)
 int
 twine_rdf_model_destroy(librdf_model *model)
 {
+	librdf_storage *storage;
+
 	if(model)
 	{
+		storage = librdf_model_get_storage(model);
+		if(storage)
+		{
+			librdf_free_storage(storage);
+		}
 		librdf_free_model(model);
 	}
 	return 0;
@@ -224,6 +231,7 @@ twine_rdf_model_add_st(librdf_model *model, librdf_statement *statement, librdf_
 		librdf_free_stream(st);
 		return 0;
 	}
+	librdf_free_stream(st);
 	if(ctx)
 	{
 		return librdf_model_context_add_statement(model, ctx, statement);
@@ -507,15 +515,15 @@ twine_graph_cleanup_(twine_graph *graph)
 {
 	if(graph->old)
 	{
-		librdf_free_model(graph->old);
+		twine_rdf_model_destroy(graph->old);
 	}
 	if(graph->pristine)
 	{
-		librdf_free_model(graph->pristine);
+		twine_rdf_model_destroy(graph->pristine);
 	}
 	if(graph->store)
 	{
-		librdf_free_model(graph->store);
+		twine_rdf_model_destroy(graph->store);
 	}
 	return 0;
 }

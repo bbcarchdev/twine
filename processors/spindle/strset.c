@@ -99,6 +99,7 @@ spindle_strset_destroy(struct spindle_strset_struct *set)
 	{
 		free(set->strings[c]);
 	}
+	free(set->flags);
 	free(set->strings);
 	free(set);
 	return 0;

@@ -154,6 +154,7 @@ spindle_cache_init_(SPINDLECACHE *data, SPINDLE *spindle, const char *localname)
 {	
 	char *t;
 
+	twine_logf(LOG_DEBUG, "- cache init for <%s>\n", localname);
 	memset(data, 0, sizeof(SPINDLECACHE));
 	data->spindle = spindle;
 	data->sparql = spindle->sparql;
@@ -214,28 +215,32 @@ spindle_cache_init_(SPINDLECACHE *data, SPINDLE *spindle, const char *localname)
 static int
 spindle_cache_cleanup_(SPINDLECACHE *data)
 {
+	twine_logf(LOG_DEBUG, "- cache cleanup for <%s>\n", data->localname);
 	if(data->rootdata)
 	{
-		librdf_free_model(data->rootdata);
+		twine_rdf_model_destroy(data->rootdata);
 	}
 	if(data->proxydata)
 	{
-		librdf_free_model(data->proxydata);
+		twine_rdf_model_destroy(data->proxydata);
 	}
 	if(data->sourcedata)
 	{
-		librdf_free_model(data->sourcedata);
+		twine_rdf_model_destroy(data->sourcedata);
 	}
 	if(data->extradata)
 	{
-		librdf_free_model(data->extradata);
+		twine_rdf_model_destroy(data->extradata);
 	}
-	librdf_free_node(data->doc);
-	/* Never free data->graph */
+	if(data->doc)
+	{
+		librdf_free_node(data->doc);
+	}
 	if(data->self)
 	{
 		librdf_free_node(data->self);
 	}
+	/* Never free data->graph - it is a pointer to data->doc or spindle->rootgraph */
 	free(data->title);
 	free(data->title_en);
 	free(data->docname);
@@ -405,18 +410,16 @@ spindle_cache_describedby_(SPINDLECACHE *data)
 		 *   ex:subject wdrs:describedBy ex:graphuri .
 		 */
 		stream = librdf_model_context_as_stream(data->sourcedata, node);
-		while(!librdf_stream_end(stream))
+		for(; !librdf_stream_end(stream); librdf_stream_next(stream))
 		{
 			statement = librdf_stream_get_object(stream);
 			subject = librdf_statement_get_subject(statement);
 			if(!librdf_node_is_resource(subject))
 			{
-				librdf_stream_next(stream);
 				continue;
 			}
 			if(librdf_node_equals(node, subject))
 			{
-				librdf_stream_next(stream);
 				continue;
 			}
 			
@@ -434,10 +437,8 @@ spindle_cache_describedby_(SPINDLECACHE *data)
 			librdf_statement_set_object(st, librdf_new_node_from_node(node));
 			twine_rdf_model_add_st(data->proxydata, st, data->graph);
 			librdf_free_statement(st);
-			librdf_stream_next(stream);
-
-			librdf_stream_next(stream);
 		}
+		librdf_free_stream(stream);
 
 		librdf_iterator_next(iter);
 	}
@@ -700,6 +701,7 @@ spindle_cache_store_s3_(SPINDLECACHE *data)
 			r = -1;
 		}
 	}
+	s3_request_destroy(req);
 	free(urlbuf);
 	free(s3data.buf);
 	return r;

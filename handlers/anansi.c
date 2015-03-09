@@ -188,7 +188,7 @@ static int process_anansi(const char *mime, const unsigned char *buf, size_t buf
 		}
 		jd_release(&dict);
 	}
-	librdf_free_model(model);
+	twine_rdf_model_destroy(model);
 	uri_info_destroy(info);
 	uri_destroy(uri);
 	free(str);
@@ -488,7 +488,8 @@ ingest_headers(jd_var *dict, const char *graph, librdf_model *model)
 				}
 			}
 		}
-	}	
+	}
+	jd_release(&keys);
 	return 0;
 }
 

@@ -98,6 +98,39 @@ twine_plugin_load_(const char *pathname)
 	return 0;
 }
 
+/* Internal: unload all plug-ins */
+int
+twine_plugin_unload_all_(void)
+{
+	twine_plugin_cleanup_fn fn;
+	void *handle;
+
+	while(cbcount)
+	{
+		handle = callbacks[0].module;
+		twine_plugin_unregister_all_(handle);
+		if(cbcount && callbacks[0].module == handle)
+		{
+			twine_logf(LOG_ERR, "failed to unregister callbacks for handle 0x%08x; aborting clean-up\n", (unsigned long) handle);
+			return -1;
+		}
+		fn = (twine_plugin_cleanup_fn) dlsym(handle, "twine_plugin_done");
+		if(fn)
+		{
+			current = handle;
+			fn();
+			current = NULL;
+		}		
+	}
+	free(callbacks);
+	callbacks = NULL;
+	cbcount = 0;
+	cbsize = 0;
+	twine_logf(LOG_INFO, "all plug-ins unregistered\n");
+	return 0;
+}
+
+
 /* Internal: add a new callback */
 static struct twine_callback_struct *
 twine_plugin_callback_add_(void *data)

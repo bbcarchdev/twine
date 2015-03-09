@@ -37,6 +37,7 @@ main(int argc, char **argv)
 {
 	pid_t child;
 	int detach;
+	int r;
 
 	if(writerd_init(argc, argv))
 	{
@@ -44,7 +45,9 @@ main(int argc, char **argv)
 	}
 	if(bulk_import)
 	{
-		return (writerd_import(bulk_import) ? 1 : 0);
+		r = writerd_import(bulk_import);
+		twine_plugin_unload_all_();
+		return r ? 1 : 0;
 	}
 	detach = config_get_bool(TWINE_APP_NAME ":detach", 1);
 	signal(SIGHUP, SIG_IGN);
@@ -82,6 +85,7 @@ main(int argc, char **argv)
 	{
 		return 1;
 	}
+	twine_plugin_unload_all_();
 	return 0;
 }
 

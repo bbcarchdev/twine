@@ -140,6 +140,8 @@ spindle_proxy_create(SPINDLE *spindle, const char *uri1, const char *uri2, struc
 		{
 			spindle_strset_add_flags(changeset, u1, flags);
 		}
+		free(u1);
+		free(u2);
 		return 0;
 	}
 	else if(!uri2 && u1)
@@ -150,6 +152,8 @@ spindle_proxy_create(SPINDLE *spindle, const char *uri1, const char *uri2, struc
 		{
 			spindle_strset_add_flags(changeset, u1, flags);
 		}
+		free(u1);
+		free(u2);
 		return 0;
 	}
 	/* If both entities already have local proxies, we just pick the first

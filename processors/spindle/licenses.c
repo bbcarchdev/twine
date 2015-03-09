@@ -241,6 +241,7 @@ spindle_license_apply(SPINDLECACHE *cache)
 	return 0;
 }
 
+/* Look for licensing triples within an individual named graph */
 static int
 spindle_license_apply_context_(SPINDLECACHE *cache, struct licenselist_struct *list, librdf_node *context, librdf_node *licenseentry, const char *licenseentryname)
 {
@@ -292,6 +293,7 @@ spindle_license_apply_context_(SPINDLECACHE *cache, struct licenselist_struct *l
 	return 0;
 }
 
+/* Take a list of licensing information and reflect it in the licensing graph */
 static int
 spindle_license_apply_list_(SPINDLECACHE *cache, struct licenselist_struct *list, librdf_node *subject)
 {
@@ -352,6 +354,7 @@ spindle_license_apply_list_(SPINDLECACHE *cache, struct licenselist_struct *list
 	return spindle_license_label_(cache, subject);
 }
 
+/* Add a label to the licensing graph */
 static int
 spindle_license_label_(SPINDLECACHE *cache, librdf_node *subject)
 {
@@ -478,6 +481,13 @@ spindle_license_apply_st_(SPINDLECACHE *cache, librdf_node *graph, const char *g
 	return 0;
 }
 
+/* Add a licensing entry to the discovered licensing information list.
+ * - uri is the full URI of the license itself
+ * - source is the hostname (if it can be determined) or full URI (otherwise)
+ *   of the document to which the license applies
+ * - if uri refers to a known license, then license will point to its entry
+ *   in the global license list.
+ */
 static struct licenseentry_struct *
 spindle_license_list_add_(struct licenselist_struct *list, const char *uri, const char *source, struct spindle_license_struct *license)
 {
@@ -540,7 +550,7 @@ spindle_license_list_add_(struct licenselist_struct *list, const char *uri, cons
 	}
 	else
 	{
-		p->name = uri;
+		p->name = p->uri;
 	}
 	p->len = strlen(p->source) + strlen(p->name);
 	list->nentries++;
