@@ -943,7 +943,7 @@ spindle_pred_add_matchnode_(SPINDLE *spindle, librdf_model *model, const char *m
 		librdf_stream_next(stream);
 	}
 	librdf_free_stream(stream);
-	librdf_free_statement(statement);
+	librdf_free_statement(query);
 	return 0;
 }
 
