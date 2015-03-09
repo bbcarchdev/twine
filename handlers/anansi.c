@@ -50,6 +50,7 @@ struct ingestinfo_struct
 };
 
 static int process_anansi(const char *mime, const unsigned char *buf, size_t buflen, void *data);
+static const unsigned char *bulk_anansi(const char *mime, const unsigned char *buf, size_t buflen, void *data);
 static S3BUCKET *get_bucket(const char *name);
 static S3BUCKET *add_bucket(struct bucketinfo_struct *info, const char *name);
 static int ingest_info(S3BUCKET *bucket, const char *resource, jd_var *dict);
@@ -68,6 +69,7 @@ twine_plugin_init(void)
 {
 	twine_logf(LOG_DEBUG, PLUGIN_NAME " plug-in: initialising\n");
 	twine_plugin_register("application/x-anansi-url", "Anansi URL", process_anansi, NULL);
+	twine_bulk_register("application/x-anansi-url", "Anansi URL", bulk_anansi, NULL);
 	return 0;
 }
 
@@ -191,6 +193,54 @@ static int process_anansi(const char *mime, const unsigned char *buf, size_t buf
 	uri_destroy(uri);
 	free(str);
 	return r;
+}
+
+static unsigned char *
+ustrnchr(const unsigned char *src, int ch, size_t max)
+{
+	const unsigned char *t;
+
+	for(t = src; (size_t) (t - src) < max; t++)
+	{
+		if(!*t)
+		{
+			break;
+		}
+		if(*t == ch)
+		{
+			return (unsigned char *) t;
+		}
+	}
+	return NULL;
+}
+
+static const unsigned char *
+bulk_anansi(const char *mime, const unsigned char *buf, size_t buflen, void *data)
+{
+	const unsigned char *start, *t;
+	size_t remaining;
+
+	t = buf;
+	while((size_t) (t - buf) < buflen)
+	{
+		start = t;
+		remaining = buflen - (t - buf);
+		t = ustrnchr(start, '\n', remaining);
+		if(t == start)
+		{
+			continue;
+		}
+		if(!t)
+		{
+			return (const unsigned char *) start;
+		}
+		if(process_anansi(mime, start, t - start, data))
+		{
+			return NULL;
+		}
+		t++;
+	}
+	return t;
 }
 
 static S3BUCKET *
