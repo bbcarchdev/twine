@@ -31,6 +31,7 @@ spindle_postproc(twine_graph *graph, void *data)
 	struct spindle_corefset_struct *oldset, *newset;
 	struct spindle_strset_struct *changes;
 	size_t c;
+	int r;
 
 	spindle = (SPINDLE *) data;
 	twine_logf(LOG_INFO, PLUGIN_NAME ": evaluating updated graph <%s>\n", graph->uri);
@@ -76,9 +77,9 @@ spindle_postproc(twine_graph *graph, void *data)
 	spindle_coref_destroy(newset);
 	/* Re-build the metadata for any related proxies */
 	twine_logf(LOG_DEBUG, PLUGIN_NAME ": updating caches for <%s>\n", graph->uri);
-	spindle_cache_update_set(spindle, changes);
+	r  = spindle_cache_update_set(spindle, changes);
 	spindle_strset_destroy(changes);
 	twine_logf(LOG_INFO, PLUGIN_NAME ": processing complete for graph <%s>\n", graph->uri);
-	return 0;
+	return r;
 }
 
