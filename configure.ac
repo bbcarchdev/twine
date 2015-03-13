@@ -41,7 +41,6 @@ BT_REQUIRE_LIBQPID_PROTON
 BT_REQUIRE_LIBXML2
 BT_REQUIRE_LIBXSLT
 BT_REQUIRE_LIBSPARQLCLIENT_INCLUDED
-BT_REQUIRE_LIBUUID
 
 old_LIBS="$LIBS"
 BT_REQUIRE_LIBURI_INCLUDED
@@ -69,7 +68,6 @@ writer/Makefile
 bridges/Makefile
 handlers/Makefile
 processors/Makefile
-processors/spindle/Makefile
 init.d/Makefile
 conf/Makefile
 conf/twine.conf
