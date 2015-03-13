@@ -9,7 +9,6 @@ usr/lib/twine/geonames.so
 usr/lib/twine/s3.so
 usr/lib/twine/anansi.so
 usr/lib/twine/example-xml.xsl
-usr/lib/twine/rulebase.ttl
 usr/share/doc/twine/twine.conf
 usr/share/doc/twine/example-xml.xml
 usr/share/man/man1/twine-inject.1
