@@ -4,10 +4,12 @@ libdir=@libdir@
 includedir=@includedir@
 top_builddir=@abs_top_builddir@
 top_srcdir=@abs_top_srcdir@
+moduledir=@libdir@/twine
 
 Name: libtwine
 Description: Twine processor API
-Requires: libsparqlclient
+Requires.private: libsparqlclient, raptor2
 Version: @PACKAGE_VERSION@
-Libs: -L@abs_builddir@ @LIBSPARQLCLIENT_LOCAL_LIBS@ @LIBSPARQLCLIENT_LIBS@ @LIBRDF_LIBS@ @LIBRDF_LOCAL_LIBS@ @LIBDL_LIBS@ @LIBDL_LOCAL_LIBS@
+Libs: -L@abs_builddir@ -ltwine
+Libs.private: @LIBSPARQLCLIENT_LOCAL_LIBS@ @LIBSPARQLCLIENT_LIBS@ @LIBRDF_LIBS@ @LIBRDF_LOCAL_LIBS@ @LIBDL_LIBS@ @LIBDL_LOCAL_LIBS@
 Cflags: -I@abs_builddir@ -I@abs_srcdir@ @LIBSPARQLCLIENT_CPPFLAGS@ @LIBRDF_CPPFLAGS@ @LIBDL_CPPFLAGS@

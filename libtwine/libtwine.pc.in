@@ -2,10 +2,12 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
+moduledir=@libdir@/twine
 
 Name: libtwine
 Description: Twine processor API
-Requires: libsparqlclient
+Requires.private: libsparqlclient, raptor2
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -ltwine @LIBSPARQLCLIENT_INSTALLED_LIBS@ @LIBSPARQLCLIENT_LIBS@ @LIBRDF_LIBS@ @LIBRDF_LOCAL_LIBS@ @LIBDL_LIBS@ @LIBDL_LOCAL_LIBS@
+Libs: -L${libdir} -ltwine
+Libs.private: @LIBSPARQLCLIENT_INSTALLED_LIBS@ @LIBSPARQLCLIENT_LIBS@ @LIBRDF_LIBS@ @LIBRDF_LOCAL_LIBS@ @LIBDL_LIBS@ @LIBDL_LOCAL_LIBS@
 Cflags: -I${includedir} @LIBRDF_CPPFLAGS@ @LIBDL_CPPFLAGS@
