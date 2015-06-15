@@ -23,6 +23,11 @@
 
 #include "p_writerd.h"
 
+struct extmime {
+	const char *ext;
+	const char *mime;
+};
+
 static void writerd_usage(void);
 static int writerd_init(int argc, char **argv);
 static int writerd_process_args(int argc, char **argv);
@@ -31,6 +36,19 @@ static void writerd_signal(int sig);
 static int writerd_import(const char *type, const char *filename);
 
 static const char *bulk_import = NULL, *bulk_import_file = NULL;
+
+static struct extmime extmime[] = {
+	{ "trig", "application/trig" },
+	{ "nq", "application/n-quads" },
+	{ "xml", "text/xml" },
+	{ "ttl", "text/turtle" },
+	{ "rdf", "application/rdf+xml" },
+	{ "html", "text/html" },
+	{ "txt", "text/plain" },
+	{ "json", "application/json" },
+	{ "nt", "application/n-triples" },
+	{ NULL, NULL }
+};
 
 int
 main(int argc, char **argv)
@@ -168,6 +186,8 @@ static int
 writerd_process_args(int argc, char **argv)
 {
 	int c;
+	size_t n;
+	const char *t;
 
 	while((c = getopt(argc, argv, "hfc:dt:")) != -1)
 	{
@@ -212,7 +232,23 @@ writerd_process_args(int argc, char **argv)
 		config_set(TWINE_APP_NAME ":detach", "0");
 		if(!bulk_import)
 		{
-			fprintf(stderr, "%s: a MIME type (-t TYPE) must be specified if importing from a file\n", utils_progname);
+			t = strrchr(argv[0], '.');
+			if(t)
+			{
+				t++;
+				for(n = 0; extmime[n].ext; n++)
+				{
+					if(!strcasecmp(extmime[n].ext, t))
+					{
+						bulk_import = extmime[n].mime;
+						break;
+					}
+				}
+			}
+		}
+		if(!bulk_import)
+		{
+			fprintf(stderr, "%s: the MIME type of '%s' cannot be automatically determined; specify it with '-t TYPE'\n", utils_progname, argv[0]);
 			return -1;
 		}
 		bulk_import_file = argv[0];
