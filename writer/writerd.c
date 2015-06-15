@@ -28,9 +28,9 @@ static int writerd_init(int argc, char **argv);
 static int writerd_process_args(int argc, char **argv);
 static int writerd_plugin_config_cb(const char *key, const char *value, void *data);
 static void writerd_signal(int sig);
-static int writerd_import(const char *type);
+static int writerd_import(const char *type, const char *filename);
 
-static const char *bulk_import = NULL;
+static const char *bulk_import = NULL, *bulk_import_file = NULL;
 
 int
 main(int argc, char **argv)
@@ -45,7 +45,7 @@ main(int argc, char **argv)
 	}
 	if(bulk_import)
 	{
-		r = writerd_import(bulk_import);
+		r = writerd_import(bulk_import, bulk_import_file);
 		twine_cleanup_();
 		return r ? 1 : 0;
 	}
@@ -152,7 +152,7 @@ writerd_init(int argc, char **argv)
 static void
 writerd_usage(void)
 {
-	fprintf(stderr, "Usage: %s [OPTIONS]\n"
+	fprintf(stderr, "Usage: %s [OPTIONS] [FILE]\n"
 			"\n"
 			"OPTIONS is one or more of:\n"
 			"  -h                   Print this notice and exit\n"
@@ -160,7 +160,7 @@ writerd_usage(void)
 			"  -d                   Enable debug output to standard error\n"
 			"  -c FILE              Specify path to configuration file\n"
 			"  -t TYPE              Perform a bulk import from stdin of TYPE\n"
-			"\n",			
+			"\n",
 			utils_progname);
 }
 
@@ -204,7 +204,22 @@ writerd_process_args(int argc, char **argv)
 			return -1;
 		}
 	}
-	if(optind != argc)
+	argc -= optind;
+	argv += optind;
+	if(argc == 1)
+	{
+		config_set("log:stderr", "1");
+		config_set(TWINE_APP_NAME ":detach", "0");
+		if(!bulk_import)
+		{
+			fprintf(stderr, "%s: a MIME type (-t TYPE) must be specified if importing from a file\n", utils_progname);
+			return -1;
+		}
+		bulk_import_file = argv[0];
+		argc--;
+		argv++;
+	}
+	if(argc)
 	{
 		/* There should not be any remaining command-line arguments */
 		writerd_usage();
@@ -235,27 +250,57 @@ writerd_signal(int signo)
 }
 
 static int
-writerd_import(const char *type)
+writerd_import(const char *type, const char *filename)
 {
+	FILE *f;
 	unsigned char *buffer, *p;
 	size_t buflen, bufsize;
 	ssize_t r;
 
+	if(filename)
+	{
+		f = fopen(filename, "rb");
+		if(!f)
+		{
+			twine_logf(LOG_CRIT, "%s: %s\n", filename, strerror(errno));
+			return -1;
+		}
+	}
+	else
+	{
+		f = stdin;
+	}
 	if(twine_bulk_supported(type))
 	{
-		return twine_bulk_import(type, stdin);
+		r = twine_bulk_import(type, f);
+		if(filename)
+		{
+			fclose(f);
+		}
+		return (r ? -1 : 0);
 	}
 	if(!twine_plugin_supported(type))
 	{
-		twine_logf(LOG_ERR, "no registered plug-in supports the MIME type '%s'\n", type);
+		twine_logf(LOG_CRIT, "no registered plug-in supports the MIME type '%s'\n", type);
+		if(filename)
+		{
+			fclose(f);
+		}
 		return -1;
 	}
-	twine_logf(LOG_NOTICE, "performing bulk import of '%s' from standard input\n", type);
-	/* Read stdin into the buffer, extending as needed */
+	if(filename)
+	{
+		twine_logf(LOG_INFO, "performing bulk import of '%s' from '%s'\n", type, filename);
+	}
+	else
+	{
+		twine_logf(LOG_INFO, "performing bulk import of '%s' from standard input\n", type);
+	}
+	/* Read file into the buffer, extending as needed */
 	buffer = NULL;
 	bufsize = 0;
 	buflen = 0;
-	while(!feof(stdin))
+	while(!feof(f))
 	{
 		if(bufsize - buflen < 1024)
 		{
@@ -269,23 +314,36 @@ writerd_import(const char *type)
 			buffer = p;
 			bufsize += 1024;
 		}
-		r = fread(&(buffer[buflen]), 1, 1023, stdin);
+		r = fread(&(buffer[buflen]), 1, 1023, f);
 		if(r < 0)
 		{
-			twine_logf(LOG_CRIT, "error reading from standard input: %s\n", strerror(errno));
+			if(filename)
+			{
+				twine_logf(LOG_CRIT, "error reading from '%s': %s\n", filename, strerror(errno));
+			}
+			else
+			{
+				twine_logf(LOG_CRIT, "error reading from standard input: %s\n", strerror(errno));
+			}
 			free(buffer);
 			return -1;
 		}
 		buflen += r;
 		buffer[buflen] = 0;
 	}
-	if(twine_plugin_process(type, buffer, buflen, NULL))
+	r = twine_plugin_process(type, buffer, buflen, NULL);
+	if(r)
 	{
-		twine_logf(LOG_ERR, "failed to process input as '%s'\n", type);
-		free(buffer);
-		return -1;
+		twine_logf(LOG_CRIT, "failed to process input as '%s'\n", type);
 	}
-	twine_logf(LOG_NOTICE, "successfully imported data as '%s'\n", type);
+	else
+	{
+		twine_logf(LOG_NOTICE, "successfully imported data as '%s'\n", type);
+	}
 	free(buffer);
-	return 0;
+	if(filename)
+	{
+		fclose(f);
+	}
+	return (r ? -1 : 0);
 }
