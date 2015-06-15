@@ -142,7 +142,10 @@ writerd_init(int argc, char **argv)
 		}
 	}
 	/* Load plug-ins */
-	config_get_all(TWINE_APP_NAME, "module", writerd_plugin_config_cb, NULL);
+	if(config_get_all(TWINE_APP_NAME, "module", writerd_plugin_config_cb, NULL))
+	{
+		return -1;
+	}
 	return 0;
 }
 
@@ -216,7 +219,10 @@ writerd_plugin_config_cb(const char *key, const char *value, void *data)
 	(void) key;
 	(void) data;
 
-	twine_plugin_load_(value);
+	if(twine_plugin_load_(value))
+	{
+		return -1;
+	}
 	return 0;
 }
 
