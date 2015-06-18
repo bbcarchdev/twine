@@ -12,4 +12,4 @@ Requires.private: libsparqlclient, raptor2
 Version: @PACKAGE_VERSION@
 Libs: -L@abs_top_builddir@/libtwine -ltwine
 Libs.private: @LIBSPARQLCLIENT_LOCAL_LIBS@ @LIBSPARQLCLIENT_LIBS@ @LIBRDF_LIBS@ @LIBRDF_LOCAL_LIBS@ @LIBDL_LIBS@ @LIBDL_LOCAL_LIBS@
-Cflags: -I@abs_builddir@ -I@abs_srcdir@ @LIBSPARQLCLIENT_CPPFLAGS@ @LIBRDF_CPPFLAGS@ @LIBDL_CPPFLAGS@
+Cflags: -I@abs_top_builddir@/libtwine -I@abs_top_srcdir@/libtwine @LIBSPARQLCLIENT_CPPFLAGS@ @LIBRDF_CPPFLAGS@ @LIBDL_CPPFLAGS@
