@@ -58,12 +58,12 @@ BT_BUILD_DOCS
 BT_DEFINE_PREFIX
 
 AC_CONFIG_FILES([Makefile
+libtwine.pc
+libtwine-uninstalled.pc
 libsupport/Makefile
 libmq/Makefile
 libutils/Makefile
 libtwine/Makefile
-libtwine/libtwine.pc
-libtwine/libtwine-uninstalled.pc
 libs3client/Makefile
 writer/Makefile
 bridges/Makefile
