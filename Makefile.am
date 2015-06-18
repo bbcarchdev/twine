@@ -27,4 +27,10 @@ SUBDIRS = libsupport @subdirs@ libmq libutils libtwine libs3client \
 	writer bridges handlers processors \
 	init.d conf docs
 
-EXTRA_DIST = README.md LICENSE-2.0
+pkgconfigdir = @libdir@/pkgconfig
+
+pkgconfig_DATA = libtwine.pc
+
+noinst_DATA = libtwine-uninstalled.pc
+
+EXTRA_DIST = README.md LICENSE-2.0 libtwine.pc.in libtwine-uninstalled.pc.in

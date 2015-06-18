@@ -16,8 +16,6 @@
 ##  See the License for the specific language governing permissions and
 ##  limitations under the License.
 
-pkgconfigdir = @libdir@/pkgconfig
-
 LIBS = \
 	@LIBRDF_LIBS@ @LIBRDF_LOCAL_LIBS@ \
 	@LIBDL_LIBS@ @LIBDL_LOCAL_LIBS@ \
@@ -34,10 +32,6 @@ libtwine_la_SOURCES = p_libtwine.h libtwine.h libtwine-internals.h \
 	init.c plugin.c logging.c sparql.c rdf.c config.c
 
 libtwine_la_LDFLAGS = -avoid-version
-
-pkgconfig_DATA = libtwine.pc
-
-noinst_DATA = libtwine-uninstalled.pc
 
 dist_man3_MANS = libtwine.3
 
