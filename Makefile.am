@@ -18,8 +18,8 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-DIST_SUBDIRS = libsupport libsparqlclient libmq libutils libtwine \
-	libs3client liburi \
+DIST_SUBDIRS = libsupport libmq libutils libtwine \
+	libs3client \
 	writer bridges handlers processors \
 	init.d conf docs m4 docbook-html5
 

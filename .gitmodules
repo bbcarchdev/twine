@@ -4,9 +4,6 @@
 [submodule "m4"]
 	path = m4
 	url = git://github.com/bbcarchdev/m4.git
-[submodule "libsparqlclient"]
-	path = libsparqlclient
-	url = git://github.com/bbcarchdev/libsparqlclient.git
 [submodule "docbook-html5"]
 	path = docbook-html5
 	url = git://github.com/bbcarchdev/docbook-html5.git
@@ -16,6 +13,3 @@
 [submodule "libs3client"]
 	path = libs3client
 	url = git://github.com/bbcarchdev/libs3client.git
-[submodule "liburi"]
-	path = liburi
-	url = git://github.com/bbcarchdev/liburi.git
