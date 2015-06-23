@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2015 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -40,7 +40,8 @@ typedef enum
 	TCB_MIME,
 	TCB_BULK,
 	TCB_PREPROC,
-	TCB_POSTPROC
+	TCB_POSTPROC,
+	TCB_UPDATE
 } twine_callback_type;
 
 struct twine_mime_struct
@@ -69,6 +70,12 @@ struct twine_preproc_struct
 	char *name;
 };
 
+struct twine_update_struct
+{
+	twine_update_fn fn;
+	char *name;
+};
+
 struct twine_callback_struct
 {
 	twine_callback_type type;
@@ -80,6 +87,7 @@ struct twine_callback_struct
 		struct twine_bulk_struct bulk;
 		struct twine_preproc_struct preproc;
 		struct twine_postproc_struct postproc;
+		struct twine_update_struct update;
 	} m;
 };
 		

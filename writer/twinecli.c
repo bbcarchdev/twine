@@ -29,7 +29,8 @@ static int twinecli_process_args(int argc, char **argv);
 static int twinecli_plugin_config_cb(const char *key, const char *value, void *data);
 static int twinecli_import(const char *type, const char *filename);
 
-static const char *bulk_import = NULL, *bulk_import_file = NULL;
+static const char *bulk_import_type = NULL, *bulk_import_file = NULL;
+static const char *cache_update_name = NULL, *cache_update_ident = NULL;
 
 static struct twinecli_extmime_struct extmime[] = {
 	{ "trig", "application/trig" },
@@ -53,7 +54,14 @@ main(int argc, char **argv)
 	{
 		return 1;
 	}
-	r = twinecli_import(bulk_import, bulk_import_file);
+	if(cache_update_name)
+	{
+		r = twine_update(cache_update_name, cache_update_ident);
+	}
+	else
+	{
+		r = twinecli_import(bulk_import_type, bulk_import_file);
+	}
 	twine_cleanup_();
 	return r ? 1 : 0;
 }
@@ -113,17 +121,26 @@ twinecli_init(int argc, char **argv)
 static void
 twinecli_usage(void)
 {
-	fprintf(stderr, "Usage: %s [OPTIONS] [FILE]\n"
+	fprintf(stderr, "Usage:\n"
+			"  %s [OPTIONS] [FILE]\n"
+			"  %s -u NAME IDENTIFIER\n"
 			"\n"
 			"OPTIONS is one or more of:\n"
 			"  -h                   Print this notice and exit\n"
 			"  -d                   Enable debug output to standard error\n"
 			"  -c FILE              Specify path to configuration file\n"
 			"  -t TYPE              Perform a bulk import of TYPE\n"
+			"  -u NAME              Ask plug-in NAME to update IDENTIFIER\n"
 			"\n"
-			"If FILE is not specified, input will be read from standard input.\n"
-			"One or both of FILE or -t TYPE must be specified.\n",
-			utils_progname);
+            "In the first usage form (bulk import):\n"			
+			"  If FILE is not specified, input will be read from standard input.\n"
+			"  One or both of FILE or -t TYPE must be specified.\n"
+			"  The -u option cannot be used in this mode.\n"
+			"In the second usage form (cache update):\n"
+			"  This form asks the named plug-in to update its data about the resource\n"
+			"  identified by IDENTIFIER. The format of IDENTIFIER is entirely specific\n"
+			"  to the plug-in. The -t option cannot be used in this mode.\n",
+			utils_progname, utils_progname);
 }
 
 static int
@@ -133,7 +150,7 @@ twinecli_process_args(int argc, char **argv)
 	size_t n;
 	const char *t;
 
-	while((c = getopt(argc, argv, "hc:dt:")) != -1)
+	while((c = getopt(argc, argv, "hc:dt:u:")) != -1)
 	{
 		switch(c)
 		{
@@ -153,12 +170,30 @@ twinecli_process_args(int argc, char **argv)
 			config_set("s3:verbose", "1");
 			break;
 		case 't':
-			if(bulk_import)
+			if(bulk_import_type)
 			{
-				fprintf(stderr, "%s: cannot specify multiple import formats ('%s' versus '%s')\n", utils_progname, bulk_import, optarg);
+				fprintf(stderr, "%s: cannot specify multiple import formats ('%s' versus '%s')\n", utils_progname, bulk_import_type, optarg);
 				return -1;
 			}
-			bulk_import = optarg;
+			if(cache_update_name)
+			{
+				fprintf(stderr, "%s: cannot specify -t and -u options together\n", utils_progname);
+				return -1;
+			}
+			bulk_import_type = optarg;
+			break;
+		case 'u':
+			if(cache_update_name)
+			{
+				fprintf(stderr, "%s: the -u option cannot be specified multiple times ('%s' versus '%s')\n", utils_progname, cache_update_name, optarg);
+				return -1;
+			}
+			if(bulk_import_type)
+			{
+				fprintf(stderr, "%s: cannot specify the -t and -u options together\n", utils_progname);
+				return -1;
+			}
+			cache_update_name = optarg;
 			break;
 		default:
 			twinecli_usage();
@@ -167,11 +202,29 @@ twinecli_process_args(int argc, char **argv)
 	}
 	argc -= optind;
 	argv += optind;
-	if(argc == 1)
+	if(cache_update_name)
 	{
-		config_set("log:stderr", "1");
-		if(!bulk_import)
+		/* There must be an identifier on the command-line */
+		if(!argc)
 		{
+			twinecli_usage();
+			return -1;
+		}
+		cache_update_ident = argv[0];
+		argc--;
+		argv++;		
+	}
+	else
+	{
+		if(!argc && !bulk_import_type)
+		{
+			/* -t TYPE must be specified if importing from stdin */
+			twinecli_usage();
+			return -1;
+		}
+		if(!bulk_import_type)
+		{		   
+			/* Attempt to determine the MIME type from the filename */
 			t = strrchr(argv[0], '.');
 			if(t)
 			{
@@ -180,13 +233,13 @@ twinecli_process_args(int argc, char **argv)
 				{
 					if(!strcasecmp(extmime[n].ext, t))
 					{
-						bulk_import = extmime[n].mime;
+						bulk_import_type = extmime[n].mime;
 						break;
 					}
 				}
 			}
 		}
-		if(!bulk_import)
+		if(!bulk_import_type)
 		{
 			fprintf(stderr, "%s: the MIME type of '%s' cannot be automatically determined; specify it with '-t TYPE'\n", utils_progname, argv[0]);
 			return -1;
@@ -195,9 +248,9 @@ twinecli_process_args(int argc, char **argv)
 		argc--;
 		argv++;
 	}
-	if(argc || (!bulk_import && !bulk_import_file))
+	if(argc)
 	{
-		/* There should not be any remaining command-line arguments */
+		/* There should be no remaining command-line arguments */
 		twinecli_usage();
 		return -1;
 	}

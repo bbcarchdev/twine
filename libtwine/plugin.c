@@ -30,7 +30,7 @@
 static void *current;
 static int preprocessing, postprocessing;
 
-static size_t mimecount, bulkcount, precount, postcount;
+static size_t precount, postcount;
 
 static struct twine_callback_struct *callbacks;
 static size_t cbcount, cbsize;
@@ -184,7 +184,6 @@ twine_plugin_register(const char *mimetype, const char *description, twine_proce
 	}
 	p->m.mime.fn = fn;
 	p->type = TCB_MIME;
-	mimecount++;
 	twine_logf(LOG_INFO, "registered MIME type: '%s' (%s)\n", mimetype, description);
 	return 0;
 }
@@ -212,7 +211,6 @@ twine_bulk_register(const char *mimetype, const char *description, twine_bulk_fn
 	}
 	p->m.bulk.fn = fn;
 	p->type = TCB_BULK;
-	bulkcount++;
 	twine_logf(LOG_INFO, "registered bulk processor for MIME type: '%s' (%s)\n", mimetype, description);
 	return 0;
 }
@@ -265,6 +263,29 @@ twine_preproc_register(const char *name, twine_postproc_fn fn, void *data)
 	return 0;
 }
 
+/* Public: Register an update handler */
+int
+twine_update_register(const char *name, twine_update_fn fn, void *data)
+{
+	struct twine_callback_struct *p;
+
+	p = twine_plugin_callback_add_(data);
+	if(!p)
+	{
+		return -1;
+	}
+	p->m.update.name = strdup(name);
+	if(!p->m.update.name)
+	{
+		twine_logf(LOG_CRIT, "failed to allocate memory to register update handler\n");
+		return -1;
+	}
+	p->m.update.fn = fn;
+	p->type = TCB_UPDATE;
+	twine_logf(LOG_INFO, "registered update handler: '%s'\n", name);
+	return 0;
+}
+
 /* Internal: un-register all plugins attached to a module */
 int
 twine_plugin_unregister_all_(void *handle)
@@ -293,9 +314,14 @@ twine_plugin_unregister_all_(void *handle)
 			break;
 		case TCB_PREPROC:
 			free(callbacks[l].m.preproc.name);
+			precount--;
 			break;
 		case TCB_POSTPROC:
 			free(callbacks[l].m.postproc.name);
+			postcount--;
+			break;
+		case TCB_UPDATE:
+			free(callbacks[l].m.update.name);
 			break;
 		}
 		if(l + 1 < cbcount)
@@ -381,6 +407,26 @@ twine_bulk_supported(const char *mimetype)
 			continue;
 		}
 		if(!strcasecmp(callbacks[l].m.bulk.type, mimetype))
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
+/* Public: Check whether a plug-in name is recognised as an update handler */
+int
+twine_update_supported(const char *name)
+{
+	size_t l;
+
+	for(l = 0; l < cbcount; l++)
+	{
+		if(callbacks[l].type != TCB_UPDATE)
+		{
+			continue;
+		}
+		if(!strcasecmp(callbacks[l].m.update.name, name))
 		{
 			return 1;
 		}
@@ -488,6 +534,45 @@ twine_bulk_import(const char *mimetype, FILE *file)
 	}
 	current = prev;
 	free(buffer);
+	return 0;
+}
+
+/* Public: Ask a plug-in to update its caches about an identifier */
+int
+twine_update(const char *name, const char *identifier)
+{
+	struct twine_callback_struct *plugin;
+	void *prev;
+	size_t l;
+	int r;
+	
+	prev = current;
+	plugin = NULL;
+	for(l = 0; l < cbcount; l++)
+	{
+		if(callbacks[l].type != TCB_UPDATE)
+		{
+			continue;
+		}
+		if(!strcmp(callbacks[l].m.update.name, name))
+		{
+			plugin = &(callbacks[l]);
+			break;
+		}
+	}
+	if(!plugin)
+	{
+		twine_logf(LOG_ERR, "no update handler '%s' has been registered\n", name);
+		return -1;
+	}
+	current = plugin->module;
+	r = plugin->m.update.fn(plugin->m.update.name, identifier, plugin->data);
+	current = prev;
+	if(r)
+	{
+		twine_logf(LOG_ERR, "handler '%s' failed to update\n");
+		return -1;
+	}
 	return 0;
 }
 

@@ -80,6 +80,17 @@ typedef int (*twine_preproc_fn)(twine_graph *graph, void *userdata);
  */
 typedef int (*twine_postproc_fn)(twine_graph *graph, void *userdata);
 
+/* A Twine update callback
+ *
+ * This callback is invoked exclusively by the 'twine' command-line utility
+ * in order to request that a plug-in update its caches (or other ancilliary
+ * data) for the specified identifier. The format of the identifier is
+ * plug-in-specific, and its structure is a matter for the plug-in and the
+ * user to agree upon (typically, it would be a URI or a UUID of something
+ * generated or processed by the plug-in).
+ */
+typedef int (*twine_update_fn)(const char *name, const char *identifier, void *userdata);
+
 /* Twine plug-in entry-point */
 int twine_plugin_init(void);
 
@@ -95,6 +106,7 @@ int twine_bulk_register(const char *mimetype, const char *description, twine_bul
 /* Check whether a MIME type is supported by any registered processor */
 int twine_plugin_supported(const char *mimetype);
 int twine_bulk_supported(const char *mimetype);
+int twine_update_supported(const char *name);
 
 /* Process a single message */
 int twine_plugin_process(const char *mimetype, const unsigned char *message, size_t msglen, const char *subject);
@@ -102,11 +114,17 @@ int twine_plugin_process(const char *mimetype, const unsigned char *message, siz
 /* Perform a bulk import from a file */
 int twine_bulk_import(const char *mimetype, FILE *file);
 
+/* Ask a named plug-in to update a resource */
+int twine_update(const char *plugin, const char *identifier);
+
 /* Register a pre-processor */
 int twine_preproc_register(const char *name, twine_preproc_fn fn, void *data);
 
 /* Register a post-processor */
 int twine_postproc_register(const char *name, twine_postproc_fn fn, void *data);
+
+/* Register an update handler */
+int twine_update_register(const char *name, twine_update_fn fn, void *data);
 
 /* Obtain the shared librdf world */
 librdf_world *twine_rdf_world(void);
