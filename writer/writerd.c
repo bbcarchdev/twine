@@ -134,6 +134,10 @@ writerd_init(int argc, char **argv)
 		return -1;
 	}
 	/* Load plug-ins */
+	if(config_get_all("plugins", "module", writerd_plugin_config_cb, NULL))
+	{
+		return -1;
+	}
 	if(config_get_all(TWINE_APP_NAME, "module", writerd_plugin_config_cb, NULL))
 	{
 		return -1;
