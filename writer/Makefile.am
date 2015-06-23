@@ -2,7 +2,7 @@
 ##
 ##  Author: Mo McRoberts
 ##
-##  Copyright (c) 2014 BBC
+##  Copyright (c) 2014-2015 BBC
 ##
 ##  Licensed under the Apache License, Version 2.0 (the "License");
 ##  you may not use this file except in compliance with the License.
@@ -23,9 +23,20 @@ AM_CPPFLAGS = @AM_CPPFLAGS@ \
 	-I$(top_builddir)/libsparqlclient -I$(top_srcdir)/libsparqlclient \
 	-I$(top_builddir)/libmq -I$(top_srcdir)/libmq
 
+bin_PROGRAMS = twine
+
 sbin_PROGRAMS = twine-writerd
 
-twine_writerd_SOURCES = writer/p_writerd.h \
+twine_SOURCES = p_twinecli.h \
+	twinecli.c sparql.c
+
+twine_LDADD = \
+	$(top_builddir)/libutils/libutils.la \
+	$(top_builddir)/libsupport/libsupport.la \
+	$(top_builddir)/libtwine/libtwine.la \
+	$(top_builddir)/libmq/libmq.la
+
+twine_writerd_SOURCES = p_writerd.h \
 	writerd.c sparql.c runloop.c
 
 twine_writerd_LDADD = \
