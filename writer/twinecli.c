@@ -122,7 +122,7 @@ twinecli_usage(void)
 			"  -t TYPE              Perform a bulk import of TYPE\n"
 			"\n"
 			"If FILE is not specified, input will be read from standard input.\n"
-			"One of FILE or -t TYPE must be specified, but both can be specified together.\n",
+			"One or both of FILE or -t TYPE must be specified.\n",
 			utils_progname);
 }
 
