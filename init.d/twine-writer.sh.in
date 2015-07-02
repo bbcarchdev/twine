@@ -49,7 +49,7 @@ do_start()
 
 do_stop()
 {
-	start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 --pidfile "$PIDFILE" --name "$NAME"
+	start-stop-daemon --stop --oknodo --quiet --retry=TERM/30/KILL/5 --pidfile "$PIDFILE" --name "$NAME"
 	RETVAL="$?"
 	[ "$RETVAL" = 2 ] && return 2
 	rm -f $PIDFILE
@@ -89,7 +89,7 @@ case "$1" in
 		if ! is_true "$START" ; then
 			[ "$VERBOSE" != no ] && log_warning_msg "$DESC is not configured to start"
 			do_stop
-			exit 0
+			exit $?
 		fi
 		log_daemon_msg "Restarting $DESC" $NAME
 		do_stop
