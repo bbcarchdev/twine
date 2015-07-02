@@ -76,7 +76,7 @@ case "$1" in
 		esac
 		;;
 	stop|force-stop)
-		log_daemon_msg "Stopping $DESC" "$NAME"
+		[ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
 		do_stop
 		case "$?" in
 			0|1)
@@ -95,7 +95,7 @@ case "$1" in
 			do_stop
 			exit $?
 		fi
-		log_daemon_msg "Restarting $DESC" $NAME
+		[ "$VERBOSE" != no ] && log_daemon_msg "Restarting $DESC" $NAME
 		do_stop
 		case "$?" in
 			0|1)
@@ -103,19 +103,19 @@ case "$1" in
 				retval=$?
 				case "$retval" in
 					0)
-						log_end_msg 0
+						[ "$VERBOSE" != no ] && log_end_msg 0
 						;;
 					1)
-						log_end_msg 1
+						[ "$VERBOSE" != no ] && log_end_msg 1
 						;;
 					*)
-						log_end_msg 1
+						[ "$VERBOSE" != no ] && log_end_msg 1
 						;;
 				esac
 				exit $retval
 				;;
 			*)
-				log_end_msg 1
+				[ "$VERBOSE" != no ] && log_end_msg 1
 				exit 1
 				;;
 		esac
