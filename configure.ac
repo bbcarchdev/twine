@@ -76,6 +76,4 @@ m4/Makefile
 docbook-html5/Makefile
 ])
 
-AC_CONFIG_FILES([init.d/twine-writer:init.d/twine-writer.sh.in],[chmod +x init.d/twine-writer])
-
 AC_OUTPUT
