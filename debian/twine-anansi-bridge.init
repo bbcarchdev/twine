@@ -19,7 +19,7 @@
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 DESC="Twine-Anansi bridge"
 ME=twine-anansi-bridge
-NAME=twine-writer-anansi-bridge
+NAME=twine-anansi-bridge
 DAEMON="/usr/sbin/$NAME"
 DAEMON_ARGS=""
 PIDFILE="/var/run/$NAME.pid"
