@@ -1,8 +1,7 @@
 # Defaults for twine-writerd, sourced by /etc/init.d/twine-writer
 
-# Start at boot?
-# START=yes
+# Start automatically?
+START=no
 
 # Additional command-line arguments
 DAEMON_ARGS=""
-

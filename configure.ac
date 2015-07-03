@@ -69,7 +69,6 @@ writer/Makefile
 bridges/Makefile
 handlers/Makefile
 processors/Makefile
-init.d/Makefile
 conf/Makefile
 conf/twine.conf
 docs/Makefile

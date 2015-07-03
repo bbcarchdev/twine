@@ -19,9 +19,9 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 DESC="Twine writer daemon"
 ME=twine-writer
 NAME=twine-writerd
-DAEMON="@SBINDIR@/$NAME"
+DAEMON="/usr/sbin/$NAME"
 DAEMON_ARGS=""
-PIDFILE="@LOCALSTATEDIR@/run/$NAME.pid"
+PIDFILE="/var/run/$NAME.pid"
 START=no
 
 [ -x "$DAEMON" ] || exit 0
