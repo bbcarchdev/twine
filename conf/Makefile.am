@@ -26,6 +26,7 @@ twine.conf.5: $(top_srcdir)/docs/twine.conf.xml
 	$(XML2MAN) $<
 
 install-data-local:
+	${mkinstalldirs} ${DESTDIR}${sysconfdir}
 	@if test -f "${DESTDIR}${sysconfdir}/twine.conf" ; then \
 		echo "$@: will not overwrite existing twine.conf" >&2 ; \
 	else \
