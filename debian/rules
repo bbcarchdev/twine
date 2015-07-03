@@ -11,4 +11,5 @@ override_dh_auto_configure: configure
 	dh_auto_configure -- --without-included-libsparqlclient
 
 override_dh_installinit:
+	dh_installinit
 	dh_installinit --name=twine-writer

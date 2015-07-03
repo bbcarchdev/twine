@@ -1,0 +1,7 @@
+# Defaults for twine-anansi-bridge, sourced by /etc/init.d/twine-anansi-bridge
+
+# Start automatically?
+START=no
+
+# Additional command-line arguments
+DAEMON_ARGS=""
