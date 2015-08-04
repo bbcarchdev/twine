@@ -166,6 +166,7 @@ twine_sparql_put_internal_(const char *uri, const char *triples, size_t length, 
 	twine_graph graph;
 	char *qbuf, *tbuf;
 	size_t l;
+	librdf_stream *stream;
 
 	memset(&graph, 0, sizeof(twine_graph));
 	graph.uri = uri;
@@ -207,7 +208,7 @@ twine_sparql_put_internal_(const char *uri, const char *triples, size_t length, 
 		if(sourcemodel)
 		{
 			stream = librdf_model_as_stream(sourcemodel);
-			r = librdf_model_add_statements(graph.pristine, model);
+			r = librdf_model_add_statements(graph.pristine, stream);
 			librdf_free_stream(stream);
 		}
 		else
