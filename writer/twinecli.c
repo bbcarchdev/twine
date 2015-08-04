@@ -135,6 +135,8 @@ twinecli_usage(void)
 			"  -c FILE              Specify path to configuration file\n"
 			"  -t TYPE              Perform a bulk import of TYPE\n"
 			"  -u NAME              Ask plug-in NAME to update IDENTIFIER\n"
+			"  -D SECTION:KEY       Set config option KEY in [SECTION] to 1\n"
+			"  -D SECTION:KEY=VALUE Set config option KEY in [SECTION] to VALUE\n"			
 			"\n"
             "In the first usage form (bulk import):\n"			
 			"  If FILE is not specified, input will be read from standard input.\n"
@@ -153,8 +155,9 @@ twinecli_process_args(int argc, char **argv)
 	int c;
 	size_t n;
 	const char *t;
+	char *p;
 
-	while((c = getopt(argc, argv, "hc:dt:u:")) != -1)
+	while((c = getopt(argc, argv, "hc:dt:u:D:")) != -1)
 	{
 		switch(c)
 		{
@@ -172,6 +175,29 @@ twinecli_process_args(int argc, char **argv)
 			config_set("log:stderr", "1");
 			config_set("sparql:verbose", "1");
 			config_set("s3:verbose", "1");
+			break;
+		case 'D':
+		    p = strchr(optarg, '=');
+			if(p)
+			{
+				*p = 0;
+				p++;
+				if(!strchr(optarg, ':'))
+				{
+					fprintf(stderr, "%s: configuration option must be specified as `section:key`=value\n", utils_progname);
+					return -1;
+				}
+				config_set(optarg, p);
+			}
+			else
+			{
+				if(!strchr(optarg, ':'))
+				{
+					fprintf(stderr, "%s: configuration option must be specified as `section:key`=value\n", utils_progname);
+					return -1;
+				}
+				config_set(optarg, "1");
+			}
 			break;
 		case 't':
 			if(bulk_import_type)

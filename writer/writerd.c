@@ -155,6 +155,8 @@ writerd_usage(void)
 			"  -f                   Don't detach and run in the background\n"
 			"  -d                   Enable debug output to standard error\n"
 			"  -c FILE              Specify path to configuration file\n"
+			"  -D SECTION:KEY       Set config option KEY in [SECTION] to 1\n"
+			"  -D SECTION:KEY=VALUE Set config option KEY in [SECTION] to VALUE\n"
 			"\n",
 			utils_progname);
 }
@@ -163,8 +165,9 @@ static int
 writerd_process_args(int argc, char **argv)
 {
 	int c;
+	char *p;
 
-	while((c = getopt(argc, argv, "hfc:dt:")) != -1)
+	while((c = getopt(argc, argv, "hfc:dt:D:")) != -1)
 	{
 		switch(c)
 		{
@@ -183,6 +186,29 @@ writerd_process_args(int argc, char **argv)
 			config_set("sparql:verbose", "1");
 			config_set("s3:verbose", "1");
 			config_set(TWINE_APP_NAME ":detach", "0");
+			break;
+		case 'D':
+		    p = strchr(optarg, '=');
+			if(p)
+			{
+				*p = 0;
+				p++;
+				if(!strchr(optarg, ':'))
+				{
+					fprintf(stderr, "%s: configuration option must be specified as `section:key`=value\n", utils_progname);
+					return -1;
+				}
+				config_set(optarg, p);
+			}
+			else
+			{
+				if(!strchr(optarg, ':'))
+				{
+					fprintf(stderr, "%s: configuration option must be specified as `section:key`=value\n", utils_progname);
+					return -1;
+				}
+				config_set(optarg, "1");
+			}
 			break;
 		default:
 			writerd_usage();
