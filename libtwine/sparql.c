@@ -29,6 +29,9 @@ static char *twine_sparql_query_uri;
 static char *twine_sparql_update_uri;
 static char *twine_sparql_data_uri;
 
+static int
+twine_sparql_put_internal_(const char *uri, const char *triples, size_t length, const char *type, librdf_model *sourcemodel);
+
 /* Internal: set defaults for SPARQL connections */
 int
 twine_sparql_defaults_(const char *query_uri, const char *update_uri, const char *data_uri, int verbose)
@@ -96,6 +99,68 @@ twine_sparql_create(void)
 int
 twine_sparql_put(const char *uri, const char *triples, size_t length)
 {
+	return twine_sparql_put_internal_(uri, triples, length, "text/turtle", NULL);
+}
+
+int
+twine_sparql_put_format(const char *uri, const char *triples, size_t length, const char *type)
+{
+	return twine_sparql_put_internal_(uri, triples, length, type, NULL);
+}
+
+/* Public: Replace a graph from a librdf stream */
+int
+twine_sparql_put_stream(const char *uri, librdf_stream *stream)
+{
+	librdf_model *model;
+	char *buf;
+	size_t buflen;
+	int r;
+
+	model = twine_rdf_model_create();
+	if(!model)
+	{
+		return -1;
+	}
+	if(librdf_model_add_statements(model, stream))
+	{
+		return -1;
+	}
+	buf = twine_rdf_model_ntriples(model, &buflen);
+	if(!buf)
+	{
+		return -1;
+	}
+	r = twine_sparql_put_internal_(uri, buf, buflen, MIME_NTRIPLES, model);
+	librdf_free_memory(buf);
+	twine_rdf_model_destroy(model);
+	return 0;
+}
+
+/* Public: Replace a graph from a librdf model */
+int
+twine_sparql_put_model(const char *uri, librdf_model *model)
+{
+	char *buf;
+	size_t buflen;
+	int r;
+
+	buf = twine_rdf_model_ntriples(model, &buflen);
+	if(!buf)
+	{
+		return -1;
+	}
+	r = twine_sparql_put_internal_(uri, buf, buflen, MIME_NTRIPLES, model);
+	librdf_free_memory(buf);
+	return r;
+}
+
+/* Perform an actual SPARQL PUT operation, dealing with pre-processors and
+ * post-processors
+ */
+static int
+twine_sparql_put_internal_(const char *uri, const char *triples, size_t length, const char *type, librdf_model *sourcemodel)
+{
 	int r, pp;
 	SPARQL *conn;
 	twine_graph graph;
@@ -139,10 +204,20 @@ twine_sparql_put(const char *uri, const char *triples, size_t length)
 		}
 		/* Parse the triples if there are any postprocessors */
 		graph.pristine = twine_rdf_model_create();
-		if(!(r = twine_rdf_model_parse(graph.pristine, "text/turtle", triples, length)))
+		if(sourcemodel)
+		{
+			stream = librdf_model_as_stream(sourcemodel);
+			r = librdf_model_add_statements(graph.pristine, model);
+			librdf_free_stream(stream);
+		}
+		else
+		{
+			r = twine_rdf_model_parse(graph.pristine, type, triples, length);
+		}
+		if(!r)
 		{
 			r = twine_preproc_process_(&graph);
-		}	
+		}
 	}
 	if(!r)
 	{
@@ -171,41 +246,5 @@ twine_sparql_put(const char *uri, const char *triples, size_t length)
 		twine_postproc_process_(&graph);
 	}
 	twine_graph_cleanup_(&graph);
-	return r;
-}
-
-/* Public: Replace a graph from a librdf stream */
-int
-twine_sparql_put_stream(const char *uri, librdf_stream *stream)
-{
-	char *buf;
-	size_t buflen;
-	int r;
-
-	buf = twine_rdf_stream_ntriples(stream, &buflen);
-	if(!buf)
-	{
-		return -1;
-	}
-	r = twine_sparql_put(uri, buf, buflen);
-	librdf_free_memory(buf);
-	return r;
-}
-
-/* Public: Replace a graph from a librdf model */
-int
-twine_sparql_put_model(const char *uri, librdf_model *model)
-{
-	char *buf;
-	size_t buflen;
-	int r;
-
-	buf = twine_rdf_model_ntriples(model, &buflen);
-	if(!buf)
-	{
-		return -1;
-	}
-	r = twine_sparql_put(uri, buf, buflen);
-	librdf_free_memory(buf);
 	return r;
 }

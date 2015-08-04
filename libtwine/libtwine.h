@@ -185,6 +185,7 @@ SPARQL *twine_sparql_create(void);
 
 /* Replace a graph with supplied triples */
 int twine_sparql_put(const char *uri, const char *triples, size_t length);
+int twine_sparql_put_format(const char *uri, const char *triples, size_t length, const char *type);
 
 /* Replace a graph contained within a librdf stream */
 int twine_sparql_put_stream(const char *uri, librdf_stream *stream);

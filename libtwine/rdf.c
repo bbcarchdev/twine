@@ -102,7 +102,7 @@ twine_rdf_model_clone(librdf_model *model)
 		twine_rdf_model_destroy(dest);
 		return NULL;
 	}	   
-	if(twine_rdf_model_parse(dest, "application/n-quads", nq, nqlen))
+	if(twine_rdf_model_parse(dest, MIME_NQUADS, nq, nqlen))
 	{
 		librdf_free_memory(nq);
 		twine_rdf_model_destroy(dest);
@@ -161,23 +161,23 @@ twine_rdf_model_parse_base(librdf_model *model, const char *mime, const char *bu
 	/* Handle specific MIME types whether or not librdf already knows
 	 * about them
 	 */
-	if(!nstrcasecmp(mime, "application/trig", sl))
+	if(!nstrcasecmp(mime, MIME_TRIG, sl))
 	{
 		name = "trig";
 	}
-	else if(!nstrcasecmp(mime, "application/n-quads", sl) || !nstrcasecmp(mime, "text/x-nquads", sl))
+	else if(!nstrcasecmp(mime, MIME_NQUADS, sl) || !nstrcasecmp(mime, MIME_NQUADS_OLD, sl))
 	{
 		name = "nquads";
 	}
-	else if(!nstrcasecmp(mime, "application/n-triples", sl) || !nstrcasecmp(mime, "text/plain", sl))
+	else if(!nstrcasecmp(mime, MIME_NTRIPLES, sl) || !nstrcasecmp(mime, MIME_PLAIN, sl))
 	{
 		name = "ntriples";
 	}
-	else if(!nstrcasecmp(mime, "text/turtle", sl) || !nstrcasecmp(mime, "text/n3", sl))
+	else if(!nstrcasecmp(mime, MIME_TURTLE, sl) || !nstrcasecmp(mime, MIME_N3, sl))
 	{
 		name = "turtle";
 	}
-	else if(!nstrcasecmp(mime, "application/rdf+xml", sl))
+	else if(!nstrcasecmp(mime, MIME_RDFXML, sl))
 	{
 		name = "rdfxml";
 	}

@@ -31,6 +31,15 @@
 
 # include "libtwine-internal.h"
 
+# define MIME_TURTLE                    "text/turtle"
+# define MIME_NTRIPLES                  "application/n-triples"
+# define MIME_NQUADS                    "application/n-quads"
+# define MIME_NQUADS_OLD                "text/x-nquads"
+# define MIME_RDFXML                    "application/rdf+xml"
+# define MIME_TRIG                      "application/trig"
+# define MIME_PLAIN                     "text/plain"
+# define MIME_N3                        "text/n3"
+
 typedef int (*twine_plugin_init_fn)(void);
 typedef int (*twine_plugin_cleanup_fn)(void);
 
