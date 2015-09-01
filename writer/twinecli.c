@@ -234,7 +234,9 @@ twinecli_process_args(int argc, char **argv)
 	argv += optind;
 	if(cache_update_name)
 	{
-		/* There must be an identifier on the command-line */
+		/* There must be an identifier on the command-line when performing
+		 * an update.
+		 */
 		if(!argc)
 		{
 			twinecli_usage();
@@ -244,14 +246,13 @@ twinecli_process_args(int argc, char **argv)
 		argc--;
 		argv++;		
 	}
-	else
+	else if(argc)
 	{
-		if(!argc && !bulk_import_type)
-		{
-			/* -t TYPE must be specified if importing from stdin */
-			twinecli_usage();
-			return -1;
-		}
+		/* Not performing a cache update.
+		 *
+		 * If there was a command-line argument, we can optionally try to
+		 * infer the MIME type from the filename.
+		 */
 		if(!bulk_import_type)
 		{		   
 			/* Attempt to determine the MIME type from the filename */
@@ -278,9 +279,17 @@ twinecli_process_args(int argc, char **argv)
 		argc--;
 		argv++;
 	}
+	else if(!bulk_import_type)
+	{
+		/* No arguments, no -t - implies stdin import, but a type needs
+		 * to be specified for that
+		 */
+		twinecli_usage();
+		return -1;
+	}
+	/* There should now be no remaining command-line arguments */
 	if(argc)
 	{
-		/* There should be no remaining command-line arguments */
 		twinecli_usage();
 		return -1;
 	}
