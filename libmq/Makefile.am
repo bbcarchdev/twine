@@ -2,7 +2,7 @@
 ##
 ## Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
 ##
-## Copyright (c) 2014 BBC
+## Copyright (c) 2014-2015 BBC
 ##
 ##  Licensed under the Apache License, Version 2.0 (the "License");
 ##  you may not use this file except in compliance with the License.
@@ -18,14 +18,16 @@
 
 ACLOCAL_AMFLAGS = -I ../m4
 
-noinst_LTLIBRARIES = libmq.la
+lib_LTLIBRARIES = libmq.la
 
-libmq_la_SOURCES = libmq.h p_libmq.h \
+include_HEADERS = libmq.h
+
+bin_PROGRAMS = mq-recv mq-send
+
+libmq_la_SOURCES = p_libmq.h \
 	connection.c message.c proton.c
 
-libmq_la_LDFLAGS = -static
-
-noinst_PROGRAMS = mq-recv mq-send
+libmq_la_LDFLAGS = -avoid-version
 
 mq_recv_SOURCES = mq-recv.c
 mq_recv_LDADD = libmq.la
