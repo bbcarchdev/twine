@@ -16,7 +16,7 @@
 ##  See the License for the specific language governing permissions and
 ##  limitations under the License.
 
-AC_INIT([twine],m4_esyscmd([/bin/sh m4/get-version.sh]),[RESFeedback@bbc.co.uk],,[http://bbcarchdev.github.io/twine/])
+AC_INIT([twine],m4_esyscmd([/bin/sh m4/get-version.sh]),[RESFeedback@bbc.co.uk],,[https://bbcarchdev.github.io/twine/])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AM_MAINTAINER_MODE
@@ -37,10 +37,8 @@ BT_REQUIRE_PTHREAD
 BT_REQUIRE_LIBDL
 BT_REQUIRE_LIBCURL
 BT_REQUIRE_LIBRDF
-BT_REQUIRE_LIBQPID_PROTON
 BT_REQUIRE_LIBXML2
 BT_REQUIRE_LIBXSLT
-BT_REQUIRE_LIBSPARQLCLIENT_INCLUDED
 
 old_LIBS="$LIBS"
 BT_REQUIRE_OPENSSL
@@ -48,6 +46,9 @@ BT_REQUIRE_LIBURI_INCLUDED
 BT_CHECK_LIBSQL
 BT_CHECK_LIBJSONDATA
 LIBS="$old_LIBS"
+
+BT_REQUIRE_LIBSPARQLCLIENT_INCLUDED
+BT_REQUIRE_LIBMQ_INCLUDED
 
 AM_CONDITIONAL([HAVE_LIBJSONDATA],[test x"$have_libjsondata" = x"yes"])
 AM_CONDITIONAL([HAVE_LIBSQL],[test x"$have_libsql" = x"yes"])
@@ -61,7 +62,6 @@ AC_CONFIG_FILES([Makefile
 libtwine.pc
 libtwine-uninstalled.pc
 libsupport/Makefile
-libmq/Makefile
 libutils/Makefile
 libtwine/Makefile
 libs3client/Makefile

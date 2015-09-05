@@ -1,8 +1,8 @@
-## libmq: A library for interacting with message queues
+##  Twine: A Linked Data workflow engine
 ##
-## Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
+##  Author: Mo McRoberts
 ##
-## Copyright (c) 2014 BBC
+##  Copyright (c) 2014-2015 BBC
 ##
 ##  Licensed under the Apache License, Version 2.0 (the "License");
 ##  you may not use this file except in compliance with the License.
@@ -16,19 +16,29 @@
 ##  See the License for the specific language governing permissions and
 ##  limitations under the License.
 
-ACLOCAL_AMFLAGS = -I ../m4
+AC_INIT([libmq],m4_esyscmd([/bin/sh ../m4/get-version.sh]),[RESFeedback@bbc.co.uk],,[https://github.com/bbcarchdev/libmq])
+AC_CONFIG_MACRO_DIR([../m4])
+AM_INIT_AUTOMAKE([foreign subdir-objects])
+AM_MAINTAINER_MODE
 
-noinst_LTLIBRARIES = libmq.la
+AC_CONFIG_HEADER([config.h])
 
-libmq_la_SOURCES = libmq.h p_libmq.h \
-	connection.c message.c proton.c
+BT_PROG_XCODE
+AC_PROG_CC([clang c99 gcc cc])
+BT_PROG_CC_WARN
+BT_PROG_CC_DEBUG
+AC_PROG_CC_C99
 
-libmq_la_LDFLAGS = -static
+LT_INIT
 
-noinst_PROGRAMS = mq-recv mq-send
+BT_ENABLE_POSIX
+BT_ENABLE_XSI
+BT_REQUIRE_PTHREAD
+BT_REQUIRE_LIBQPID_PROTON
 
-mq_recv_SOURCES = mq-recv.c
-mq_recv_LDADD = libmq.la
+BT_DEFINE_PREFIX
 
-mq_send_SOURCES = mq-send.c
-mq_send_LDADD = libmq.la
+AC_CONFIG_FILES([Makefile
+])
+
+AC_OUTPUT
