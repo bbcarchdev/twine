@@ -24,6 +24,16 @@ include_HEADERS = libmq.h
 
 bin_PROGRAMS = mq-recv mq-send
 
+EXTRA_DIST = libmq.pc.in libmq-uninstalled.pc.in
+
+DISTCLEANFILES = libmq.pc libcluster-mq.pc
+
+pkgconfigdir = $(libdir)/pkgconfig
+
+noinst_DATA = libmq-uninstalled.pc
+
+pkgconfig_DATA = libmq.pc
+
 libmq_la_SOURCES = p_libmq.h \
 	connection.c message.c proton.c
 

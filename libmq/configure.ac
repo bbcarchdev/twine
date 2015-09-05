@@ -1,4 +1,4 @@
-##  Twine: A Linked Data workflow engine
+## libmq: A library for interacting with message queues
 ##
 ##  Author: Mo McRoberts
 ##
@@ -21,6 +21,9 @@ AC_CONFIG_MACRO_DIR([../m4])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AM_MAINTAINER_MODE
 
+PACKAGE_DESC='A library for interacting with message queues'
+AC_SUBST([PACKAGE_DESC])
+
 AC_CONFIG_HEADER([config.h])
 
 BT_PROG_XCODE
@@ -38,7 +41,11 @@ BT_REQUIRE_LIBQPID_PROTON
 
 BT_DEFINE_PREFIX
 
+AC_SUBST([LOCAL_LIBS])
+
 AC_CONFIG_FILES([Makefile
+libmq.pc
+libmq-uninstalled.pc
 ])
 
 AC_OUTPUT
