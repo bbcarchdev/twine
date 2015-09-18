@@ -31,6 +31,7 @@ static int twinecli_import(const char *type, const char *filename);
 
 static const char *bulk_import_type = NULL, *bulk_import_file = NULL;
 static const char *cache_update_name = NULL, *cache_update_ident = NULL;
+static int schema_update_only = 0;
 
 static struct twinecli_extmime_struct extmime[] = {
 	{ "trig", "application/trig" },
@@ -54,13 +55,20 @@ main(int argc, char **argv)
 	{
 		return 1;
 	}
-	if(cache_update_name)
+	if(schema_update_only)
 	{
-		r = twine_update(cache_update_name, cache_update_ident);
+		r = 0;
 	}
 	else
 	{
-		r = twinecli_import(bulk_import_type, bulk_import_file);
+		if(cache_update_name)
+		{
+			r = twine_update(cache_update_name, cache_update_ident);
+		}
+		else
+		{
+			r = twinecli_import(bulk_import_type, bulk_import_file);
+		}
 	}
 	twine_cleanup_();
 	return r ? 1 : 0;
@@ -127,7 +135,8 @@ twinecli_usage(void)
 {
 	fprintf(stderr, "Usage:\n"
 			"  %s [OPTIONS] [FILE]\n"
-			"  %s -u NAME IDENTIFIER\n"
+			"  %s [OPTIONS] -u NAME IDENTIFIER\n"
+			"  %s [OPTIONS] -S\n"
 			"\n"
 			"OPTIONS is one or more of:\n"
 			"  -h                   Print this notice and exit\n"
@@ -136,7 +145,8 @@ twinecli_usage(void)
 			"  -t TYPE              Perform a bulk import of TYPE\n"
 			"  -u NAME              Ask plug-in NAME to update IDENTIFIER\n"
 			"  -D SECTION:KEY       Set config option KEY in [SECTION] to 1\n"
-			"  -D SECTION:KEY=VALUE Set config option KEY in [SECTION] to VALUE\n"			
+			"  -D SECTION:KEY=VALUE Set config option KEY in [SECTION] to VALUE\n"
+			"  -S                   Perform schema migrations and then exit\n"
 			"\n"
             "In the first usage form (bulk import):\n"			
 			"  If FILE is not specified, input will be read from standard input.\n"
@@ -145,8 +155,12 @@ twinecli_usage(void)
 			"In the second usage form (cache update):\n"
 			"  This form asks the named plug-in to update its data about the resource\n"
 			"  identified by IDENTIFIER. The format of IDENTIFIER is entirely specific\n"
-			"  to the plug-in. The -t option cannot be used in this mode.\n",
-			utils_progname, utils_progname);
+			"  to the plug-in. The -t option cannot be used in this mode.\n"
+			"In the third usage form (schema migrations):\n"
+			"  Modules are initialised and database connections established, if\n"
+			"  applicable. The process then shuts down immediately. None of the\n"
+			"  -t, -u or FILE options may be specified.\n",
+			utils_progname, utils_progname, utils_progname);
 }
 
 static int
@@ -157,7 +171,7 @@ twinecli_process_args(int argc, char **argv)
 	const char *t;
 	char *p;
 
-	while((c = getopt(argc, argv, "hc:dt:u:D:")) != -1)
+	while((c = getopt(argc, argv, "hc:dt:u:D:S")) != -1)
 	{
 		switch(c)
 		{
@@ -225,6 +239,19 @@ twinecli_process_args(int argc, char **argv)
 			}
 			cache_update_name = optarg;
 			break;
+		case 'S':
+			if(cache_update_name)
+			{
+				fprintf(stderr, "%s: warning: cannot specify the -S and -u options together\n", utils_progname);
+				return -1;
+			}
+			if(bulk_import_type)
+			{
+				fprintf(stderr, "%s: warning: cannot specify the -S and -t options together\n", utils_progname);
+				return -1;
+			}
+			schema_update_only = 1;
+			break;
 		default:
 			twinecli_usage();
 			return -1;
@@ -232,7 +259,18 @@ twinecli_process_args(int argc, char **argv)
 	}
 	argc -= optind;
 	argv += optind;
-	if(cache_update_name)
+	if(schema_update_only)
+	{
+		/* When the -S option is provided, there should be no remaining
+		 * arguments
+		 */
+		if(argc)
+		{
+			twinecli_usage();
+			return -1;
+		}
+	}
+	else if(cache_update_name)
 	{
 		/* There must be an identifier on the command-line when performing
 		 * an update.
