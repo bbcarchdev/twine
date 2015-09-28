@@ -66,8 +66,6 @@ AC_SUBST([LINKS])
 NAV='${top_srcdir}/docbook-html5/res-nav.xml'
 AC_SUBST([NAV])
 
-BT_DEFINE_PREFIX
-
 twinehtdocdir='${docdir}'
 AC_SUBST([twinehtdocdir])
 
