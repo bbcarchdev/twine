@@ -1,13 +1,13 @@
 '\" t
 .\"     Title: twine-writerd
 .\"    Author: Mo McRoberts
-.\" Generator: DocBook XSL-NS Stylesheets v1.76.1 <http://docbook.sf.net/>
-.\"      Date: 10/29/2014
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 06/22/2015
 .\"    Manual: Twine Writer Daemon
 .\"    Source: Twine
 .\"  Language: English
 .\"
-.TH "TWINE\-WRITERD" "8" "10/29/2014" "Twine" "Twine Writer Daemon"
+.TH "TWINE\-WRITERD" "8" "06/22/2015" "Twine" "Twine Writer Daemon"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -34,12 +34,10 @@ twine-writerd \- Twine writer daemon
 \fBtwine\-writerd\fR [\fB\-h\fR] [\fB\-c\ \fR\fB\fIconfig\-file\fR\fR] [\fB\-f\fR] [\fB\-d\fR]
 .SH "DESCRIPTION"
 .PP
-
 \fBtwine\-writerd\fR
 is the processing and writer daemon for
 Twine, a Linked Open Data workflow engine\&.
 .PP
-
 \fBtwine\-writerd\fR
 connects to a queue on an AMQP 1\&.0 message broker and waits for messages to arrive\&. When they do, they are routed to a processor module, depending upon the content type of the message\&. The processor module translates the message contents into some kind of update operation on a quad\-store\&.
 .PP
@@ -85,6 +83,5 @@ Note that if connection URIs include credentials or other pieces of sensitive in
 .RE
 .SH "SEE ALSO"
 .PP
-
 \fBtwine.conf\fR(5),
 \fBtwine-inject\fR(1)\&.

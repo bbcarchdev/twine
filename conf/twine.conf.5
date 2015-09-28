@@ -1,13 +1,13 @@
 '\" t
 .\"     Title: twine.conf
 .\"    Author: Mo McRoberts
-.\" Generator: DocBook XSL-NS Stylesheets v1.76.1 <http://docbook.sf.net/>
-.\"      Date: 10/29/2014
+.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
+.\"      Date: 06/22/2015
 .\"    Manual: Twine Configuration File
 .\"    Source: Twine
 .\"  Language: English
 .\"
-.TH "TWINE\&.CONF" "5" "10/29/2014" "Twine" "Twine Configuration File"
+.TH "TWINE\&.CONF" "5" "06/22/2015" "Twine" "Twine Configuration File"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -31,7 +31,6 @@
 twine.conf \- Twine configuration file
 .SH "DESCRIPTION"
 .PP
-
 twine\&.conf
 is the configuration file used by components of Twine, a Linked Open Data workflow engine\&. The file uses the Windows \&.INI file format (albeit with Unix line\-endings), with sets of configuration values split into groups\&. Each key and value pair begins on a new line within a section, with an equals sign separating the value from the key\&. Comments begin with a semicolon or hash sign at the start of a line\&.
 .PP
@@ -87,7 +86,6 @@ uri (String)
 .RS 4
 Specifies the default URI to use for AMQP connections\&. The URI takes the following general form:
 .sp
-
 amqp://[\fIuser\fR[:\fIauth\-info\fR]@]\fIhost\fR[:\fIport\fR]/\fIqueue\-or\-exchange\fR
 .RE
 .SH "[SPARQL] SECTION"
@@ -478,6 +476,5 @@ twine\-writerd)\&.
 .RE
 .SH "SEE ALSO"
 .PP
-
 \fBtwine-writerd\fR(8),
 \fBtwine-inject\fR(1)\&.
