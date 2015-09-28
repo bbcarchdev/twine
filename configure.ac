@@ -55,6 +55,22 @@ AM_CONDITIONAL([HAVE_LIBSQL],[test x"$have_libsql" = x"yes"])
 use_docbook_html5=yes
 BT_BUILD_DOCS
 
+XML2HTMLFLAGS="--param \"html.linksfile\" \"'file://\$(abs_top_srcdir)/docbook-html5/res-links.xml'\" \
+  --param \"html.navfile\" \"'file://\$(abs_top_srcdir)/docbook-html5/res-nav.xml'\" \
+  --param \"html.ie78css\" \"'//bbcarchdev.github.io/painting-by-numbers/ie78.css'\""
+AC_SUBST([XML2HTMLFLAGS])
+
+LINKS='${top_srcdir}/docbook-html5/res-links.xml'
+AC_SUBST([LINKS])
+
+NAV='${top_srcdir}/docbook-html5/res-nav.xml'
+AC_SUBST([NAV])
+
+BT_DEFINE_PREFIX
+
+twinehtdocdir='${docdir}'
+AC_SUBST([twinehtdocdir])
+
 BT_DEFINE_PREFIX
 
 AC_CONFIG_FILES([Makefile
