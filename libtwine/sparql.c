@@ -86,6 +86,7 @@ twine_sparql_create(void)
 	p = sparql_create(twine_sparql_uri);
 	if(!p)
 	{
+		twine_logf(LOG_CRIT, "failed to create new SPARQL connection\n");
 		return NULL;
 	}
 	sparql_set_logger(p, twine_logger_);
