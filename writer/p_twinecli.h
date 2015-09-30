@@ -20,8 +20,6 @@
 #ifndef P_TWINECLI_H_
 # define P_TWINECLI_H_                  1
 
-# define _BSD_SOURCE                    1
-
 # include <stdio.h>
 # include <stdlib.h>
 # include <string.h>
