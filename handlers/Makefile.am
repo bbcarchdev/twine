@@ -18,7 +18,9 @@
 
 AM_CPPFLAGS = @AM_CPPFLAGS@ \
 	-I$(top_builddir)/libtwine -I$(top_srcdir)/libtwine \
-	-I$(top_builddir)/libs3client -I$(top_srcdir)/libs3client
+	-I$(top_builddir)/libs3client -I$(top_srcdir)/libs3client \
+	$(LIBJSONDATA_CPPFLAGS)
+
 LIBS = $(top_builddir)/libtwine/libtwine.la
 
 moduledir = $(libdir)/twine
