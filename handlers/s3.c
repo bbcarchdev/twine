@@ -30,14 +30,14 @@
 
 #include "libtwine.h"
 #include "liburi.h"
-#include "libs3client.h"
+#include "libawsclient.h"
 
 #define PLUGIN_NAME                     "S3"
 
 struct bucketinfo_struct
 {
 	char *name;
-	S3BUCKET *bucket;
+	AWSS3BUCKET *bucket;
 };
 
 struct ingestinfo_struct
@@ -48,9 +48,9 @@ struct ingestinfo_struct
 };
 
 static int process_s3(const char *mime, const unsigned char *buf, size_t buflen, void *data);
-static S3BUCKET *get_bucket(const char *name);
-static S3BUCKET *add_bucket(struct bucketinfo_struct *info, const char *name);
-static int ingest_resource(S3BUCKET *bucket, const char *resource);
+static AWSS3BUCKET *get_bucket(const char *name);
+static AWSS3BUCKET *add_bucket(struct bucketinfo_struct *info, const char *name);
+static int ingest_resource(AWSS3BUCKET *bucket, const char *resource);
 static size_t ingest_write(char *ptr, size_t size, size_t nemb, void *userdata);
 
 static struct bucketinfo_struct bucketinfo[8];
@@ -70,7 +70,7 @@ static int process_s3(const char *mime, const unsigned char *buf, size_t buflen,
 	char *str, *t;
 	URI *uri;
 	URI_INFO *info;
-	S3BUCKET *bucket;
+	AWSS3BUCKET *bucket;
 	int r;
 
 	(void) mime;
@@ -126,7 +126,7 @@ static int process_s3(const char *mime, const unsigned char *buf, size_t buflen,
 	return r;
 }
 
-static S3BUCKET *
+static AWSS3BUCKET *
 get_bucket(const char *name)
 {
 	size_t c;
@@ -145,14 +145,14 @@ get_bucket(const char *name)
 			return add_bucket(&(bucketinfo[c]), name);
 		}
 	}
-    /* Recycle the oldest entry */
+	/* Recycle the oldest entry */
 	free(bucketinfo[0].name);
-	s3_destroy(bucketinfo[0].bucket);
+	aws_s3_destroy(bucketinfo[0].bucket);
 	memmove(&(bucketinfo[0]), &(bucketinfo[1]), sizeof(struct bucketinfo_struct) * maxbuckets - 1);
 	return add_bucket(&(bucketinfo[maxbuckets - 1]), name);
 }
 
-static S3BUCKET *
+static AWSS3BUCKET *
 add_bucket(struct bucketinfo_struct *info, const char *name)
 {
 	char *t;
@@ -163,7 +163,7 @@ add_bucket(struct bucketinfo_struct *info, const char *name)
 	{
 		return NULL;
 	}
-	info->bucket = s3_create(name);
+	info->bucket = aws_s3_create(name);
 	if(!info->bucket)
 	{
 		free(info->name);
@@ -172,26 +172,26 @@ add_bucket(struct bucketinfo_struct *info, const char *name)
 	}
 	if((t = twine_config_geta("s3:endpoint", NULL)))
 	{
-		s3_set_endpoint(info->bucket, t);
+		aws_s3_set_endpoint(info->bucket, t);
 		free(t);
 	}
 	if((t = twine_config_geta("s3:access", NULL)))
 	{
-		s3_set_access(info->bucket, t);
+		aws_s3_set_access(info->bucket, t);
 		free(t);
 	}
 	if((t = twine_config_geta("s3:secret", NULL)))
 	{
-		s3_set_secret(info->bucket, t);
+		aws_s3_set_secret(info->bucket, t);
 		free(t);
 	}
 	return info->bucket;
 }
 
 static int
-ingest_resource(S3BUCKET *bucket, const char *resource)
+ingest_resource(AWSS3BUCKET *bucket, const char *resource)
 {
-	S3REQUEST *req;
+	AWSREQUEST *req;
 	CURL *ch;
 	struct ingestinfo_struct info;
 	long status;
@@ -199,16 +199,16 @@ ingest_resource(S3BUCKET *bucket, const char *resource)
 	char *type;
 
 	memset(&info, 0, sizeof(struct ingestinfo_struct));
-	req = s3_request_create(bucket, resource, "GET");
-	ch = s3_request_curl(req);
+	req = aws_s3_request_create(bucket, resource, "GET");
+	ch = aws_request_curl(req);
 	curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, ingest_write);
 	curl_easy_setopt(ch, CURLOPT_WRITEDATA, (void *) &info);
 	curl_easy_setopt(ch, CURLOPT_VERBOSE, twine_config_get_bool("s3:verbose", 0));
-	if(s3_request_perform(req) || !info.buf)
+	if(aws_request_perform(req) || !info.buf)
 	{
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to request resource '%s'\n", resource);
 		free(info.buf);
-		s3_request_destroy(req);
+		aws_request_destroy(req);
 		return -1;
 	}
 	status = 0;
@@ -217,7 +217,7 @@ ingest_resource(S3BUCKET *bucket, const char *resource)
 	{
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to request resource '%s' with status %ld\n", resource, status);
 		free(info.buf);
-		s3_request_destroy(req);
+		aws_request_destroy(req);
 		return -1;
 	}
 	type = NULL;
@@ -226,12 +226,12 @@ ingest_resource(S3BUCKET *bucket, const char *resource)
 	{
 		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to request resource '%s': no Content-Type in response\n", resource, status);
 		free(info.buf);
-		s3_request_destroy(req);
+		aws_request_destroy(req);
 		return -1;
 	}
 	r = twine_plugin_process(type, (const unsigned char *) info.buf, info.pos, NULL);
 	free(info.buf);
-	s3_request_destroy(req);
+	aws_request_destroy(req);
 	return r;
 }
 
