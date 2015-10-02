@@ -42,12 +42,7 @@ BT_REQUIRE_LIBQPID_PROTON
 BT_REQUIRE_LIBXML2
 BT_REQUIRE_LIBXSLT
 
-dnl The following checks override action-if-true to be a no-op so that $LIBS
-dnl doesn't get updated to include these libraries (they're only linked into
-dnl certain components)
-BT_CHECK_COMMONCRYPTO([true],[
-	BT_REQUIRE_OPENSSL
-])
+BT_REQUIRE_LIBAWSCLIENT_INCLUDED([true])
 BT_REQUIRE_LIBURI_INCLUDED([true])
 BT_CHECK_LIBSQL([true])
 BT_CHECK_LIBJSONDATA([true])
@@ -83,7 +78,6 @@ libsupport/Makefile
 libmq/Makefile
 libutils/Makefile
 libtwine/Makefile
-libs3client/Makefile
 writer/Makefile
 bridges/Makefile
 handlers/Makefile

@@ -19,11 +19,10 @@
 ACLOCAL_AMFLAGS = -I m4
 
 DIST_SUBDIRS = libsupport libmq libutils libtwine \
-	libs3client \
 	writer bridges handlers processors \
 	conf docs m4 docbook-html5
 
-SUBDIRS = libsupport @subdirs@ libmq libutils libtwine libs3client \
+SUBDIRS = libsupport @subdirs@ libmq libutils libtwine \
 	writer bridges handlers processors \
 	conf docs
 
@@ -38,7 +37,7 @@ EXTRA_DIST = README.md LICENSE-2.0 libtwine.pc.in libtwine-uninstalled.pc.in
 BRANCH ?= develop
 DOCS_BRANCH ?= gh-pages
 
-DEVELOP_SUBMODULES = m4 libsupport libs3client
+DEVELOP_SUBMODULES = m4 libsupport
 DOCS_SUBMODULES = docs docbook-html5
 
 checkout:
