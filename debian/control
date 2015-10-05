@@ -3,16 +3,16 @@ Section: misc
 Priority: optional
 Maintainer: Mo McRoberts <mo.mcroberts@bbc.co.uk>
 Standards-Version: 3.9.3
-Build-Depends: debhelper (>= 8.0.0), autoconf, automake, libtool, libcurl4-gnutls-dev, librdf0-dev, uuid-dev, liburi-dev, libsparqlclient-dev, libltdl-dev, libqpid-proton-dev, libxml2-dev, libxslt1-dev, libsql-dev, libjsondata-dev, libawsclient-dev
+Build-Depends: debhelper (>= 8.0.0), autoconf, automake, libtool, libcurl4-gnutls-dev, librdf0-dev, uuid-dev, liburi-dev, libsparqlclient-dev, libltdl-dev, libqpid-proton-dev, libxml2-dev, libxslt1-dev, libsql-dev, libjsondata-dev, libawsclient-dev, libmq-dev
 
 Package: libtwine
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}, libsparqlclient
+Depends: ${misc:Depends}, ${shlibs:Depends}, libsparqlclient, libmq
 Description: Linked Data workflow engine (module API)
 
 Package: twine
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}, libtwine (= ${binary:Version}), libawsclient
+Depends: ${misc:Depends}, ${shlibs:Depends}, libtwine (= ${binary:Version}), libmq, libawsclient
 Description: Linked Data workflow engine
 
 Package: twine-anansi-bridge
@@ -22,5 +22,5 @@ Description: Bridge between an Anansi queue and Twine
 
 Package: libtwine-dev
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}, libtwine (= ${binary:Version}), libsparqlclient-dev, librdf0-dev
+Depends: ${misc:Depends}, ${shlibs:Depends}, libtwine (= ${binary:Version}), libsparqlclient-dev, librdf0-dev, libmq-dev
 Description: Linked Data workflow engine (module API development files)
