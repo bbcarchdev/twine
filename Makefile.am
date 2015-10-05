@@ -22,7 +22,7 @@ DIST_SUBDIRS = libsupport libmq libutils libtwine \
 	writer bridges handlers processors \
 	conf docs m4 docbook-html5
 
-SUBDIRS = libsupport @subdirs@ libmq libutils libtwine \
+SUBDIRS = libsupport @subdirs@ libmq libtwine libutils \
 	writer bridges handlers processors \
 	conf docs
 

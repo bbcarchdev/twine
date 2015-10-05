@@ -91,11 +91,21 @@ typedef int (*twine_postproc_fn)(twine_graph *graph, void *userdata);
  */
 typedef int (*twine_update_fn)(const char *name, const char *identifier, void *userdata);
 
-/* Twine plug-in entry-point */
+/* Twine plug-in entry-point (this is not an API, but the signature for the function
+ * provided by a plug-in)
+ */
 int twine_plugin_init(void);
 
-/* Twine plug-in clean-up entry-point */
+/* Twine plug-in clean-up entry-point (this is not an API, but the signature for the
+ * function provided by a plug-in)
+ */
 int twine_plugin_done(void);
+
+/* Obtain the path to the Twine configuration file */
+const char *twine_config_path(void);
+
+/* Obtain the default URI of the message broker */
+const char *twine_mq_default_uri(void);
 
 /* Register a processor callback for a given MIME type */
 int twine_plugin_register(const char *mimetype, const char *description, twine_processor_fn fn, void *data);

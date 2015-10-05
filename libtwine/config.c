@@ -32,6 +32,12 @@ twine_config_init_(struct twine_configfn_struct *fns)
 	return 0;
 }
 
+const char *
+twine_config_path(void)
+{
+	return SYSCONFDIR "/twine.conf";
+}
+
 size_t
 twine_config_get(const char *key, const char *defval, char *buf, size_t bufsize)
 {

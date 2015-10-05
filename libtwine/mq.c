@@ -1,8 +1,8 @@
-/* Twine: Utilities
+/* Twine: Internal API
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2015 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -17,27 +17,14 @@
  *  limitations under the License.
  */
 
-#ifndef P_LIBUTILS_H_
-# define P_LIBUTILS_H_                  1
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
-# include <stdio.h>
-# include <stdlib.h>
-# include <string.h>
-# include <errno.h>
-# include <unistd.h>
-# include <fcntl.h>
-# include <sys/stat.h>
-# include <sys/types.h>
+#include "p_libtwine.h"
 
-# include "libsupport.h"
-# include "libtwine.h"
-# include "libmq.h"
-
-# include <curl/curl.h>
-# include <librdf.h>
-# include <proton/message.h>
-# include <proton/messenger.h>
-
-# include "libutils.h"
-
-#endif /*!P_LIBUTILS_H_*/
+const char *
+twine_mq_default_uri(void)
+{
+	return DEFAULT_MQ_URI;
+}

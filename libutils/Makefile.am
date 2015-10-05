@@ -2,7 +2,7 @@
 ##
 ##  Author: Mo McRoberts
 ##
-##  Copyright (c) 2014 BBC
+##  Copyright (c) 2014-2015 BBC
 ##
 ##  Licensed under the Apache License, Version 2.0 (the "License");
 ##  you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
 ##  See the License for the specific language governing permissions and
 ##  limitations under the License.
 
-## libutils is a static utility library for twine executables
+## libutils is a static utility library for twine executables. It will be removed
+## in the future and its core functionality rolled into libtwine.
 ##
 ## Different portions of libutils depend upon different external libraries,
 ## so some care ought to be taken in using different areas of functionality.
@@ -25,6 +26,7 @@
 ##     utils_proton_*                   libsupport, libqpid-proton
 
 AM_CPPFLAGS = @AM_CPPFLAGS@ \
+	-I$(top_builddir)/libtwine -I$(top_srcdir)/libtwine \
 	-I$(top_builddir)/libsupport -I$(top_srcdir)/libsupport \
 	-I$(top_builddir)/libmq -I$(top_srcdir)/libmq
 
@@ -34,3 +36,5 @@ libutils_la_SOURCES = p_libutils.h libutils.h \
 	init.c config.c proton.c urlencode.c daemon.c mq.c
 
 libutils_la_LDFLAGS = -static
+
+libutils_la_LIBADD = $(top_builddir)/libtwine/libtwine.la

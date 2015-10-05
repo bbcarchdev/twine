@@ -28,6 +28,8 @@
 
 # include "libtwine-internal.h"
 
+# define DEFAULT_MQ_URI               "amqp://~0.0.0.0/amq.direct"
+
 # define MIME_TURTLE                    "text/turtle"
 # define MIME_NTRIPLES                  "application/n-triples"
 # define MIME_NQUADS                    "application/n-quads"

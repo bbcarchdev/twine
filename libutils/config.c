@@ -26,7 +26,7 @@
 int
 utils_config_defaults(void)
 {
-	config_set_default("global:configFile", SYSCONFDIR "/twine.conf");
+	config_set_default("global:configFile", twine_config_path());
 	config_set_default("log:level", "notice");
 	config_set_default("log:ident", utils_progname);
 	if(utils_is_daemon)
@@ -40,7 +40,7 @@ utils_config_defaults(void)
 		config_set_default("log:syslog", "0");
 		config_set_default("log:stderr", "1");
 	}
-	config_set_default("amqp:uri", DEFAULT_MQ_URI);
-	config_set_default("mq:uri", DEFAULT_MQ_URI);
+	config_set_default("amqp:uri", twine_mq_default_uri());
+	config_set_default("mq:uri", twine_mq_default_uri());
 	return 0;
 }
