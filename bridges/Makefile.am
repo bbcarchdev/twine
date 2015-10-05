@@ -19,7 +19,6 @@
 AM_CPPFLAGS = @AM_CPPFLAGS@ \
 	-I$(top_builddir)/libsupport -I$(top_srcdir)/libsupport \
 	-I$(top_builddir)/libutils -I$(top_srcdir)/libutils \
-	-I$(top_builddir)/libmq -I$(top_srcdir)/libmq \
 	$(LIBSQL_CPPFLAGS)
 
 if HAVE_LIBSQL
@@ -37,7 +36,7 @@ twine_inject_SOURCES = inject.c
 twine_inject_LDADD = \
 	$(top_builddir)/libutils/libutils.la \
 	$(top_builddir)/libsupport/libsupport.la \
-	$(top_builddir)/libmq/libmq.la
+	@LIBMQ_LOCAL_LIBS@ @LIBMQ_LIBS@
 
 if HAVE_LIBSQL
 
@@ -46,8 +45,8 @@ twine_anansi_bridge_SOURCES = anansi-bridge.c
 twine_anansi_bridge_LDADD = \
 	$(top_builddir)/libutils/libutils.la \
 	$(top_builddir)/libsupport/libsupport.la \
-	$(top_builddir)/libmq/libmq.la \
-	$(LIBSQL_LOCAL_LIBS) $(LIBSQL_LIBS)
+	@LIBMQ_LOCAL_LIBS@ @LIBMQ_LIBS@ \
+	@LIBSQL_LOCAL_LIBS@ @LIBSQL_LIBS@
 
 endif
 

@@ -45,7 +45,6 @@ LIBS="$old_LIBS"
 
 BT_REQUIRE_LIBCURL
 BT_REQUIRE_LIBRDF
-BT_REQUIRE_LIBQPID_PROTON
 BT_REQUIRE_LIBXML2
 BT_REQUIRE_LIBXSLT
 
@@ -56,6 +55,9 @@ BT_CHECK_LIBJSONDATA([true])
 
 dnl Check for this last in the event that it's not yet-built'
 BT_REQUIRE_LIBSPARQLCLIENT_INCLUDED
+
+BT_REQUIRE_LIBSPARQLCLIENT_INCLUDED
+BT_REQUIRE_LIBMQ_INCLUDED
 
 AM_CONDITIONAL([HAVE_LIBJSONDATA],[test x"$have_libjsondata" = x"yes"])
 AM_CONDITIONAL([HAVE_LIBSQL],[test x"$have_libsql" = x"yes"])
@@ -83,7 +85,6 @@ AC_CONFIG_FILES([Makefile
 libtwine.pc
 libtwine-uninstalled.pc
 libsupport/Makefile
-libmq/Makefile
 libutils/Makefile
 libtwine/Makefile
 writer/Makefile

@@ -18,11 +18,11 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-DIST_SUBDIRS = libsupport libmq libutils libtwine \
+DIST_SUBDIRS = libsupport libtwine libutils \
 	writer bridges handlers processors \
 	conf docs m4 docbook-html5
 
-SUBDIRS = libsupport @subdirs@ libmq libtwine libutils \
+SUBDIRS = libsupport @subdirs@ libtwine libutils \
 	writer bridges handlers processors \
 	conf docs
 
