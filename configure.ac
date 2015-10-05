@@ -55,8 +55,6 @@ BT_CHECK_LIBJSONDATA([true])
 
 dnl Check for this last in the event that it's not yet-built'
 BT_REQUIRE_LIBSPARQLCLIENT_INCLUDED
-
-BT_REQUIRE_LIBSPARQLCLIENT_INCLUDED
 BT_REQUIRE_LIBMQ_INCLUDED
 
 AM_CONDITIONAL([HAVE_LIBJSONDATA],[test x"$have_libjsondata" = x"yes"])
