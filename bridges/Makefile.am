@@ -19,7 +19,8 @@
 AM_CPPFLAGS = @AM_CPPFLAGS@ \
 	-I$(top_builddir)/libsupport -I$(top_srcdir)/libsupport \
 	-I$(top_builddir)/libutils -I$(top_srcdir)/libutils \
-	-I$(top_builddir)/libmq -I$(top_srcdir)/libmq
+	-I$(top_builddir)/libmq -I$(top_srcdir)/libmq \
+	$(LIBSQL_CPPFLAGS)
 
 if HAVE_LIBSQL
 

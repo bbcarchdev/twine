@@ -25,6 +25,7 @@
 
 static int twine_sparql_debug;
 
+static char *twine_sparql_uri;
 static char *twine_sparql_query_uri;
 static char *twine_sparql_update_uri;
 static char *twine_sparql_data_uri;
@@ -34,8 +35,17 @@ twine_sparql_put_internal_(const char *uri, const char *triples, size_t length, 
 
 /* Internal: set defaults for SPARQL connections */
 int
-twine_sparql_defaults_(const char *query_uri, const char *update_uri, const char *data_uri, int verbose)
+twine_sparql_defaults_(const char *base_uri, const char *query_uri, const char *update_uri, const char *data_uri, int verbose)
 {
+	if(base_uri)
+	{
+		twine_sparql_uri = strdup(base_uri);
+		if(!twine_sparql_uri)
+		{
+			return -1;
+		}
+		twine_logf(LOG_DEBUG, "SPARQL endpoint is <%s>\n", twine_sparql_uri);
+	}
 	if(query_uri)
 	{
 		twine_sparql_query_uri = strdup(query_uri);
@@ -73,9 +83,10 @@ twine_sparql_create(void)
 {
 	SPARQL *p;
 
-	p = sparql_create(NULL);
+	p = sparql_create(twine_sparql_uri);
 	if(!p)
 	{
+		twine_logf(LOG_CRIT, "failed to create new SPARQL connection\n");
 		return NULL;
 	}
 	sparql_set_logger(p, twine_logger_);

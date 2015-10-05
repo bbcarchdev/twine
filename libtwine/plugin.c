@@ -570,7 +570,7 @@ twine_update(const char *name, const char *identifier)
 	current = prev;
 	if(r)
 	{
-		twine_logf(LOG_ERR, "handler '%s' failed to update\n");
+		twine_logf(LOG_ERR, "handler '%s' failed to update\n", name);
 		return -1;
 	}
 	return 0;

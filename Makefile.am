@@ -19,11 +19,10 @@
 ACLOCAL_AMFLAGS = -I m4
 
 DIST_SUBDIRS = libsupport libmq libutils libtwine \
-	libs3client \
 	writer bridges handlers processors \
 	conf docs m4 docbook-html5
 
-SUBDIRS = libsupport @subdirs@ libmq libutils libtwine libs3client \
+SUBDIRS = libsupport @subdirs@ libmq libutils libtwine \
 	writer bridges handlers processors \
 	conf docs
 
@@ -34,3 +33,26 @@ pkgconfig_DATA = libtwine.pc
 noinst_DATA = libtwine-uninstalled.pc
 
 EXTRA_DIST = README.md LICENSE-2.0 libtwine.pc.in libtwine-uninstalled.pc.in
+
+BRANCH ?= develop
+DOCS_BRANCH ?= gh-pages
+
+DEVELOP_SUBMODULES = m4 libsupport
+DOCS_SUBMODULES = docs docbook-html5
+
+checkout:
+	@for submod in $(DEVELOP_SUBMODULES) ; do \
+		echo "+++ Checking out the latest version of $$submod on $(BRANCH)" >&2 ; \
+		cd $$submod && \
+		git checkout $(BRANCH) && \
+		git pull && \
+		$(MAKE) checkout BRANCH=$(BRANCH) || exit $? && \
+		cd .. ; \
+	done
+	@for submod in $(DOCS_SUBMODULES) ; do \
+		echo "+++ Checking out the latest version of $$submod on $(DOCS_BRANCH)" >&2 ; \
+		cd $$submod && \
+		git checkout $(DOCS_BRANCH) && \
+		git pull && \
+		cd .. ; \
+	done

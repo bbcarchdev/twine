@@ -69,12 +69,21 @@ process_rdf(const char *mime, const unsigned char *buf, size_t buflen, void *dat
 	if(twine_rdf_model_parse(model, mime, (const char *) buf, buflen))
 	{
 		twine_logf(LOG_ERR, "failed to parse string into model\n");
+		librdf_free_model(model);
 		return -1;
 	}
 	iter = librdf_model_get_contexts(model);
 	if(!iter)
 	{
 		twine_logf(LOG_ERR, "failed to retrieve contexts from model\n");
+		librdf_free_model(model);
+		return -1;
+	}
+	if(librdf_iterator_end(iter))
+	{
+		twine_logf(LOG_ERR, "model contains no named graphs\n");
+		librdf_free_iterator(iter);
+		librdf_free_model(model);
 		return -1;
 	}
 	while(!librdf_iterator_end(iter))
@@ -88,6 +97,7 @@ process_rdf(const char *mime, const unsigned char *buf, size_t buflen, void *dat
 		{
 			uri = librdf_node_get_uri(node);
 			stream = librdf_model_context_as_stream(model, node);
+			twine_logf(LOG_DEBUG, "RDF: replacing graph <%s>\n", (const char *) librdf_uri_as_string(uri));
 			if(twine_sparql_put_stream((const char *) librdf_uri_as_string(uri), stream))
 			{
 				twine_logf(LOG_ERR, "failed to update graph <%s>\n", (const char *) librdf_uri_as_string(uri));

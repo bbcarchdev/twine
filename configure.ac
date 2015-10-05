@@ -16,7 +16,7 @@
 ##  See the License for the specific language governing permissions and
 ##  limitations under the License.
 
-AC_INIT([twine],m4_esyscmd([/bin/sh m4/get-version.sh]),[RESFeedback@bbc.co.uk],,[http://bbcarchdev.github.io/twine/])
+AC_INIT([twine],m4_esyscmd([/bin/sh m4/get-version.sh]),[RESFeedback@bbc.co.uk],,[https://bbcarchdev.github.io/twine/])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AM_MAINTAINER_MODE
@@ -49,11 +49,10 @@ BT_REQUIRE_LIBQPID_PROTON
 BT_REQUIRE_LIBXML2
 BT_REQUIRE_LIBXSLT
 
-old_LIBS="$LIBS"
-BT_REQUIRE_LIBURI_INCLUDED
-BT_CHECK_LIBSQL
-BT_CHECK_LIBJSONDATA
-LIBS="$old_LIBS"
+BT_REQUIRE_LIBAWSCLIENT_INCLUDED([true])
+BT_REQUIRE_LIBURI_INCLUDED([true])
+BT_CHECK_LIBSQL([true])
+BT_CHECK_LIBJSONDATA([true])
 
 dnl Check for this last in the event that it's not yet-built'
 BT_REQUIRE_LIBSPARQLCLIENT_INCLUDED
@@ -64,6 +63,20 @@ AM_CONDITIONAL([HAVE_LIBSQL],[test x"$have_libsql" = x"yes"])
 use_docbook_html5=yes
 BT_BUILD_DOCS
 
+XML2HTMLFLAGS="--param \"html.linksfile\" \"'file://\$(abs_top_srcdir)/docbook-html5/res-links.xml'\" \
+  --param \"html.navfile\" \"'file://\$(abs_top_srcdir)/docbook-html5/res-nav.xml'\" \
+  --param \"html.ie78css\" \"'//bbcarchdev.github.io/painting-by-numbers/ie78.css'\""
+AC_SUBST([XML2HTMLFLAGS])
+
+LINKS='${top_srcdir}/docbook-html5/res-links.xml'
+AC_SUBST([LINKS])
+
+NAV='${top_srcdir}/docbook-html5/res-nav.xml'
+AC_SUBST([NAV])
+
+twinehtdocdir='${docdir}'
+AC_SUBST([twinehtdocdir])
+
 BT_DEFINE_PREFIX
 
 AC_CONFIG_FILES([Makefile
@@ -73,7 +86,6 @@ libsupport/Makefile
 libmq/Makefile
 libutils/Makefile
 libtwine/Makefile
-libs3client/Makefile
 writer/Makefile
 bridges/Makefile
 handlers/Makefile

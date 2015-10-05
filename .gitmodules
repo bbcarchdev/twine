@@ -10,6 +10,3 @@
 [submodule "docs"]
 	path = docs
 	url = git://github.com/bbcarchdev/twine.git
-[submodule "libs3client"]
-	path = libs3client
-	url = git://github.com/bbcarchdev/libs3client.git
