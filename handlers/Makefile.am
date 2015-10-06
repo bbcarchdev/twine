@@ -18,30 +18,17 @@
 
 AM_CPPFLAGS = @AM_CPPFLAGS@ \
 	-I$(top_builddir)/libtwine -I$(top_srcdir)/libtwine \
-	$(LIBAWSCLIENT_CPPFLAGS) \
-	$(LIBJSONDATA_CPPFLAGS)
+	$(LIBURI_CPPFLAGS) \
+	$(LIBAWSCLIENT_CPPFLAGS)
 
 LIBS = $(top_builddir)/libtwine/libtwine.la
 
 moduledir = $(libdir)/twine
 
-if HAVE_LIBJSONDATA
-
-anansi_module = anansi.la
-
-endif
-
 module_LTLIBRARIES = s3.la $(anansi_module)
 
 s3_la_SOURCES = s3.c
 s3_la_LDFLAGS = -no-undefined -module -avoid-version
-s3_la_LIBADD = @LIBAWSCLIENT_LOCAL_LIBS@ @LIBAWSCLIENT_LIBS@
-
-if HAVE_LIBJSONDATA
-
-anansi_la_SOURCES = anansi.c
-anansi_la_LDFLAGS = -no-undefined -module -avoid-version
-anansi_la_LIBADD = @LIBAWSCLIENT_LOCAL_LIBS@ @LIBAWSCLIENT_LIBS@ \
-	@LIBJSONDATA_LOCAL_LIBS@ @LIBJSONDATA_LIBS@
-
-endif
+s3_la_LIBADD = \
+	$(LIBAWSCLIENT_LOCAL_LIBS) $(LIBAWSCLIENT_LIBS) \
+	$(LIBURI_LOCAL_LIBS) $(LIBURI_LIBS)

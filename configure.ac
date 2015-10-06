@@ -48,17 +48,12 @@ BT_REQUIRE_LIBRDF
 BT_REQUIRE_LIBXML2
 BT_REQUIRE_LIBXSLT
 
+dnl Check for these last in the event that they are not yet-built
+
 BT_REQUIRE_LIBAWSCLIENT_INCLUDED([true])
 BT_REQUIRE_LIBURI_INCLUDED([true])
-BT_CHECK_LIBSQL([true])
-BT_CHECK_LIBJSONDATA([true])
-
-dnl Check for this last in the event that it's not yet-built'
 BT_REQUIRE_LIBSPARQLCLIENT_INCLUDED
 BT_REQUIRE_LIBMQ_INCLUDED
-
-AM_CONDITIONAL([HAVE_LIBJSONDATA],[test x"$have_libjsondata" = x"yes"])
-AM_CONDITIONAL([HAVE_LIBSQL],[test x"$have_libsql" = x"yes"])
 
 use_docbook_html5=yes
 BT_BUILD_DOCS
