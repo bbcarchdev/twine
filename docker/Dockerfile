@@ -4,7 +4,7 @@ MAINTAINER Simeon van der Steen <simeon.vandersteen@bbc.co.uk>
 ENV DEBIAN_FRONTEND noninteractive
 
 # Install Twine-specific dependencies
-RUN apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y --no-install-recommends \
 	liburi libsparqlclient-dev libsql \
 	libawsclient-dev libmq-dev \
 	twine-processor-spindle
