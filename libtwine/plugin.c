@@ -633,7 +633,7 @@ twine_preproc_process_(twine_graph *graph)
 		}
 	}
 	current = prev;
-	postprocessing = 0;
+	preprocessing = 0;
 	return r;
 }
 
@@ -649,7 +649,7 @@ twine_postproc_process_(twine_graph *graph)
 	{
 		return 0;
 	}
-	if(postprocessing || postprocessing)
+	if(preprocessing || postprocessing)
 	{
 		return 0;
 	}
