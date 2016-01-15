@@ -1,13 +1,35 @@
-body>header .masthead {
-	display: block;
-	background: #859900;
-}
-body.book>header .masthead {
-	background: #859900 url('twine-masthead.png') 50% 50% no-repeat;
-}
+
 .refentry>header, .refentry>section, .refentry>article>section {
 	page-break-after: inherit;
 }
 .refentry>article>section>h1::before {
     content: '';
+}
+
+
+.masthead:before{
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  background-size: 70% auto;
+  background-position: 50% 50%;
+  background-repeat: no-repeat;
+  opacity: 0.5;
+}
+@media screen and (max-width: 960px) {
+  .masthead:before{
+    background-size: 100% auto;
+  }
+}
+body>header .masthead{
+  position: relative;
+  background-color: #859900;
+}
+body>header .masthead:before {
+  display: block;
+  background-image: url('twine-masthead.png');
 }
