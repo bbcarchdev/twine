@@ -29,8 +29,6 @@
 
 static void *current;
 
-static size_t precount, postcount;
-
 static struct twine_callback_struct *callbacks;
 static size_t cbcount, cbsize;
 static int internal;
@@ -253,7 +251,7 @@ twine_graph_register(const char *name, twine_graph_fn fn, void *data)
 int
 twine_postproc_register(const char *name, twine_postproc_fn fn, void *data)
 {
-	struct twine_callback_struct *p, *g;
+	struct twine_callback_struct *g;
 
 	g = twine_plugin_callback_add_(data);
 	if(!g)
@@ -271,22 +269,6 @@ twine_postproc_register(const char *name, twine_postproc_fn fn, void *data)
 	g->m.graph.fn = fn;
 	g->type = TCB_GRAPH;
 
-	/* Deprecated: register a TCB_POSTPROC callback */
-	p = twine_plugin_callback_add_(data);
-	if(!p)
-	{
-		return -1;
-	}
-	p->m.postproc.name = strdup(name);
-	if(!p->m.postproc.name)
-	{
-		twine_logf(LOG_CRIT, "failed to allocate memory to register post-processor\n");
-		return -1;
-	}
-	p->m.postproc.fn = fn;
-	p->type = TCB_POSTPROC;
-	postcount++;
-
 	twine_logf(LOG_INFO, "registered graph processor: 'post:%s'\n", name);
 	return 0;
 }
@@ -295,7 +277,7 @@ twine_postproc_register(const char *name, twine_postproc_fn fn, void *data)
 int
 twine_preproc_register(const char *name, twine_preproc_fn fn, void *data)
 {
-	struct twine_callback_struct *g, *p;
+	struct twine_callback_struct *g;
 
 	g = twine_plugin_callback_add_(data);
 	if(!g)
@@ -312,22 +294,6 @@ twine_preproc_register(const char *name, twine_preproc_fn fn, void *data)
 	strcpy(&(g->m.graph.name[4]), name);
 	g->m.graph.fn = fn;
 	g->type = TCB_GRAPH;
-
-	/* Deprecated: register a TCB_PREPROC callback */
-	p = twine_plugin_callback_add_(data);
-	if(!p)
-	{
-		return -1;
-	}
-	p->m.preproc.name = strdup(name);
-	if(!p->m.preproc.name)
-	{
-		twine_logf(LOG_CRIT, "failed to allocate memory to register pre-processor\n");
-		return -1;
-	}
-	p->m.preproc.fn = fn;
-	p->type = TCB_PREPROC;
-	precount++;
 
 	twine_logf(LOG_INFO, "registered graph processor: 'pre:%s'\n", name);
 	return 0;
@@ -381,14 +347,6 @@ twine_plugin_unregister_all_(void *handle)
 		case TCB_BULK:
 			free(callbacks[l].m.bulk.type);
 			free(callbacks[l].m.bulk.desc);
-			break;
-		case TCB_PREPROC:
-			free(callbacks[l].m.preproc.name);
-			precount--;
-			break;
-		case TCB_POSTPROC:
-			free(callbacks[l].m.postproc.name);
-			postcount--;
 			break;
 		case TCB_UPDATE:
 			free(callbacks[l].m.update.name);
@@ -670,20 +628,6 @@ twine_update(const char *name, const char *identifier)
 	return 0;
 }
 
-/* Internal: return nonzero if any postprocessors have been registered */
-int
-twine_postproc_registered_(void)
-{
-	return (postcount ? 1 : 0);
-}
-
-/* Internal: return nonzero if any preprocessors have been registered */
-int
-twine_preproc_registered_(void)
-{
-	return (precount ? 1 : 0);
-}
-
 /* Internal: invoke post-processing handlers before a graph is replaced */
 int
 twine_preproc_process_(twine_graph *graph)
@@ -692,21 +636,18 @@ twine_preproc_process_(twine_graph *graph)
 	size_t c;
 	int r;
 
-	if(!precount)
-	{
-		return 0;
-	}
 	twine_logf(LOG_DEBUG, "invoking pre-processors for <%s>\n", graph->uri);
 	prev = current;
 	r = 0;
 	for(c = 0; c < cbcount; c++)
 	{
-		if(callbacks[c].type == TCB_PREPROC)
+		if(callbacks[c].type == TCB_GRAPH &&
+		   !strncmp(callbacks[c].m.graph.name, "pre:", 4))
 		{
 			current = callbacks[c].module;
-			if(callbacks[c].m.preproc.fn(graph, callbacks[c].data))
+			if(callbacks[c].m.graph.fn(graph, callbacks[c].data))
 			{
-				twine_logf(LOG_ERR, "pre-processor '%s' failed\n", callbacks[c].m.preproc.name);
+				twine_logf(LOG_ERR, "graph processor '%s' failed\n", callbacks[c].m.graph.name);
 				r = -1;
 				break;
 			}
@@ -724,21 +665,18 @@ twine_postproc_process_(twine_graph *graph)
 	void *prev;
 	int r;
 
-	if(!postcount)
-	{
-		return 0;
-	}
 	twine_logf(LOG_DEBUG, "invoking post-processors for <%s>\n", graph->uri);
 	prev = current;
 	r = 0;
 	for(c = 0; c < cbcount; c++)
 	{
-		if(callbacks[c].type == TCB_POSTPROC)
+		if(callbacks[c].type == TCB_GRAPH &&
+		   !strncmp(callbacks[c].m.graph.name, "post:", 5))
 		{
 			current = callbacks[c].module;
-			if(callbacks[c].m.postproc.fn(graph, callbacks[c].data))
+			if(callbacks[c].m.graph.fn(graph, callbacks[c].data))
 			{
-				twine_logf(LOG_ERR, "pre-processor '%s' failed\n", callbacks[c].m.preproc.name);
+				twine_logf(LOG_ERR, "graph processor '%s' failed\n", callbacks[c].m.graph.name);
 				r = -1;
 				break;
 			}
