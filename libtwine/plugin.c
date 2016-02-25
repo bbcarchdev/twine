@@ -34,8 +34,17 @@ static size_t precount, postcount;
 
 static struct twine_callback_struct *callbacks;
 static size_t cbcount, cbsize;
+static int internal;
 
 static struct twine_callback_struct *twine_plugin_callback_add_(void *data);
+
+/* Internal: temporarily enable or disable internal registration of plug-ins */
+int
+twine_plugin_internal_(int enable)
+{
+	internal = enable;
+	return 0;
+}
 
 /* Internal: load a plug-in and invoke its initialiser callback */
 
@@ -114,14 +123,17 @@ twine_plugin_unload_all_(void)
 			twine_logf(LOG_ERR, "failed to unregister callbacks for handle 0x%08x; aborting clean-up\n", (unsigned long) handle);
 			return -1;
 		}
-		fn = (twine_plugin_cleanup_fn) dlsym(handle, "twine_plugin_done");
-		if(fn)
+		if(handle)
 		{
-			current = handle;
-			fn();
-			current = NULL;
+			fn = (twine_plugin_cleanup_fn) dlsym(handle, "twine_plugin_done");
+			if(fn)
+			{
+				current = handle;
+				fn();
+				current = NULL;
+			}
+			dlclose(handle);
 		}
-		dlclose(handle);
 	}
 	free(callbacks);
 	callbacks = NULL;
@@ -138,7 +150,7 @@ twine_plugin_callback_add_(void *data)
 {
 	struct twine_callback_struct *p;
 
-	if(!current)
+	if(!current && !internal)
 	{
 		twine_logf(LOG_ERR, "attempt to register a new callback outside of a module\n");
 		return NULL;
@@ -276,7 +288,7 @@ twine_postproc_register(const char *name, twine_postproc_fn fn, void *data)
 	p->type = TCB_POSTPROC;
 	postcount++;
 
-	twine_logf(LOG_INFO, "registered post-processor module: 'post:%s'\n", name);
+	twine_logf(LOG_INFO, "registered graph processor: 'post:%s'\n", name);
 	return 0;
 }
 
@@ -489,6 +501,27 @@ twine_update_supported(const char *name)
 			continue;
 		}
 		if(!strcasecmp(callbacks[l].m.update.name, name))
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
+/* Public: Check whether a plug-in name is recognised as an graph processing
+ * handler */
+int
+twine_graph_supported(const char *name)
+{
+	size_t l;
+
+	for(l = 0; l < cbcount; l++)
+	{
+		if(callbacks[l].type != TCB_GRAPH)
+		{
+			continue;
+		}
+		if(!strcasecmp(callbacks[l].m.graph.name, name))
 		{
 			return 1;
 		}

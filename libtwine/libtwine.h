@@ -117,6 +117,7 @@ int twine_bulk_register(const char *mimetype, const char *description, twine_bul
 int twine_plugin_supported(const char *mimetype);
 int twine_bulk_supported(const char *mimetype);
 int twine_update_supported(const char *name);
+int twine_graph_supported(const char *name);
 
 /* Process a single message */
 int twine_plugin_process(const char *mimetype, const unsigned char *message, size_t msglen, const char *subject);

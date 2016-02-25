@@ -32,7 +32,12 @@ static int twine_workflow_sparql_put_(twine_graph *graph, void *dummy);
 int
 twine_workflow_init_(void)
 {
-	
+	twine_plugin_internal_(1);
+	twine_graph_register("preprocess", twine_workflow_preprocess_, NULL);
+	twine_graph_register("postprocess", twine_workflow_postprocess_, NULL);
+	twine_graph_register("sparql-get", twine_workflow_sparql_get_, NULL);
+	twine_graph_register("sparql-put", twine_workflow_sparql_put_, NULL);
+	twine_plugin_internal_(0);
 	return 0;
 }
 
