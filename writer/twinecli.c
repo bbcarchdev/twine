@@ -127,6 +127,11 @@ twinecli_init(int argc, char **argv)
 	{
 		return -1;
 	}
+	/* Perform final pre-flight checks */
+	if(twine_preflight_())
+	{
+		return -1;
+	}
 	return 0;
 }
 

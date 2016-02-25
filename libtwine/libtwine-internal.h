@@ -34,6 +34,7 @@ struct twine_configfn_struct
 };
 
 int twine_init_(twine_log_fn logger);
+int twine_preflight_(void);
 int twine_cleanup_(void);
 int twine_config_init_(struct twine_configfn_struct *fns);
 int twine_sparql_defaults_(const char *base_uri, const char *query_uri, const char *update_uri, const char *data_uri, int verbose);
