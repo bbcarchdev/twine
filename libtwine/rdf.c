@@ -528,10 +528,6 @@ twine_graph_cleanup_(twine_graph *graph)
 	{
 		twine_rdf_model_destroy(graph->old);
 	}
-	if(graph->pristine)
-	{
-		twine_rdf_model_destroy(graph->pristine);
-	}
 	if(graph->store)
 	{
 		twine_rdf_model_destroy(graph->store);

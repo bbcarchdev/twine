@@ -29,6 +29,7 @@ twine_init_(twine_log_fn logger)
 	curl_global_init(CURL_GLOBAL_ALL);
 	twine_log_init_(logger);
 	twine_rdf_init_();
+	twine_workflow_init_();
 	return 0;
 }
 

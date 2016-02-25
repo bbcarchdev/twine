@@ -58,11 +58,8 @@ struct twine_graph_struct
 {
 	/* The graph URI */
 	const char *uri;
-	/* The new graph, as originally supplied to the processing chain */
-	librdf_model *pristine;
-	/* The new graph, possibly modified by processors (initially a clone
-	 * of pristine
-	 */
+	void *reserved;
+	/* The new graph, possibly modified by processors */
 	librdf_model *store;
 	/* The old graph in the quad store, if available */
 	librdf_model *old;

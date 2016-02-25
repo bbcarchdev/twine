@@ -607,15 +607,6 @@ twine_preproc_process_(twine_graph *graph)
 		return 0;
 	}
 	twine_logf(LOG_DEBUG, "invoking pre-processors for <%s>\n", graph->uri);
-	if(!graph->store)
-	{
-		graph->store = twine_rdf_model_clone(graph->pristine);
-		if(!graph->store)
-		{
-			twine_logf(LOG_ERR, "failed to duplicate model for pre-processors\n");
-			return -1;
-		}
-	}
 	preprocessing = 1;
 	prev = current;
 	r = 0;

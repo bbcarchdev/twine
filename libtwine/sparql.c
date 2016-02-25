@@ -166,96 +166,32 @@ twine_sparql_put_model(const char *uri, librdf_model *model)
 	return r;
 }
 
-/* Perform an actual SPARQL PUT operation, dealing with pre-processors and
- * post-processors
+/* Construct an RDF graph and pass it to the processing modules which
+ * constitute the workflow.
  */
 static int
 twine_sparql_put_internal_(const char *uri, const char *triples, size_t length, const char *type, librdf_model *sourcemodel)
 {
-	int r, pp;
-	SPARQL *conn;
+	int r;
 	twine_graph graph;
-	char *qbuf, *tbuf;
-	size_t l;
 	librdf_stream *stream;
 
 	memset(&graph, 0, sizeof(twine_graph));
 	graph.uri = uri;
-	pp = twine_postproc_registered_() || twine_preproc_registered_();
-	conn = twine_sparql_create();
-	r = 0;
-	if(!conn)
+	graph.store = twine_rdf_model_create();
+	if(sourcemodel)
 	{
-		return -1;
+		stream = librdf_model_as_stream(sourcemodel);
+		r = librdf_model_add_statements(graph.store, stream);
+		librdf_free_stream(stream);
 	}
-	if(pp)
+	else
 	{
-		/* Obtain 'old' graph if there are any postprocessors registered */
-		l = strlen(uri) + 60;
-		qbuf = (char *) calloc(1, l + 1);
-		if(!qbuf)
-		{
-			sparql_destroy(conn);
-			return -1;
-		}
-		snprintf(qbuf, l, "SELECT * WHERE { GRAPH <%s> { ?s ?p ?o . } }", uri);
-		graph.old = twine_rdf_model_create();
-		if(!graph.old)
-		{
-			sparql_destroy(conn);
-			return -1;
-		}
-		r = sparql_query_model(conn, qbuf, strlen(qbuf), graph.old);
-		free(qbuf);
-		if(r)
-		{
-			twine_logf(LOG_ERR, "failed to obtain triples for graph <%s>\n", uri);
-			twine_graph_cleanup_(&graph);
-			sparql_destroy(conn);
-			return -1;
-		}
-		/* Parse the triples if there are any postprocessors */
-		graph.pristine = twine_rdf_model_create();
-		if(sourcemodel)
-		{
-			stream = librdf_model_as_stream(sourcemodel);
-			r = librdf_model_add_statements(graph.pristine, stream);
-			librdf_free_stream(stream);
-		}
-		else
-		{
-			r = twine_rdf_model_parse(graph.pristine, type, triples, length);
-		}
-		if(!r)
-		{
-			r = twine_preproc_process_(&graph);
-		}
+		r = twine_rdf_model_parse(graph.store, type, triples, length);
 	}
 	if(!r)
 	{
-		if(graph.store)
-		{
-			tbuf = twine_rdf_model_ntriples(graph.store, &l);
-			if(tbuf)
-			{
-				r = sparql_put(conn, uri, tbuf, l);
-				librdf_free_memory(tbuf);
-			}
-			else
-			{
-				r = -1;
-			}
-			
-		}
-		else
-		{
-			r = sparql_put(conn, uri, triples, length);
-		}
-	}
-	sparql_destroy(conn);
-	if(!r && pp)
-	{
-		twine_postproc_process_(&graph);
+		r = twine_workflow_process_(&graph);
 	}
 	twine_graph_cleanup_(&graph);
 	return r;

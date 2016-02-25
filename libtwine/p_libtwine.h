@@ -108,5 +108,7 @@ int twine_rdf_init_(void);
 int twine_rdf_cleanup_(void);
 int twine_graph_cleanup_(twine_graph *graph);
 int twine_plugin_unload_all_(void);
+int twine_workflow_init_(void);
+int twine_workflow_process_(twine_graph *graph);
 
 #endif /*!P_LIBTWINE_H_*/
