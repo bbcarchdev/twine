@@ -24,10 +24,14 @@
 #include "p_libtwine.h"
 
 /* Built-in workflow processors */
+static int twine_workflow_config_cb_(const char *key, const char *value, void *data);
 static int twine_workflow_preprocess_(twine_graph *graph, void *dummy);
 static int twine_workflow_postprocess_(twine_graph *graph, void *dummy);
 static int twine_workflow_sparql_get_(twine_graph *graph, void *dummy);
 static int twine_workflow_sparql_put_(twine_graph *graph, void *dummy);
+
+static char **workflow;
+static int nworkflow;
 
 int
 twine_workflow_init_(void)
@@ -38,6 +42,15 @@ twine_workflow_init_(void)
 	twine_graph_register("sparql-get", twine_workflow_sparql_get_, NULL);
 	twine_graph_register("sparql-put", twine_workflow_sparql_put_, NULL);
 	twine_plugin_internal_(0);
+	twine_config_get_all("workflow", "invoke", twine_workflow_config_cb_, NULL);
+	if(!nworkflow)
+	{
+		twine_logf(LOG_NOTICE, "no processing workflow was configured; using defaults\n");
+		twine_workflow_config_cb_(NULL, "sparql-get", NULL);
+		twine_workflow_config_cb_(NULL, "preprocess", NULL);
+		twine_workflow_config_cb_(NULL, "sparql-put", NULL);
+		twine_workflow_config_cb_(NULL, "postprocess", NULL);
+	}
 	return 0;
 }
 
@@ -156,5 +169,37 @@ twine_workflow_sparql_put_(twine_graph *graph, void *dummy)
 		r = -1;
 	}
 	sparql_destroy(conn);
+	return 0;
+}
+
+static int
+twine_workflow_config_cb_(const char *key, const char *value, void *data)
+{
+	char **p;
+
+	(void) key;
+	(void) data;
+
+	twine_logf(LOG_DEBUG, "adding processor '%s' to workflow\n", value);
+	if(!twine_graph_supported(value))
+	{
+		twine_logf(LOG_CRIT, "graph processor '%s' named in configured workflow is not registered\n", value);
+		return -1;
+	}
+	p = (char **) realloc(workflow, sizeof(char *) * (nworkflow + 2));
+	if(!p)
+	{
+		twine_logf(LOG_CRIT, "failed to expand workflow list\n");
+		return -1;
+	}
+	workflow = p;
+	p[nworkflow] = strdup(value);
+	if(!p[nworkflow])
+	{
+		twine_logf(LOG_CRIT, "failed to duplicate graph processor name while adding to workflow\n");
+		return -1;
+	}
+	nworkflow++;
+	p[nworkflow] = NULL;
 	return 0;
 }
