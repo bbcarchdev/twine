@@ -215,12 +215,52 @@ twine_bulk_register(const char *mimetype, const char *description, twine_bulk_fn
 	return 0;
 }
 
-/* Public: Register a post-processing module */
+/* Public: Register a graph processing handler */
+int
+twine_graph_register(const char *name, twine_graph_fn fn, void *data)
+{
+	struct twine_callback_struct *g;
+
+	g = twine_plugin_callback_add_(data);
+	if(!g)
+	{
+		return -1;
+	}
+	g->m.graph.name = strdup(name);
+	if(!g->m.graph.name)
+	{
+		twine_logf(LOG_CRIT, "failed to allocate memory to register graph processor\n");
+		return -1;
+	}
+	g->m.graph.fn = fn;
+	g->type = TCB_GRAPH;
+	twine_logf(LOG_INFO, "registered graph processor: '%s'\n", name);
+	return 0;
+}
+
+/* Deprecated: register a post-processing handler */
 int
 twine_postproc_register(const char *name, twine_postproc_fn fn, void *data)
 {
-	struct twine_callback_struct *p;
+	struct twine_callback_struct *p, *g;
 
+	g = twine_plugin_callback_add_(data);
+	if(!g)
+	{
+		return -1;
+	}
+	g->m.graph.name = (char *) calloc(1, strlen(name) + 6);
+	if(!g->m.graph.name)
+	{
+		twine_logf(LOG_CRIT, "failed to allocate memory to register post-processor\n");
+		return -1;
+	}
+	strcpy(g->m.graph.name, "post:");
+	strcpy(&(g->m.graph.name[5]), name);
+	g->m.graph.fn = fn;
+	g->type = TCB_GRAPH;
+
+	/* Deprecated: register a TCB_POSTPROC callback */
 	p = twine_plugin_callback_add_(data);
 	if(!p)
 	{
@@ -235,16 +275,34 @@ twine_postproc_register(const char *name, twine_postproc_fn fn, void *data)
 	p->m.postproc.fn = fn;
 	p->type = TCB_POSTPROC;
 	postcount++;
-	twine_logf(LOG_INFO, "registered post-processor module: '%s'\n", name);
+
+	twine_logf(LOG_INFO, "registered post-processor module: 'post:%s'\n", name);
 	return 0;
 }
 
-/* Public: Register a pre-processing module */
+/* Deprecated: register a pre-processing handler */
 int
-twine_preproc_register(const char *name, twine_postproc_fn fn, void *data)
+twine_preproc_register(const char *name, twine_preproc_fn fn, void *data)
 {
-	struct twine_callback_struct *p;
+	struct twine_callback_struct *g, *p;
 
+	g = twine_plugin_callback_add_(data);
+	if(!g)
+	{
+		return -1;
+	}
+	g->m.graph.name = (char *) calloc(1, strlen(name) + 5);
+	if(!g->m.graph.name)
+	{
+		twine_logf(LOG_CRIT, "failed to allocate memory to register pre-processor\n");
+		return -1;
+	}
+	strcpy(g->m.graph.name, "pre:");
+	strcpy(&(g->m.graph.name[4]), name);
+	g->m.graph.fn = fn;
+	g->type = TCB_GRAPH;
+
+	/* Deprecated: register a TCB_PREPROC callback */
 	p = twine_plugin_callback_add_(data);
 	if(!p)
 	{
@@ -259,7 +317,8 @@ twine_preproc_register(const char *name, twine_postproc_fn fn, void *data)
 	p->m.preproc.fn = fn;
 	p->type = TCB_PREPROC;
 	precount++;
-	twine_logf(LOG_INFO, "registered pre-processor module: '%s'\n", name);
+
+	twine_logf(LOG_INFO, "registered graph processor: 'pre:%s'\n", name);
 	return 0;
 }
 
@@ -322,6 +381,9 @@ twine_plugin_unregister_all_(void *handle)
 			break;
 		case TCB_UPDATE:
 			free(callbacks[l].m.update.name);
+			break;
+		case TCB_GRAPH:
+			free(callbacks[l].m.graph.name);
 			break;
 		}
 		if(l + 1 < cbcount)

@@ -65,6 +65,9 @@ struct twine_graph_struct
 	librdf_model *old;
 };
 
+/* A Twine graph-processing callback */
+typedef int (*twine_graph_fn)(twine_graph *graph, void *userdata);
+
 /* A Twine pre-processing callback
  *
  * This callback is invoked before a graph is added, removed, or modified
@@ -124,10 +127,13 @@ int twine_bulk_import(const char *mimetype, FILE *file);
 /* Ask a named plug-in to update a resource */
 int twine_update(const char *plugin, const char *identifier);
 
-/* Register a pre-processor */
+/* Register a graph processor */
+int twine_graph_register(const char *name, twine_graph_fn fn, void *data);
+
+/* Deprecated (see twine_graph_register): register a pre-processor */
 int twine_preproc_register(const char *name, twine_preproc_fn fn, void *data);
 
-/* Register a post-processor */
+/* Deprecated (see twine_graph_register): register a post-processor */
 int twine_postproc_register(const char *name, twine_postproc_fn fn, void *data);
 
 /* Register an update handler */

@@ -32,6 +32,7 @@ static int twine_workflow_sparql_put_(twine_graph *graph, void *dummy);
 int
 twine_workflow_init_(void)
 {
+	
 	return 0;
 }
 

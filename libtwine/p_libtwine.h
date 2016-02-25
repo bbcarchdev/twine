@@ -49,7 +49,8 @@ typedef enum
 	TCB_BULK,
 	TCB_PREPROC,
 	TCB_POSTPROC,
-	TCB_UPDATE
+	TCB_UPDATE,
+	TCB_GRAPH
 } twine_callback_type;
 
 struct twine_mime_struct
@@ -78,6 +79,12 @@ struct twine_preproc_struct
 	char *name;
 };
 
+struct twine_graphproc_struct
+{
+	twine_preproc_fn fn;
+	char *name;
+};
+
 struct twine_update_struct
 {
 	twine_update_fn fn;
@@ -96,9 +103,9 @@ struct twine_callback_struct
 		struct twine_preproc_struct preproc;
 		struct twine_postproc_struct postproc;
 		struct twine_update_struct update;
+		struct twine_graphproc_struct graph;
 	} m;
 };
-		
 
 extern twine_log_fn twine_logger_;
 
