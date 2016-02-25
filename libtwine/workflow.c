@@ -31,7 +31,7 @@ static int twine_workflow_sparql_get_(twine_graph *graph, void *dummy);
 static int twine_workflow_sparql_put_(twine_graph *graph, void *dummy);
 
 static char **workflow;
-static int nworkflow;
+static size_t nworkflow;
 
 int
 twine_workflow_init_(void)
@@ -62,31 +62,21 @@ twine_workflow_init_(void)
 int
 twine_workflow_process_(twine_graph *graph)
 {
-	/* The workflow is not yet completely configurable, and so we follow
-	 * a fixed path here:
-	 *
-	 * - Invoke sparql-get to obtain the 'old' graph (if any)
-	 * - Invoke preprocessors
-	 * - Invoke sparql-put to push the 'new' graph
-	 * - Invoke postprocessors
-	 */
-	if(twine_workflow_sparql_get_(graph, NULL))
+	size_t c;
+	int r;
+
+	twine_logf(LOG_DEBUG, "workflow: processing <%s>\n", graph->uri);
+	r = 0;
+	for(c = 0; c < nworkflow; c++)
 	{
-		return -1;
+		twine_logf(LOG_DEBUG, "workflow: invoking graph processor '%s'\n", workflow[c]);
+		r = twine_graph_process_(workflow[c], graph);
+		if(r)
+		{
+			break;
+		}
 	}
-	if(twine_workflow_preprocess_(graph, NULL))
-	{
-		return -1;
-	}
-	if(twine_workflow_sparql_put_(graph, NULL))
-	{
-		return -1;
-	}
-	if(twine_workflow_postprocess_(graph, NULL))
-	{
-		return -1;
-	}
-	return 0;
+	return r;
 }
 
 /* Pseudo-processor which in turn invokes any registered pre-processors */
@@ -95,7 +85,7 @@ twine_workflow_preprocess_(twine_graph *graph, void *dummy)
 {
 	(void) dummy;
 
-	return twine_postproc_process_(graph);
+	return twine_preproc_process_(graph);
 }
 
 /* Pseudo-processor which in turn invokes any registered post-processors */

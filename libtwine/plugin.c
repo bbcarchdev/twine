@@ -28,7 +28,6 @@
 #define PLUGINDIR                       LIBDIR "/" PACKAGE_TARNAME "/"
 
 static void *current;
-static int preprocessing, postprocessing;
 
 static size_t precount, postcount;
 
@@ -697,12 +696,7 @@ twine_preproc_process_(twine_graph *graph)
 	{
 		return 0;
 	}
-	if(preprocessing || postprocessing)
-	{
-		return 0;
-	}
 	twine_logf(LOG_DEBUG, "invoking pre-processors for <%s>\n", graph->uri);
-	preprocessing = 1;
 	prev = current;
 	r = 0;
 	for(c = 0; c < cbcount; c++)
@@ -719,7 +713,6 @@ twine_preproc_process_(twine_graph *graph)
 		}
 	}
 	current = prev;
-	preprocessing = 0;
 	return r;
 }
 
@@ -735,12 +728,7 @@ twine_postproc_process_(twine_graph *graph)
 	{
 		return 0;
 	}
-	if(preprocessing || postprocessing)
-	{
-		return 0;
-	}
 	twine_logf(LOG_DEBUG, "invoking post-processors for <%s>\n", graph->uri);
-	postprocessing = 1;
 	prev = current;
 	r = 0;
 	for(c = 0; c < cbcount; c++)
@@ -757,6 +745,34 @@ twine_postproc_process_(twine_graph *graph)
 		}
 	}
 	current = prev;
-	postprocessing = 0;
+	return r;
+}
+
+/* Internal: invoke a graph processing handler */
+int
+twine_graph_process_(const char *name, twine_graph *graph)
+{
+	void *prev;
+	size_t c;
+	int r;
+
+	twine_logf(LOG_DEBUG, "invoking graph processor '%s' for <%s>\n", name, graph->uri);
+	prev = current;
+	r = 0;
+	for(c = 0; c < cbcount; c++)
+	{
+		if(callbacks[c].type == TCB_GRAPH &&
+		   !strcmp(callbacks[c].m.graph.name, name))
+		{
+			current = callbacks[c].module;
+			if(callbacks[c].m.graph.fn(graph, callbacks[c].data))
+			{
+				twine_logf(LOG_ERR, "graph processor '%s' failed\n", callbacks[c].m.graph.name);
+				r = -1;
+			}
+			break;
+		}
+	}
+	current = prev;
 	return r;
 }
