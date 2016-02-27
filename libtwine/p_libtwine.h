@@ -24,7 +24,9 @@
 # include <dlfcn.h>
 # include <errno.h>
 # include <string.h>
+# include <pthread.h>
 # include <curl/curl.h>
+# include <libcluster.h>
 
 # include "libtwine-internal.h"
 

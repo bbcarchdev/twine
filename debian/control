@@ -3,7 +3,7 @@ Section: misc
 Priority: optional
 Maintainer: Mo McRoberts <mo.mcroberts@bbc.co.uk>
 Standards-Version: 3.9.3
-Build-Depends: debhelper (>= 8.0.0), autoconf, automake, libtool, libcurl4-gnutls-dev, librdf0-dev, uuid-dev, liburi-dev, libsparqlclient-dev, libltdl-dev, libqpid-proton-dev, libxml2-dev, libxslt1-dev, libawsclient-dev, libmq, libmq-dev
+Build-Depends: debhelper (>= 8.0.0), autoconf, automake, libtool, libcurl4-gnutls-dev, librdf0-dev, uuid-dev, liburi-dev, libsparqlclient-dev, libltdl-dev, libqpid-proton-dev, libxml2-dev, libxslt1-dev, libawsclient-dev, libmq, libmq-dev, libcluster-dev
 
 Package: libtwine
 Architecture: any
