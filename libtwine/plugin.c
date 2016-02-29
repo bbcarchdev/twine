@@ -35,23 +35,15 @@ static int internal;
 
 static struct twine_callback_struct *twine_plugin_callback_add_(void *data);
 
-/* Internal: temporarily enable or disable internal registration of plug-ins */
-int
-twine_plugin_internal_(int enable)
-{
-	internal = enable;
-	return 0;
-}
-
-/* Internal: load a plug-in and invoke its initialiser callback */
-
-int
-twine_plugin_load_(const char *pathname)
+/* Internal API: load a plug-in and invoke its initialiser callback */
+void *
+twine_plugin_load(TWINE *restrict context, const char *restrict pathname)
 {
 	void *handle;
 	twine_plugin_init_fn fn;
 	char *fnbuf;
 	size_t len;
+	TWINE *prevtwine;
 
 	twine_logf(LOG_DEBUG, "loading plug-in %s\n", pathname);
 	if(strchr(pathname, '/'))
@@ -65,18 +57,21 @@ twine_plugin_load_(const char *pathname)
 		if(!fnbuf)
 		{
 			twine_logf(LOG_CRIT, "failed to allocate %u bytes\n", (unsigned) len);
-			return -1;
+			return NULL;
 		}
 		strcpy(fnbuf, PLUGINDIR);
 		strcat(fnbuf, pathname);
 		pathname = fnbuf;
 	}
+	prevtwine = twine_;
+	twine_ = context;
 	handle = dlopen(pathname, RTLD_NOW);
 	if(!handle)
 	{
 		twine_logf(LOG_ERR, "failed to load %s: %s\n", pathname, dlerror());
 		free(fnbuf);
-		return -1;
+		twine_ = prevtwine;
+		return NULL;
 	}
 	fn = (twine_plugin_init_fn) dlsym(handle, "twine_plugin_init");
 	if(!fn)
@@ -84,91 +79,129 @@ twine_plugin_load_(const char *pathname)
 		twine_logf(LOG_ERR, "%s is not a Twine plug-in\n", pathname);
 		dlclose(handle);
 		free(fnbuf);
+		twine_ = prevtwine;
 		errno = EINVAL;
-		return -1;
+		return NULL;
 	}
 	twine_logf(LOG_DEBUG, "invoking plug-in initialisation function for %s\n", pathname);
 	current = handle;
 	if(fn())
 	{
-		twine_logf(LOG_DEBUG, "initialisation of plug-in %s failed\n", pathname);
+		twine_logf(LOG_ERR, "initialisation of plug-in %s failed\n", pathname);
 		current = NULL;
-		twine_plugin_unregister_all_(handle);		
-		dlclose(handle);
+		twine_ = prevtwine;
+		twine_plugin_unload(context, handle);		
 		free(fnbuf);
-		return -1;
+		return NULL;
 	}
 	twine_logf(LOG_INFO, "loaded plug-in %s\n", pathname);
 	free(fnbuf);
 	current = NULL;
+	twine_ = prevtwine;
+	return handle;
+}
+
+/* Internal API: de-register all plugins attached to a module and un-load
+ * the plug-in
+ */
+int
+twine_plugin_unload(TWINE *restrict context, void *handle)
+{
+	size_t l;
+	twine_plugin_cleanup_fn fn;
+
+	/* We don't actually use the context, because there's a single shared
+	 * list of callbacks which we can iterate.
+	 */
+	(void) context;
+
+	l = 0;
+	while(l < cbcount)
+	{
+		if(callbacks[l].module != handle)
+		{
+			l++;
+			continue;
+		}
+		switch(callbacks[l].type)
+		{
+		case TCB_NONE:
+			break;
+		case TCB_MIME:
+			free(callbacks[l].m.mime.type);
+			free(callbacks[l].m.mime.desc);
+			break;
+		case TCB_BULK:
+			free(callbacks[l].m.bulk.type);
+			free(callbacks[l].m.bulk.desc);
+			break;
+		case TCB_UPDATE:
+			free(callbacks[l].m.update.name);
+			break;
+		case TCB_GRAPH:
+			free(callbacks[l].m.graph.name);
+			break;
+		}
+		if(l + 1 < cbcount)
+		{
+			memmove(&(callbacks[l]), &(callbacks[l + 1]), sizeof(struct twine_callback_struct) * (cbcount - l - 1));
+		}
+		cbcount--;
+	}
+	if(handle)
+	{
+		fn = (twine_plugin_cleanup_fn) dlsym(handle, "twine_plugin_done");
+		if(fn)
+		{
+			current = handle;
+			fn();
+			current = NULL;
+		}	   
+		dlclose(handle);
+	}
 	return 0;
 }
 
-/* Internal: unload all plug-ins */
-int
-twine_plugin_unload_all_(void)
-{
-	twine_plugin_cleanup_fn fn;
-	void *handle;
 
-	while(cbcount)
+/* Private: temporarily enable or disable internal registration of plug-ins */
+int
+twine_plugin_internal_(int enable)
+{
+	internal = enable;
+	return 0;
+}
+
+/* Private: unload all plug-ins attached to a context */
+int
+twine_plugin_unload_all_(TWINE *context)
+{
+	void *handle;
+	size_t c;
+
+	for(c = 0; c < cbcount;)
 	{
-		handle = callbacks[0].module;
-		twine_plugin_unregister_all_(handle);
-		if(cbcount && callbacks[0].module == handle)
+		if(callbacks[0].context != context)
+		{
+			c++;
+			continue;
+		}
+		handle = callbacks[c].module;
+		twine_plugin_unload(context, handle);
+		if(c < cbcount && callbacks[c].module == handle)
 		{
 			twine_logf(LOG_ERR, "failed to unregister callbacks for handle 0x%08x; aborting clean-up\n", (unsigned long) handle);
 			return -1;
 		}
-		if(handle)
-		{
-			fn = (twine_plugin_cleanup_fn) dlsym(handle, "twine_plugin_done");
-			if(fn)
-			{
-				current = handle;
-				fn();
-				current = NULL;
-			}
-			dlclose(handle);
-		}
 	}
-	free(callbacks);
-	callbacks = NULL;
-	cbcount = 0;
-	cbsize = 0;   
+	if(!cbcount)
+	{		
+		free(callbacks);
+		callbacks = NULL;
+		cbcount = 0;
+		cbsize = 0;
+	} 
 	twine_logf(LOG_INFO, "all plug-ins unregistered\n");
 	return 0;
-}
-
-
-/* Internal: add a new callback */
-static struct twine_callback_struct *
-twine_plugin_callback_add_(void *data)
-{
-	struct twine_callback_struct *p;
-
-	if(!current && !internal)
-	{
-		twine_logf(LOG_ERR, "attempt to register a new callback outside of a module\n");
-		return NULL;
-	}
-	if(cbcount >= cbsize)
-	{
-		p = (struct twine_callback_struct *) realloc(callbacks, sizeof(struct twine_callback_struct) * (cbsize + CALLBACK_BLOCKSIZE));
-		if(!p)
-		{
-			twine_logf(LOG_CRIT, "failed to allocate memory to register callback\n");
-			return NULL;
-		}
-		callbacks = p;
-		cbsize += CALLBACK_BLOCKSIZE;
-	}
-	p = &(callbacks[cbcount]);
-	memset(p, 0, sizeof(struct twine_callback_struct));
-	p->module = current;
-	p->data = data;
-	cbcount++;
-	return p;
 }
 
 /* Public: register a MIME type */
@@ -319,48 +352,6 @@ twine_update_register(const char *name, twine_update_fn fn, void *data)
 	p->m.update.fn = fn;
 	p->type = TCB_UPDATE;
 	twine_logf(LOG_INFO, "registered update handler: '%s'\n", name);
-	return 0;
-}
-
-/* Internal: un-register all plugins attached to a module */
-int
-twine_plugin_unregister_all_(void *handle)
-{
-	size_t l;
-
-	l = 0;
-	while(l < cbcount)
-	{
-		if(callbacks[l].module != handle)
-		{
-			l++;
-			continue;
-		}
-		switch(callbacks[l].type)
-		{
-		case TCB_NONE:
-			break;
-		case TCB_MIME:
-			free(callbacks[l].m.mime.type);
-			free(callbacks[l].m.mime.desc);
-			break;
-		case TCB_BULK:
-			free(callbacks[l].m.bulk.type);
-			free(callbacks[l].m.bulk.desc);
-			break;
-		case TCB_UPDATE:
-			free(callbacks[l].m.update.name);
-			break;
-		case TCB_GRAPH:
-			free(callbacks[l].m.graph.name);
-			break;
-		}
-		if(l + 1 < cbcount)
-		{
-			memmove(&(callbacks[l]), &(callbacks[l + 1]), sizeof(struct twine_callback_struct) * (cbcount - l - 1));
-		}
-		cbcount--;
-	}
 	return 0;
 }
 
@@ -713,4 +704,35 @@ twine_graph_process_(const char *name, twine_graph *graph)
 	}
 	current = prev;
 	return r;
+}
+
+/* Private: add a new callback */
+static struct twine_callback_struct *
+twine_plugin_callback_add_(void *data)
+{
+	struct twine_callback_struct *p;
+
+	if(!current && !internal)
+	{
+		twine_logf(LOG_ERR, "attempt to register a new callback outside of a module\n");
+		return NULL;
+	}
+	if(cbcount >= cbsize)
+	{
+		p = (struct twine_callback_struct *) realloc(callbacks, sizeof(struct twine_callback_struct) * (cbsize + CALLBACK_BLOCKSIZE));
+		if(!p)
+		{
+			twine_logf(LOG_CRIT, "failed to allocate memory to register callback\n");
+			return NULL;
+		}
+		callbacks = p;
+		cbsize += CALLBACK_BLOCKSIZE;
+	}
+	p = &(callbacks[cbcount]);
+	memset(p, 0, sizeof(struct twine_callback_struct));
+	p->context = twine_;
+	p->module = current;
+	p->data = data;
+	cbcount++;
+	return p;
 }

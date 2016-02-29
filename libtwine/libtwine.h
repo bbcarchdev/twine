@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014-2015 BBC
+ * Copyright (c) 2014-2016 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -25,9 +25,35 @@
 # include <syslog.h>
 # include <libsparqlclient.h>
 
+# undef BEGIN_DECLS_
+# undef END_DECLS_
+# undef DEPRECATED_
+# undef restrict
 # ifdef __cplusplus
-extern "C" {
+#  define BEGIN_DECLS_                  extern "C" {
+#  define END_DECLS_                    }
+# else
+#  define BEGIN_DECLS_
+#  define END_DECLS_
 # endif
+# ifdef __GNUC__
+#  define DEPRECATED_                   __attribute__((deprecated))
+# else
+#  define DEPRECATED_
+# endif
+# ifdef __cplusplus
+#  ifdef __GNUC__
+#   define restrict                     __restrict__
+#  else
+#   define restrict
+#  endif
+# elif __STDC_VERSION__ < 199901L
+#  define restrict
+# endif
+
+BEGIN_DECLS_
+
+typedef struct twine_context_struct TWINE;
 
 /* A Twine processor callback
  *
@@ -218,9 +244,6 @@ int twine_config_get_int(const char *key, int defval);
 int twine_config_get_bool(const char *key, int defval);
 int twine_config_get_all(const char *section, const char *key, int (*fn)(const char *key, const char *value, void *data), void *data);
 
-
-# ifdef __cplusplus
-}
-# endif
+END_DECLS_
 
 #endif /*!TWINE_H_*/

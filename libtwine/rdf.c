@@ -27,31 +27,29 @@
 # error librdf library version is too old; please upgrade to a version which supports contexts
 #endif
 
-static librdf_world *twine_world;
-
 static int twine_librdf_logger(void *data, librdf_log_message *message);
 
 int
-twine_rdf_init_(void)
+twine_rdf_init_(TWINE *context)
 {
-	twine_world = librdf_new_world();
-	if(!twine_world)
+	context->world = librdf_new_world();
+	if(!context->world)
 	{
 		twine_logf(LOG_CRIT, "failed to create new RDF world\n");
 		return -1;
 	}
-	librdf_world_open(twine_world);
-	librdf_world_set_logger(twine_world, NULL, twine_librdf_logger);
+	librdf_world_open(context->world);
+	librdf_world_set_logger(context->world, NULL, twine_librdf_logger);
 	return 0;
 }
 
 int
-twine_rdf_cleanup_(void)
+twine_rdf_cleanup_(TWINE *context)
 {
-	if(twine_world)
+	if(context->world)
 	{
-		librdf_free_world(twine_world);
-		twine_world = NULL;
+		librdf_free_world(context->world);
+		context->world = NULL;
 	}
 	return 0;
 }
@@ -59,7 +57,7 @@ twine_rdf_cleanup_(void)
 librdf_world *
 twine_rdf_world(void)
 {
-	return twine_world;
+	return twine_->world;
 }
 
 /* Create a new model */
@@ -69,13 +67,13 @@ twine_rdf_model_create(void)
 	librdf_model *model;
 	librdf_storage *storage;
 	
-	storage = librdf_new_storage(twine_world, "hashes", NULL, "hash-type='memory',contexts='yes'");
+	storage = librdf_new_storage(twine_->world, "hashes", NULL, "hash-type='memory',contexts='yes'");
 	if(!storage)
 	{
 		twine_logf(LOG_CRIT, "failed to create new RDF storage\n");
 		return NULL;
 	}
-	model = librdf_new_model(twine_world, storage, NULL);
+	model = librdf_new_model(twine_->world, storage, NULL);
 	if(!model)
 	{
 		twine_logf(LOG_CRIT, "failed to create new RDF model\n");
@@ -186,7 +184,7 @@ twine_rdf_model_parse_base(librdf_model *model, const char *mime, const char *bu
 	{
 		mime = NULL;
 	}
-	parser = librdf_new_parser(twine_world, name, mime, NULL);
+	parser = librdf_new_parser(twine_->world, name, mime, NULL);
 	if(!parser)
 	{
 		if(!name)
@@ -213,7 +211,7 @@ twine_rdf_model_parse(librdf_model *model, const char *mime, const char *buf, si
 	
 	if(!base)
 	{
-		base = librdf_new_uri(twine_world, (const unsigned char *) "/");
+		base = librdf_new_uri(twine_->world, (const unsigned char *) "/");
 		if(!base)
 		{
 			twine_logf(LOG_CRIT, "failed to parse URI </>\n");
@@ -270,7 +268,7 @@ twine_rdf_st_create(void)
 {
 	librdf_statement *st;
 
-	st = librdf_new_statement(twine_world);
+	st = librdf_new_statement(twine_->world);
 	if(!st)
 	{
 		twine_logf(LOG_ERR, "failed to create new statement\n");
@@ -339,7 +337,7 @@ twine_rdf_node_createuri(const char *uri)
 {
 	librdf_node *p;
 
-	p = librdf_new_node_from_uri_string(twine_world, (const unsigned char *) uri);
+	p = librdf_new_node_from_uri_string(twine_->world, (const unsigned char *) uri);
 	if(!p)
 	{
 		twine_logf(LOG_ERR, "failed to create new node from <%s>\n", uri);

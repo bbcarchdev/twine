@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014-2015 BBC
+ * Copyright (c) 2014-2016 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -119,11 +119,11 @@ twinecli_init(int argc, char **argv)
 		return -1;
 	}
 	/* Load plug-ins */
-	if(config_get_all("plugins", "module", twinecli_plugin_config_cb, NULL))
+	if(config_get_all("plugins", "module", twinecli_plugin_config_cb, NULL) < 0)
 	{
 		return -1;
 	}
-	if(config_get_all(TWINE_APP_NAME, "module", twinecli_plugin_config_cb, NULL))
+	if(config_get_all(TWINE_APP_NAME, "module", twinecli_plugin_config_cb, NULL) < 0)
 	{
 		return -1;
 	}

@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2016 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -23,34 +23,5 @@
 
 #include "p_libtwine.h"
 
-int
-twine_init_(twine_log_fn logger)
-{
-	curl_global_init(CURL_GLOBAL_ALL);
-	twine_log_init_(logger);
-	twine_rdf_init_();
-	return 0;
-}
 
-/* Perform final pre-flight checks and initialisation before any real work
- * happens.
- */
-int
-twine_preflight_(void)
-{
-	if(twine_workflow_init_())
-	{
-		return -1;
-	}
-	return 0;
-}
 
-int
-twine_cleanup_(void)
-{
-	twine_log_cleanup_();
-	twine_plugin_unload_all_();
-	twine_rdf_cleanup_();
-	curl_global_cleanup();
-	return 0;
-}

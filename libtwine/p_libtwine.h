@@ -30,7 +30,11 @@
 
 # include "libtwine-internal.h"
 
-# define DEFAULT_MQ_URI               "amqp://~0.0.0.0/amq.direct"
+# define DEFAULT_MQ_URI                 "amqp://~0.0.0.0/amq.direct"
+
+# define DEFAULT_CONFIG_SECTION_NAME    "twine:"
+# define DEFAULT_CONFIG_SECTION         DEFAULT_CONFIG_SECTION_NAME ":"
+# define DEFAULT_CONFIG_SECTION_LEN     6
 
 # define MIME_TURTLE                    "text/turtle"
 # define MIME_NTRIPLES                  "application/n-triples"
@@ -81,6 +85,7 @@ struct twine_update_struct
 
 struct twine_callback_struct
 {
+	TWINE *context;
 	twine_callback_type type;
 	void *module;
 	void *data;
@@ -93,16 +98,35 @@ struct twine_callback_struct
 	} m;
 };
 
+struct twine_context_struct
+{
+	TWINE *prev;
+	twine_log_fn logger;
+	librdf_world *world;
+	struct twine_configfn_struct config;
+	char *appname;
+	size_t appnamelen;
+	char *keybuf;
+	size_t keybuflen;
+	int sparql_debug;
+	char *sparql_uri;
+	char *sparql_query_uri;
+	char *sparql_update_uri;
+	char *sparql_data_uri;   
+};
+
+extern TWINE *twine_;
 extern twine_log_fn twine_logger_;
 
-int twine_log_init_(twine_log_fn logfn);
-int twine_log_cleanup_(void);
-int twine_rdf_init_(void);
-int twine_rdf_cleanup_(void);
+int twine_rdf_init_(TWINE *context);
+int twine_rdf_cleanup_(TWINE *context);
 int twine_graph_cleanup_(twine_graph *graph);
-int twine_plugin_unload_all_(void);
+int twine_plugin_unload_all_(TWINE *context);
 int twine_workflow_init_(void);
 int twine_workflow_process_(twine_graph *graph);
+int twine_graph_process_(const char *name, twine_graph *graph);
+int twine_preproc_process_(twine_graph *graph);
+int twine_postproc_process_(twine_graph *graph);
 int twine_plugin_internal_(int);
 
 #endif /*!P_LIBTWINE_H_*/

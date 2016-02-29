@@ -1,8 +1,8 @@
-/* Twine: Plug-in interface -- internal API
+/* Twine: Internal (application) interface
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014-2015 BBC
+ * Copyright (c) 2014-2016 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -22,6 +22,34 @@
 
 # include "libtwine.h"
 
+# undef BEGIN_DECLS_
+# undef END_DECLS_
+# undef DEPRECATED_
+# undef restrict
+# ifdef __cplusplus
+#  define BEGIN_DECLS_                  extern "C" {
+#  define END_DECLS_                    }
+# else
+#  define BEGIN_DECLS_
+#  define END_DECLS_
+# endif
+# ifdef __GNUC__
+#  define DEPRECATED_                   __attribute__((deprecated))
+# else
+#  define DEPRECATED_
+# endif
+# ifdef __cplusplus
+#  ifdef __GNUC__
+#   define restrict                     __restrict__
+#  else
+#   define restrict
+#  endif
+# elif __STDC_VERSION__ < 199901L
+#  define restrict
+# endif
+
+BEGIN_DECLS_
+
 typedef void (*twine_log_fn)(int prio, const char *fmt, va_list ap);
 
 struct twine_configfn_struct
@@ -33,15 +61,26 @@ struct twine_configfn_struct
 	int (*config_get_all)(const char *section, const char *key, int (*fn)(const char *key, const char *value, void *data), void *data);
 };
 
-int twine_init_(twine_log_fn logger);
-int twine_preflight_(void);
-int twine_cleanup_(void);
-int twine_config_init_(struct twine_configfn_struct *fns);
-int twine_sparql_defaults_(const char *base_uri, const char *query_uri, const char *update_uri, const char *data_uri, int verbose);
-int twine_plugin_load_(const char *pathname);
-int twine_plugin_unregister_all_(void *handle);
-int twine_graph_process_(const char *name, twine_graph *graph);
-int twine_preproc_process_(twine_graph *graph);
-int twine_postproc_process_(twine_graph *graph);
+TWINE *twine_create(void);
+int twine_destroy(TWINE *context);
+int twine_ready(TWINE *context);
+int twine_set_logger(TWINE *context, twine_log_fn logger);
+int twine_set_config(TWINE *restrict context, struct twine_configfn_struct *restrict config);
+int twine_set_appname(TWINE *restrict context, const char *name);
+int twine_set_sparql(TWINE *restrict context, const char *base_uri, const char *query_uri, const char *update_uri, const char *data_uri, int verbose);
+void *twine_plugin_load(TWINE *restrict context, const char *restrict pathname);
+int twine_plugin_unload(TWINE *restrict context, void *handle);
+const char *twine_config_path(void);
+
+/* Deprecated internal APIs */
+int twine_init_(twine_log_fn logger) DEPRECATED_;
+int twine_preflight_(void) DEPRECATED_;
+int twine_cleanup_(void) DEPRECATED_;
+int twine_config_init_(struct twine_configfn_struct *fns) DEPRECATED_;
+int twine_sparql_defaults_(const char *base_uri, const char *query_uri, const char *update_uri, const char *data_uri, int verbose) DEPRECATED_;
+int twine_plugin_load_(const char *pathname) DEPRECATED_;
+int twine_plugin_unregister_all_(void *handle) DEPRECATED_;
+
+END_DECLS_
 
 #endif /*!LIBTWINE_INTERNAL_H_*/

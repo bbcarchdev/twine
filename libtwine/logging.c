@@ -23,28 +23,12 @@
 
 #include "p_libtwine.h"
 
-twine_log_fn twine_logger_;
-
-int
-twine_log_init_(twine_log_fn logfn)
-{
-	twine_logger_ = logfn;
-	return 0;
-}
-
-int
-twine_log_cleanup_(void)
-{
-	twine_logger_ = vsyslog;
-	return 0;
-}
-
 void
 twine_vlogf(int prio, const char *format, va_list args)
 {
-	if(twine_logger_)
+	if(twine_->logger)
 	{
-		twine_logger_(prio, format, args);
+		twine_->logger(prio, format, args);
 	}
 }
 

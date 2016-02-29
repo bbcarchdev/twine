@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014-2015 BBC
+ * Copyright (c) 2014-2016 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -23,57 +23,54 @@
 
 #include "p_libtwine.h"
 
-static int twine_sparql_debug;
-
-static char *twine_sparql_uri;
-static char *twine_sparql_query_uri;
-static char *twine_sparql_update_uri;
-static char *twine_sparql_data_uri;
-
 static int
 twine_sparql_put_internal_(const char *uri, const char *triples, size_t length, const char *type, librdf_model *sourcemodel);
 
-/* Internal: set defaults for SPARQL connections */
+/* Internal API: set configuration for SPARQL connections
+ *
+ * Note that this will have no effect on SPARQL connection objects which
+ * have been created prior to this call.
+ */
 int
-twine_sparql_defaults_(const char *base_uri, const char *query_uri, const char *update_uri, const char *data_uri, int verbose)
+twine_set_sparql(TWINE *restrict context, const char *base_uri, const char *query_uri, const char *update_uri, const char *data_uri, int verbose)
 {
 	if(base_uri)
 	{
-		twine_sparql_uri = strdup(base_uri);
-		if(!twine_sparql_uri)
+		context->sparql_uri = strdup(base_uri);
+		if(!context->sparql_uri)
 		{
 			return -1;
 		}
-		twine_logf(LOG_DEBUG, "SPARQL endpoint is <%s>\n", twine_sparql_uri);
+		twine_logf(LOG_DEBUG, "SPARQL endpoint is <%s>\n", context->sparql_uri);
 	}
 	if(query_uri)
 	{
-		twine_sparql_query_uri = strdup(query_uri);
-		if(!twine_sparql_query_uri)
+		context->sparql_query_uri = strdup(query_uri);
+		if(!context->sparql_query_uri)
 		{
 			return -1;
 		}
-		twine_logf(LOG_DEBUG, "SPARQL query endpoint is <%s>\n", twine_sparql_query_uri);
+		twine_logf(LOG_DEBUG, "SPARQL query endpoint is <%s>\n", context->sparql_query_uri);
 	}
 	if(update_uri)
 	{
-		twine_sparql_update_uri = strdup(update_uri);
-		if(!twine_sparql_update_uri)
+		context->sparql_update_uri = strdup(update_uri);
+		if(!context->sparql_update_uri)
 		{
 			return -1;
 		}
-		twine_logf(LOG_DEBUG, "SPARQL update endpoint is <%s>\n", twine_sparql_update_uri);
+		twine_logf(LOG_DEBUG, "SPARQL update endpoint is <%s>\n", context->sparql_update_uri);
 	}
 	if(data_uri)
 	{
-		twine_sparql_data_uri = strdup(data_uri);
-		if(!twine_sparql_data_uri)
+		context->sparql_data_uri = strdup(data_uri);
+		if(!context->sparql_data_uri)
 		{
 			return -1;
 		}
-		twine_logf(LOG_DEBUG, "SPARQL RESTful endpoint is <%s>\n", twine_sparql_data_uri);
+		twine_logf(LOG_DEBUG, "SPARQL RESTful endpoint is <%s>\n", context->sparql_data_uri);
 	}
-	twine_sparql_debug = verbose;
+	context->sparql_debug = verbose;
 	return 0;
 }
 
@@ -83,25 +80,25 @@ twine_sparql_create(void)
 {
 	SPARQL *p;
 
-	p = sparql_create(twine_sparql_uri);
+	p = sparql_create(twine_->sparql_uri);
 	if(!p)
 	{
 		twine_logf(LOG_CRIT, "failed to create new SPARQL connection\n");
 		return NULL;
 	}
-	sparql_set_logger(p, twine_logger_);
-	sparql_set_verbose(p, twine_sparql_debug);
-	if(twine_sparql_query_uri)
+	sparql_set_logger(p, twine_->logger);
+	sparql_set_verbose(p, twine_->sparql_debug);
+	if(twine_->sparql_query_uri)
 	{
-		sparql_set_query_uri(p, twine_sparql_query_uri);
+		sparql_set_query_uri(p, twine_->sparql_query_uri);
 	}
-	if(twine_sparql_update_uri)
+	if(twine_->sparql_update_uri)
 	{
-		sparql_set_update_uri(p, twine_sparql_update_uri);
+		sparql_set_update_uri(p, twine_->sparql_update_uri);
 	}
-	if(twine_sparql_data_uri)
+	if(twine_->sparql_data_uri)
 	{
-		sparql_set_data_uri(p, twine_sparql_data_uri);
+		sparql_set_data_uri(p, twine_->sparql_data_uri);
 	}
 	return p;
 }

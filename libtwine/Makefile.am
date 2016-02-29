@@ -31,7 +31,8 @@ lib_LTLIBRARIES = libtwine.la
 include_HEADERS = libtwine.h
 
 libtwine_la_SOURCES = p_libtwine.h libtwine.h libtwine-internals.h \
-	init.c plugin.c logging.c sparql.c rdf.c config.c mq.c workflow.c
+	context.c init.c plugin.c logging.c sparql.c rdf.c config.c mq.c \
+	workflow.c legacy-api.c
 
 libtwine_la_LDFLAGS = -avoid-version
 
