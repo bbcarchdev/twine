@@ -131,8 +131,10 @@ twine_set_appname(TWINE *restrict context, const char *appname)
 int
 twine_ready(TWINE *context)
 {
-	(void) context;
-
+	if(twine_plugin_init_(context))
+	{
+		return -1;
+	}
 	if(twine_workflow_init_())
 	{
 		return -1;

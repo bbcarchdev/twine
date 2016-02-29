@@ -32,7 +32,7 @@
 
 # define DEFAULT_MQ_URI                 "amqp://~0.0.0.0/amq.direct"
 
-# define DEFAULT_CONFIG_SECTION_NAME    "twine:"
+# define DEFAULT_CONFIG_SECTION_NAME    "twine"
 # define DEFAULT_CONFIG_SECTION         DEFAULT_CONFIG_SECTION_NAME ":"
 # define DEFAULT_CONFIG_SECTION_LEN     6
 
@@ -120,11 +120,16 @@ extern twine_log_fn twine_logger_;
 
 int twine_rdf_init_(TWINE *context);
 int twine_rdf_cleanup_(TWINE *context);
+
 int twine_graph_cleanup_(twine_graph *graph);
+int twine_graph_process_(const char *name, twine_graph *graph);
+
+int twine_plugin_init_(TWINE *context);
 int twine_plugin_unload_all_(TWINE *context);
+
 int twine_workflow_init_(void);
 int twine_workflow_process_(twine_graph *graph);
-int twine_graph_process_(const char *name, twine_graph *graph);
+
 int twine_preproc_process_(twine_graph *graph);
 int twine_postproc_process_(twine_graph *graph);
 int twine_plugin_internal_(int);

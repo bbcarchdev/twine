@@ -34,6 +34,7 @@ static size_t cbcount, cbsize;
 static int internal;
 
 static struct twine_callback_struct *twine_plugin_callback_add_(void *data);
+static int twine_plugin_config_cb_(const char *key, const char *value, void *data);
 
 /* Internal API: load a plug-in and invoke its initialiser callback */
 void *
@@ -735,4 +736,45 @@ twine_plugin_callback_add_(void *data)
 	p->data = data;
 	cbcount++;
 	return p;
+}
+
+/* Private: Load all configured plug-ins into a context */
+int
+twine_plugin_init_(TWINE *context)
+{
+	int r;
+
+	r = twine_config_get_all("plugins", "module", twine_plugin_config_cb_, context);
+	if(r < 0)
+	{
+		return -1;
+	}
+	else if(r)
+	{
+		if(context->appname && strcmp(context->appname, DEFAULT_CONFIG_SECTION_NAME))
+		{
+			twine_logf(LOG_NOTICE, "The [plugins] configuration section has been deprecated; you should use the common section [%s] or application-specific section [%s] instead\n", DEFAULT_CONFIG_SECTION_NAME, context->appname);
+		}
+		else
+		{
+			twine_logf(LOG_NOTICE, "The [plugins] configuration section has been deprecated; you should use the common section [%s] instead\n", DEFAULT_CONFIG_SECTION_NAME);
+		}
+		return 0;
+	}
+	return twine_config_get_all("*", "module", twine_plugin_config_cb_, context);
+}
+
+static int
+twine_plugin_config_cb_(const char *key, const char *value, void *data)
+{
+	TWINE *context;
+
+	(void) key;
+
+	context = (TWINE *) data;
+	if(twine_plugin_load(context, value) == NULL)
+	{
+		return -1;
+	}
+	return 0;
 }

@@ -31,7 +31,6 @@ struct extmime {
 static void writerd_usage(void);
 static int writerd_init(int argc, char **argv);
 static int writerd_process_args(int argc, char **argv);
-static int writerd_plugin_config_cb(const char *key, const char *value, void *data);
 static void writerd_signal(int sig);
 
 int
@@ -130,15 +129,6 @@ writerd_init(int argc, char **argv)
 	}
 	/* Set up the AMQP interface */
 	if(utils_mq_init_recv(TWINE_APP_NAME ":mq"))
-	{
-		return -1;
-	}
-	/* Load plug-ins */
-	if(config_get_all("plugins", "module", writerd_plugin_config_cb, NULL) < 0)
-	{
-		return -1;
-	}
-	if(config_get_all(TWINE_APP_NAME, "module", writerd_plugin_config_cb, NULL) < 0)
 	{
 		return -1;
 	}

@@ -26,7 +26,6 @@
 static void twinecli_usage(void);
 static int twinecli_init(int argc, char **argv);
 static int twinecli_process_args(int argc, char **argv);
-static int twinecli_plugin_config_cb(const char *key, const char *value, void *data);
 static int twinecli_import(const char *type, const char *filename);
 
 static const char *bulk_import_type = NULL, *bulk_import_file = NULL;
@@ -115,15 +114,6 @@ twinecli_init(int argc, char **argv)
 	curl_global_init(CURL_GLOBAL_ALL);
 	/* Set up the SPARQL interface */
 	if(writerd_sparql_init())
-	{
-		return -1;
-	}
-	/* Load plug-ins */
-	if(config_get_all("plugins", "module", twinecli_plugin_config_cb, NULL) < 0)
-	{
-		return -1;
-	}
-	if(config_get_all(TWINE_APP_NAME, "module", twinecli_plugin_config_cb, NULL) < 0)
 	{
 		return -1;
 	}
@@ -334,19 +324,6 @@ twinecli_process_args(int argc, char **argv)
 	if(argc)
 	{
 		twinecli_usage();
-		return -1;
-	}
-	return 0;
-}
-
-static int
-twinecli_plugin_config_cb(const char *key, const char *value, void *data)
-{
-	(void) key;
-	(void) data;
-
-	if(twine_plugin_load_(value))
-	{
 		return -1;
 	}
 	return 0;
