@@ -27,7 +27,7 @@ bin_PROGRAMS = twine
 sbin_PROGRAMS = twine-writerd
 
 twine_SOURCES = p_twinecli.h \
-	twinecli.c sparql.c
+	twinecli.c
 
 twine_LDADD = \
 	$(top_builddir)/libutils/libutils.la \
@@ -36,7 +36,7 @@ twine_LDADD = \
 	@LIBMQ_LOCAL_LIBS@ @LIBMQ_LIBS@
 
 twine_writerd_SOURCES = p_writerd.h \
-	writerd.c sparql.c runloop.c
+	writerd.c runloop.c
 
 twine_writerd_LDADD = \
 	$(top_builddir)/libutils/libutils.la \

@@ -34,7 +34,6 @@
 
 # define TWINE_APP_NAME                 "writerd"
 
-int writerd_sparql_init(void);
 int writerd_runloop(void);
 int writerd_exit(void);
 

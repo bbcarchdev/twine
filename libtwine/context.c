@@ -76,7 +76,9 @@ twine_destroy(TWINE *context)
 			}
 		}
 	}
-	twine_rdf_cleanup_(context);
+	twine_rdf_cleanup_(context);	
+	/* sparql_verbose will never be explicitly set to this value */
+	context->sparql_debug = -2;
 	free(context->sparql_uri);
 	free(context->sparql_query_uri);
 	free(context->sparql_update_uri);
@@ -131,6 +133,10 @@ twine_set_appname(TWINE *restrict context, const char *appname)
 int
 twine_ready(TWINE *context)
 {
+	if(twine_sparql_init_(context))
+	{
+		return -1;
+	}
 	if(twine_plugin_init_(context))
 	{
 		return -1;

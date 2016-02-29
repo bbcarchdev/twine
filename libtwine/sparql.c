@@ -70,7 +70,7 @@ twine_set_sparql(TWINE *restrict context, const char *base_uri, const char *quer
 		}
 		twine_logf(LOG_DEBUG, "SPARQL RESTful endpoint is <%s>\n", context->sparql_data_uri);
 	}
-	context->sparql_debug = verbose;
+	context->sparql_debug = !!(verbose);
 	return 0;
 }
 
@@ -163,7 +163,55 @@ twine_sparql_put_model(const char *uri, librdf_model *model)
 	return r;
 }
 
-/* Construct an RDF graph and pass it to the processing modules which
+/* Private: Initialise the SPARQL connection details for a context */
+int
+twine_sparql_init_(TWINE *context)
+{
+	if(context->sparql_uri ||
+	   (context->sparql_query_uri && context->sparql_update_uri && context->sparql_data_uri))
+	{
+		/* The SPARQL connection parameters have already been specified */
+		if(context->sparql_debug == -2)
+		{
+			context->sparql_debug = 0;
+		}
+		return 0;
+	}
+	/* First, look for parameters in the [sparql] section, for compatibility
+	 * with older versions of Twine
+	 */
+	context->sparql_debug = twine_config_get_bool("sparql:verbose", context->sparql_debug);
+	context->sparql_uri = twine_config_geta("sparql:uri", "http://localhost/");
+	context->sparql_query_uri = twine_config_geta("sparql:query", NULL);
+	context->sparql_update_uri = twine_config_geta("sparql:update", NULL);
+	context->sparql_data_uri = twine_config_geta("sparql:data", NULL);
+	if(context->sparql_uri || context->sparql_query_uri ||
+	   context->sparql_update_uri || context->sparql_data_uri)
+	{
+		if(context->appname && strcmp(context->appname, DEFAULT_CONFIG_SECTION_NAME))
+		{
+			twine_logf(LOG_NOTICE, "The [sparql] configuration section has been deprecated; you should use sparql=URI, sparql-verbose=yes|no, sparql-query=URI, sparql-update=URI, and sparql-data=URI in the common [%s] section or the application-specific [%s] section instead\n", DEFAULT_CONFIG_SECTION_NAME, context->appname);
+		}
+		else
+		{
+			twine_logf(LOG_NOTICE, "The [sparql] configuration section has been deprecated; you should use sparql=URI, sparql-verbose=yes|no, sparql-query=URI, sparql-update=URI, and sparql-data=URI in the common [%s] section\n", DEFAULT_CONFIG_SECTION_NAME, context->appname);
+		}
+		if(context->sparql_debug == -2)
+		{
+			context->sparql_debug = 0;
+		}
+		return 0;
+	}
+	/* Now obtain the values normally */
+	context->sparql_debug = twine_config_get_bool("*:sparql-verbose", 0);
+	context->sparql_uri = twine_config_geta("*:sparql", "http://localhost/");
+	context->sparql_query_uri = twine_config_geta("*:sparql-query", NULL);
+	context->sparql_update_uri = twine_config_geta("*:sparql-update", NULL);
+	context->sparql_data_uri = twine_config_geta("*:sparql-data", NULL);	
+	return 0;
+}
+
+/* Private: Construct an RDF graph and pass it to the processing modules which
  * constitute the workflow.
  */
 static int

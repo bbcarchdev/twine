@@ -134,4 +134,6 @@ int twine_preproc_process_(twine_graph *graph);
 int twine_postproc_process_(twine_graph *graph);
 int twine_plugin_internal_(int);
 
+int twine_sparql_init_(TWINE *context);
+
 #endif /*!P_LIBTWINE_H_*/

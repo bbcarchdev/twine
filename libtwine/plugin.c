@@ -753,11 +753,11 @@ twine_plugin_init_(TWINE *context)
 	{
 		if(context->appname && strcmp(context->appname, DEFAULT_CONFIG_SECTION_NAME))
 		{
-			twine_logf(LOG_NOTICE, "The [plugins] configuration section has been deprecated; you should use the common section [%s] or application-specific section [%s] instead\n", DEFAULT_CONFIG_SECTION_NAME, context->appname);
+			twine_logf(LOG_NOTICE, "The [plugins] configuration section has been deprecated; you should use the common [%s] section or application-specific [%s] section instead\n", DEFAULT_CONFIG_SECTION_NAME, context->appname);
 		}
 		else
 		{
-			twine_logf(LOG_NOTICE, "The [plugins] configuration section has been deprecated; you should use the common section [%s] instead\n", DEFAULT_CONFIG_SECTION_NAME);
+			twine_logf(LOG_NOTICE, "The [plugins] configuration section has been deprecated; you should use the common [%s] section instead\n", DEFAULT_CONFIG_SECTION_NAME);
 		}
 		return 0;
 	}

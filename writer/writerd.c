@@ -122,11 +122,6 @@ writerd_init(int argc, char **argv)
 
 	/* Initialise libCURL */
 	curl_global_init(CURL_GLOBAL_ALL);
-	/* Set up the SPARQL interface */
-	if(writerd_sparql_init())
-	{
-		return -1;
-	}
 	/* Set up the AMQP interface */
 	if(utils_mq_init_recv(TWINE_APP_NAME ":mq"))
 	{

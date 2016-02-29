@@ -112,11 +112,6 @@ twinecli_init(int argc, char **argv)
 
 	/* Initialise libCURL */
 	curl_global_init(CURL_GLOBAL_ALL);
-	/* Set up the SPARQL interface */
-	if(writerd_sparql_init())
-	{
-		return -1;
-	}
 	/* Perform final pre-flight checks */
 	if(twine_preflight_())
 	{

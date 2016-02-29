@@ -39,6 +39,4 @@ struct twinecli_extmime_struct
 	const char *mime;
 };
 
-int writerd_sparql_init(void);
-
 #endif /*!P_TWINECLI_H_*/
