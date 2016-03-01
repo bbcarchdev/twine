@@ -181,7 +181,7 @@ twine_sparql_init_(TWINE *context)
 	 * with older versions of Twine
 	 */
 	context->sparql_debug = twine_config_get_bool("sparql:verbose", context->sparql_debug);
-	context->sparql_uri = twine_config_geta("sparql:uri", "http://localhost/");
+	context->sparql_uri = twine_config_geta("sparql:uri", NULL);
 	context->sparql_query_uri = twine_config_geta("sparql:query", NULL);
 	context->sparql_update_uri = twine_config_geta("sparql:update", NULL);
 	context->sparql_data_uri = twine_config_geta("sparql:data", NULL);
