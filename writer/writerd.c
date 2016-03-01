@@ -65,8 +65,8 @@ main(int argc, char **argv)
 	signal(SIGCHLD, SIG_IGN);
 	signal(SIGTERM, writerd_signal);	
 	if(detach)
-	{
-		child = utils_daemon(TWINE_APP_NAME ":pidfile", LOCALSTATEDIR "/run/twine-writerd.pid");
+	{	   
+		child = twine_daemonize(twine, LOCALSTATEDIR "/run/twine-writerd.pid");
 		if(child < 0)
 		{
 			return 1;

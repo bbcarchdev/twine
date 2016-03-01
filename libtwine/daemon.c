@@ -1,4 +1,4 @@
-/* Twine: Daemonize
+/* Twine: Daemonize a process
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
@@ -21,34 +21,18 @@
 # include "config.h"
 #endif
 
-#include "p_libutils.h"
+#include "p_libtwine.h"
 
 pid_t
-utils_daemon(const char *configkey, const char *pidfile)
+twine_daemonize(TWINE *context, const char *default_pidfile)
 {
 	pid_t child;	
 	char *file;
 	FILE *f;
 	int fd;
 
-	utils_is_daemon = 1;
-	if(configkey)
-	{
-		file = twine_config_geta(configkey, pidfile);
-	}
-	else if(pidfile)
-	{
-		file = strdup(pidfile);
-		if(!file)
-		{
-			twine_logf(LOG_CRIT, "failed to allocate memory: %s\n", strerror(errno));
-			return -1;
-		}
-	}
-	else
-	{
-		file = NULL;
-	}
+	context->is_daemon = 1;
+	file = twine_config_geta("*:pidfile", default_pidfile);
 	child = fork();
 	if(child == -1)
 	{
@@ -75,7 +59,7 @@ utils_daemon(const char *configkey, const char *pidfile)
 	/* Child process */
 	free(file);
 	umask(0);
-/*	log_reset(); */
+	log_reset()
 	if(setsid() < 0)
 	{
 		twine_logf(LOG_CRIT, "failed to create new process group: %s\n", strerror(errno));

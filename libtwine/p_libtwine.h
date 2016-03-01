@@ -27,6 +27,11 @@
 # include <errno.h>
 # include <string.h>
 # include <pthread.h>
+# include <unistd.h>
+# include <sys/types.h>
+# include <sys/param.h>
+# include <sys/stat.h>
+# include <fcntl.h>
 # include <curl/curl.h>
 # include <libcluster.h>
 

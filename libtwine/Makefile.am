@@ -33,7 +33,7 @@ include_HEADERS = libtwine.h
 
 libtwine_la_SOURCES = p_libtwine.h libtwine.h libtwine-internals.h \
 	context.c plugin.c logging.c sparql.c rdf.c config.c mq.c \
-	workflow.c legacy-api.c
+	workflow.c daemon.c legacy-api.c
 
 libtwine_la_LDFLAGS = -avoid-version \
 	-export-symbols-regex '^twine_'

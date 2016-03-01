@@ -25,17 +25,12 @@
 
 /* The name of the process, defined as basename(argv[0]) */
 const char *utils_progname;
-/* Non-zero if the process is a daemon */
-int utils_is_daemon;
 
 /* Initialise libutils */
 int utils_init(int argc, char **argv, int daemon);
 
 /* Apply default configuration values */
 int utils_config_defaults(void);
-
-/* Daemonize the process */
-pid_t utils_daemon(const char *configkey, const char *pidfile);
 
 /* Interface with libmq */
 int utils_mq_init_recv(const char *confkey);

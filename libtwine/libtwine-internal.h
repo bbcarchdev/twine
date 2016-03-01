@@ -20,6 +20,8 @@
 #ifndef LIBTWINE_INTERNAL_H_
 # define LIBTWINE_INTERNAL_H_           1
 
+# include <sys/types.h>
+
 # include "libtwine.h"
 
 # undef BEGIN_DECLS_
@@ -74,6 +76,7 @@ int twine_set_sparql(TWINE *restrict context, const char *base_uri, const char *
 void *twine_plugin_load(TWINE *restrict context, const char *restrict pathname);
 int twine_plugin_unload(TWINE *restrict context, void *handle);
 const char *twine_config_path(void);
+pid_t twine_daemonize(TWINE *context, const char *pidfile);
 
 /* Deprecated internal APIs */
 typedef TWINELOGFN twine_log_fn;
