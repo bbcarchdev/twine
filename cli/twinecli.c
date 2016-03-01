@@ -121,8 +121,6 @@ twinecli_init(int argc, char **argv)
 	/* Update logging configuration to use configuration file */
 	log_set_use_config(1);
 
-	/* Initialise libCURL */
-	curl_global_init(CURL_GLOBAL_ALL);
 	/* Perform final pre-flight checks */
 	if(twine_ready(twine) < 0)
 	{

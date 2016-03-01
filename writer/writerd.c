@@ -132,8 +132,6 @@ writerd_init(int argc, char **argv)
 	/* Update logging configuration to use configuration file */
 	log_set_use_config(1);
 
-	/* Initialise libCURL */
-	curl_global_init(CURL_GLOBAL_ALL);
 	/* Set up the AMQP interface */
 	if(utils_mq_init_recv(TWINE_APP_NAME ":mq"))
 	{
