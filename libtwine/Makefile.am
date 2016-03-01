@@ -34,7 +34,10 @@ libtwine_la_SOURCES = p_libtwine.h libtwine.h libtwine-internals.h \
 	context.c plugin.c logging.c sparql.c rdf.c config.c mq.c \
 	workflow.c legacy-api.c
 
-libtwine_la_LDFLAGS = -avoid-version
+libtwine_la_LDFLAGS = -avoid-version \
+	-export-symbols-regex '^twine_'
+
+libtwine_la_LIBADD = $(top_builddir)/libsupport/libsupport.la
 
 dist_man3_MANS = libtwine.3
 
