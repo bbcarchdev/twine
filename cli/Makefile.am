@@ -17,7 +17,6 @@
 ##  limitations under the License.
 
 AM_CPPFLAGS = @AM_CPPFLAGS@ \
-	-I$(top_builddir)/libsupport -I$(top_srcdir)/libsupport \
 	-I$(top_builddir)/libutils -I$(top_srcdir)/libutils \
 	-I$(top_builddir)/libtwine -I$(top_srcdir)/libtwine \
 	-I$(top_builddir)/libsparqlclient -I$(top_srcdir)/libsparqlclient
@@ -29,6 +28,5 @@ twine_SOURCES = p_twinecli.h \
 
 twine_LDADD = \
 	$(top_builddir)/libutils/libutils.la \
-	$(top_builddir)/libsupport/libsupport.la \
 	$(top_builddir)/libtwine/libtwine.la \
 	@LIBMQ_LOCAL_LIBS@ @LIBMQ_LIBS@

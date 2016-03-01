@@ -24,6 +24,7 @@
 #include "p_libtwine.h"
 
 static char *twine_config_key_alloc_(TWINE *restrict context, const char *restrict name);
+/* static int twine_config_defaults_(TWINE *restrict context); */
 
 /* Internal API: Return the path to the default configuration file used by Twine */
 const char *
@@ -257,6 +258,53 @@ twine_config_get_all(const char *section, const char *key, int (*fn)(const char 
 		return twine_->config.config_get_all(DEFAULT_CONFIG_SECTION_NAME, key, fn, data);
 	}
 	return twine_->config.config_get_all(section, key, fn, data);
+}
+
+/* Public: set a configuration value */
+int
+twine_config_set(const char *key, const char *value)
+{
+	return config_set(key, value);
+}
+
+/* Private: initialise the configuration elements of a Twine context */
+int
+twine_config_setup_(TWINE *context)
+{
+	context->config.config_get = config_get;
+	context->config.config_geta = config_geta;
+	context->config.config_get_int = config_get_int;
+	context->config.config_get_bool = config_get_bool;
+	context->config.config_get_all = config_get_all;
+	return 0;
+}
+
+/* Private: perform pre-flight actions on a Twine context */
+int
+twine_config_ready_(TWINE *context)
+{
+	/* Apply configuration defaults */
+	config_set_default("global:configFile", twine_config_path());
+	config_set_default("log:level", "notice");
+	if(context->appname)
+	{
+		config_set_default("log:ident", context->appname);
+	}
+	if(context->is_daemon)
+	{
+		config_set_default("log:facility", "daemon");
+		config_set_default("log:syslog", "1");
+		config_set_default("log:stderr", "0");
+	}
+	else
+	{		
+		config_set_default("log:syslog", "0");
+		config_set_default("log:stderr", "1");
+	}
+	config_set_default(DEFAULT_CONFIG_SECTION "mq", twine_mq_default_uri());
+	config_load(NULL);
+	log_set_use_config(1);
+	return 0;	
 }
 
 static char *

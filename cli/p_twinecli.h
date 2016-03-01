@@ -1,8 +1,8 @@
-/* Twine: Stand-alone import process
+/* Twine: Stand-alone import utility
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014-2015 BBC
+ * Copyright (c) 2014-2016 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -23,10 +23,10 @@
 # include <stdio.h>
 # include <stdlib.h>
 # include <string.h>
+# include <errno.h>
 # include <unistd.h>
 # include <curl/curl.h>
 
-# include "libsupport.h"
 # include "libmq.h"
 # include "libutils.h"
 # include "libtwine-internal.h"

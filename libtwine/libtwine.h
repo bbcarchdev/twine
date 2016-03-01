@@ -243,6 +243,7 @@ char *twine_config_geta(const char *key, const char *defval);
 int twine_config_get_int(const char *key, int defval);
 int twine_config_get_bool(const char *key, int defval);
 int twine_config_get_all(const char *section, const char *key, int (*fn)(const char *key, const char *value, void *data), void *data);
+int twine_config_set(const char *key, const char *value);
 
 END_DECLS_
 

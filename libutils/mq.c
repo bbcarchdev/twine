@@ -40,12 +40,12 @@ utils_mq_init_recv(const char *confkey)
 	messenger = mq_connect_recv(mq_uri, NULL, NULL);
 	if(!messenger)
 	{
-		log_printf(LOG_CRIT, "failed to create message queue client for <%s>\n", mq_uri);
+		twine_logf(LOG_CRIT, "failed to create message queue client for <%s>\n", mq_uri);
 		return -1;
 	}
 	if(mq_error(messenger))
 	{
-		log_printf(LOG_CRIT, "failed to establish message queue receiver: %s\n", mq_errmsg(messenger));
+		twine_logf(LOG_CRIT, "failed to establish message queue receiver: %s\n", mq_errmsg(messenger));
 		mq_disconnect(messenger);
 		return -1;
 	}
@@ -64,12 +64,12 @@ utils_mq_init_send(const char *confkey)
 	messenger = mq_connect_send(mq_uri, NULL, NULL);
 	if(!messenger)
 	{
-		log_printf(LOG_CRIT, "failed to create message queue client for <%s>\n", mq_uri);
+		twine_logf(LOG_CRIT, "failed to create message queue client for <%s>\n", mq_uri);
 		return -1;
 	}
 	if(mq_error(messenger))
 	{
-		log_printf(LOG_CRIT, "failed to establish message queue receiver: %s\n", mq_errmsg(messenger));
+		twine_logf(LOG_CRIT, "failed to establish message queue receiver: %s\n", mq_errmsg(messenger));
 		mq_disconnect(messenger);
 		return -1;
 	}
@@ -100,7 +100,7 @@ utils_mq_init(const char *confkey)
 	/* Try the application-specific configuration key first */
 	if(confkey)
 	{
-		l = config_get(confkey, NULL, mq_uri, sizeof(mq_uri));
+		l = twine_config_get(confkey, NULL, mq_uri, sizeof(mq_uri));
 	}
 	else
 	{
@@ -109,25 +109,23 @@ utils_mq_init(const char *confkey)
 	if(!l || l > sizeof(mq_uri))
 	{
 		/* Try the global 'uri' key in the [twine] section */
-		l = config_get(DEFAULT_CONFIG_SECTION_NAME ":mq", NULL, mq_uri, sizeof(mq_uri));
+		l = twine_config_get(DEFAULT_CONFIG_SECTION_NAME ":mq", NULL, mq_uri, sizeof(mq_uri));
 	}
 	if(!l || l > sizeof(mq_uri))
 	{
 		/* If that fails, try the global 'uri' key in the [mq] section */
-		l = config_get("mq:uri", NULL, mq_uri, sizeof(mq_uri));
+		l = twine_config_get("mq:uri", NULL, mq_uri, sizeof(mq_uri));
 		if(l)
 		{
-			log_printf(LOG_NOTICE, "The [mq] configuration section has been deprecated; you should use mq=URI in the application-specific or common [%s] section instead\n", DEFAULT_CONFIG_SECTION_NAME);
+			twine_logf(LOG_NOTICE, "The [mq] configuration section has been deprecated; you should use mq=URI in the application-specific or common [%s] section instead\n", DEFAULT_CONFIG_SECTION_NAME);
 		}
 	}
 	if(!l || l == (size_t) -1 || l > sizeof(mq_uri))
 	{
-		log_printf(LOG_CRIT, "failed to determine message queue URI\n");
+		twine_logf(LOG_CRIT, "failed to determine message queue URI\n");
 		return -1;
 	}
-	log_printf(LOG_DEBUG, "establishing connection to <%s>\n", mq_uri);
+	twine_logf(LOG_DEBUG, "establishing connection to <%s>\n", mq_uri);
 	return 0;
 }
-
- 
 

@@ -44,13 +44,5 @@ utils_init(int argc, char **argv, int daemon)
 			utils_progname = argv[0];
 		}
 	}
-	log_set_ident(utils_progname);
-	/* Log to stderr until configuration is loaded */
-	log_set_stderr(1);
-	log_set_level(LOG_NOTICE);
-	if(!daemon)
-	{
-		log_set_syslog(0);
-	}
 	return 0;
 }

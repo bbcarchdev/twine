@@ -66,6 +66,7 @@ struct twine_configfn_struct
 TWINE *twine_create(void);
 int twine_destroy(TWINE *context);
 int twine_ready(TWINE *context);
+int twine_set_daemon(TWINE *context, int isdaemon);
 int twine_set_logger(TWINE *context, TWINELOGFN logger);
 int twine_set_config(TWINE *restrict context, TWINECONFIGFNS *restrict config);
 int twine_set_appname(TWINE *restrict context, const char *name);

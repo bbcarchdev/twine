@@ -45,7 +45,7 @@ main(int argc, char **argv)
 	{
 		return 1;
 	}
-	detach = config_get_bool(TWINE_APP_NAME ":detach", 1);
+	detach = twine_config_get_bool(TWINE_APP_NAME ":detach", 1);
 	signal(SIGHUP, SIG_IGN);
 	if(detach)
 	{
@@ -88,8 +88,6 @@ main(int argc, char **argv)
 static int
 writerd_init(int argc, char **argv)
 {
-	TWINECONFIGFNS configfn;
-
 	/* Initialise libtwine */
 	twine = twine_create();
 	if(!twine)
@@ -99,23 +97,10 @@ writerd_init(int argc, char **argv)
 	}
 	/* Set the app name, which is used when reading configuration settings */
 	twine_set_appname(twine, TWINE_APP_NAME);
-	/* Set the logging callback */
-	twine_set_logger(twine, log_vprintf);
-	/* Set the configuration callbacks */
-	configfn.config_get = config_get;
-	configfn.config_geta = config_geta;
-	configfn.config_get_int = config_get_int;
-	configfn.config_get_bool = config_get_bool;
-	configfn.config_get_all = config_get_all;
-	twine_set_config(twine, &configfn);
-	
+	/* twine-writerd is a daemon under normal operation */
+	twine_set_daemon(twine, 0);
 	/* Initialise the utilities library */
 	if(utils_init(argc, argv, 1))
-	{
-		return -1;
-	}
-	/* Apply default configuration */
-	if(config_init(utils_config_defaults))
 	{
 		return -1;
 	}
@@ -124,20 +109,14 @@ writerd_init(int argc, char **argv)
 	{
 		return -1;
 	}
-	/* Load the configuration file */
-	if(config_load(NULL))
+	/* Update logging configuration to use configuration file */
+
+	if(twine_ready(twine))
 	{
 		return -1;
 	}
-	/* Update logging configuration to use configuration file */
-	log_set_use_config(1);
-
 	/* Set up the AMQP interface */
 	if(utils_mq_init_recv(TWINE_APP_NAME ":mq"))
-	{
-		return -1;
-	}
-	if(twine_ready(twine))
 	{
 		return -1;
 	}
@@ -174,17 +153,17 @@ writerd_process_args(int argc, char **argv)
 			writerd_usage();
 			exit(0);
 		case 'f':
-			config_set(TWINE_APP_NAME ":detach", "0");
+			twine_config_set(TWINE_APP_NAME ":detach", "0");
 			break;
 		case 'c':
-			config_set("global:configFile", optarg);
+			twine_config_set("global:configFile", optarg);
 			break;
 		case 'd':
-			config_set("log:level", "debug");
-			config_set("log:stderr", "1");
-			config_set("sparql:verbose", "1");
-			config_set("s3:verbose", "1");
-			config_set(TWINE_APP_NAME ":detach", "0");
+			twine_config_set("log:level", "debug");
+			twine_config_set("log:stderr", "1");
+			twine_config_set("sparql:verbose", "1");
+			twine_config_set("s3:verbose", "1");
+			twine_config_set(TWINE_APP_NAME ":detach", "0");
 			break;
 		case 'D':
 		    p = strchr(optarg, '=');
@@ -197,7 +176,7 @@ writerd_process_args(int argc, char **argv)
 					fprintf(stderr, "%s: configuration option must be specified as `section:key`=value\n", utils_progname);
 					return -1;
 				}
-				config_set(optarg, p);
+				twine_config_set(optarg, p);
 			}
 			else
 			{
@@ -206,7 +185,7 @@ writerd_process_args(int argc, char **argv)
 					fprintf(stderr, "%s: configuration option must be specified as `section:key`=value\n", utils_progname);
 					return -1;
 				}
-				config_set(optarg, "1");
+				twine_config_set(optarg, "1");
 			}
 			break;
 		default:

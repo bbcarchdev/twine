@@ -17,7 +17,7 @@
 ##  limitations under the License.
 
 AM_CPPFLAGS = @AM_CPPFLAGS@ \
-	-I$(top_builddir)/libsupport -I$(top_srcdir)/libsupport \
+	-I$(top_builddir)/libtwine -I$(top_srcdir)/libtwine \
 	-I$(top_builddir)/libutils -I$(top_srcdir)/libutils \
 	$(LIBSQL_CPPFLAGS)
 
@@ -27,7 +27,7 @@ twine_inject_SOURCES = inject.c
 
 twine_inject_LDADD = \
 	$(top_builddir)/libutils/libutils.la \
-	$(top_builddir)/libsupport/libsupport.la \
+	$(top_builddir)/libtwine/libtwine.la \
 	@LIBMQ_LOCAL_LIBS@ @LIBMQ_LIBS@
 
 dist_man1_MANS = twine-inject.1

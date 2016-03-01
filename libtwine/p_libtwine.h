@@ -30,6 +30,8 @@
 # include <curl/curl.h>
 # include <libcluster.h>
 
+# include "libsupport.h"
+
 # include "libtwine-internal.h"
 
 # define DEFAULT_MQ_URI                 "amqp://~0.0.0.0/amq.direct"
@@ -116,6 +118,7 @@ struct twine_context_struct
 	char *sparql_update_uri;
 	char *sparql_data_uri;
 	int allow_internal;
+	int is_daemon;
 };
 
 extern TWINE *twine_;
@@ -138,5 +141,9 @@ int twine_preproc_process_(twine_graph *graph);
 int twine_postproc_process_(twine_graph *graph);
 
 int twine_sparql_init_(TWINE *context);
+
+/* This can't be called twine_config_init_() because that's a legacy API */
+int twine_config_setup_(TWINE *context);
+int twine_config_ready_(TWINE *context);
 
 #endif /*!P_LIBTWINE_H_*/

@@ -24,7 +24,8 @@ LIBS = \
 	@PTHREAD_LIBS@ @PTHREAD_LOCAL_LIBS@
 
 AM_CPPFLAGS = @AM_CPPFLAGS@ \
-	@LIBSPARQLCLIENT_CPPFLAGS@
+	@LIBSPARQLCLIENT_CPPFLAGS@ \
+	-I$(top_builddir)/libsupport -I$(top_srcdir)/libsupport
 
 lib_LTLIBRARIES = libtwine.la
 

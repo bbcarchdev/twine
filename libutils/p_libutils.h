@@ -31,6 +31,7 @@
 
 # include "libsupport.h"
 # include "libtwine.h"
+# include "libtwine-internal.h"
 # include "libmq.h"
 
 # include <curl/curl.h>

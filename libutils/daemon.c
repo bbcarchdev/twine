@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2016 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
  *  limitations under the License.
  */
 
-#ifdef HAVE_CONFIG_H
+#ifdef HAVE_TWINE_CONFIG_H
 # include "config.h"
 #endif
 
@@ -34,14 +34,14 @@ utils_daemon(const char *configkey, const char *pidfile)
 	utils_is_daemon = 1;
 	if(configkey)
 	{
-		file = config_geta(configkey, pidfile);
+		file = twine_config_geta(configkey, pidfile);
 	}
 	else if(pidfile)
 	{
 		file = strdup(pidfile);
 		if(!file)
 		{
-			log_printf(LOG_CRIT, "failed to allocate memory: %s\n", strerror(errno));
+			twine_logf(LOG_CRIT, "failed to allocate memory: %s\n", strerror(errno));
 			return -1;
 		}
 	}
@@ -52,7 +52,7 @@ utils_daemon(const char *configkey, const char *pidfile)
 	child = fork();
 	if(child == -1)
 	{
-		log_printf(LOG_CRIT, "failed to fork child process: %s\n", strerror(errno));
+		twine_logf(LOG_CRIT, "failed to fork child process: %s\n", strerror(errno));
 		free(file);
 		return -1;
 	}
@@ -64,7 +64,7 @@ utils_daemon(const char *configkey, const char *pidfile)
 			f = fopen(file, "w");
 			if(!f)
 			{
-				log_printf(LOG_CRIT, "failed to open PID file %s: %s\n", file, strerror(errno));
+				twine_logf(LOG_CRIT, "failed to open PID file %s: %s\n", file, strerror(errno));
 				return child;
 			}
 			fprintf(f, "%ld\n", (long int) child);
@@ -75,15 +75,15 @@ utils_daemon(const char *configkey, const char *pidfile)
 	/* Child process */
 	free(file);
 	umask(0);
-	log_reset();
+/*	log_reset(); */
 	if(setsid() < 0)
 	{
-		log_printf(LOG_CRIT, "failed to create new process group: %s\n", strerror(errno));
+		twine_logf(LOG_CRIT, "failed to create new process group: %s\n", strerror(errno));
 		return -1;
 	}
 	if(chdir("/"))
 	{
-		log_printf(LOG_CRIT, "failed to change working directory: %s\n", strerror(errno));
+		twine_logf(LOG_CRIT, "failed to change working directory: %s\n", strerror(errno));
 		return -1;
 	}
     close(STDIN_FILENO);
@@ -96,7 +96,7 @@ utils_daemon(const char *configkey, const char *pidfile)
 	while(fd == -1 && errno == EINTR);
 	if(fd == -1)
 	{
-		log_printf(LOG_CRIT, "failed to open /dev/null: %s\n", strerror(errno));
+		twine_logf(LOG_CRIT, "failed to open /dev/null: %s\n", strerror(errno));
 		return -1;
 	}
 	if(fd != 0)

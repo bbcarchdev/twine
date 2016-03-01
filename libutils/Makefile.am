@@ -34,7 +34,7 @@ AM_CPPFLAGS = @AM_CPPFLAGS@ \
 noinst_LTLIBRARIES = libutils.la
 
 libutils_la_SOURCES = p_libutils.h libutils.h \
-	init.c config.c urlencode.c daemon.c mq.c
+	init.c urlencode.c daemon.c mq.c
 
 libutils_la_LDFLAGS = -static
 

@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2016 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -24,9 +24,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <unistd.h>
 
-#include "libsupport.h"
+#include "libtwine-internal.h"
 #include "libutils.h"
 #include "libmq.h"
 
@@ -37,6 +38,7 @@ static void usage(void);
 int
 main(int argc, char **argv)
 {
+	TWINE *twine;
 	MQ *messenger;
 	MQMESSAGE *msg;
 	const char *mime, *subj;
@@ -45,11 +47,9 @@ main(int argc, char **argv)
 	ssize_t r;
 	int c;
 
+	twine = twine_create();
+	twine_set_appname(twine, TWINE_APP_NAME);
 	if(utils_init(argc, argv, 0))
-	{
-		return 1;
-	}
-	if(config_init(utils_config_defaults))
 	{
 		return 1;
 	}
@@ -63,10 +63,10 @@ main(int argc, char **argv)
 			usage();
 			return 0;
 		case 'd':
-			log_set_level(LOG_DEBUG);
+			twine_config_set("log:level", "debug");
 			break;
 		case 'c':
-			config_set("global:configFile", optarg);
+			twine_config_set("global:configFile", optarg);
 			break;
 		case 't':
 			mime = optarg;
@@ -81,11 +81,11 @@ main(int argc, char **argv)
 	}
 	if(!mime)
 	{
-		log_printf(LOG_ERR, "no MIME type specified\n");
+		twine_logf(LOG_ERR, "no MIME type specified\n");
 		usage();
 		return 1;
 	}
-	if(config_load(NULL))
+	if(twine_ready(twine))
 	{
 		return 1;
 	}
@@ -109,7 +109,7 @@ main(int argc, char **argv)
 			p = (char *) realloc(buffer, bufsize + 1024);
 			if(!p)
 			{
-				log_printf(LOG_ERR, "failed to reallocate buffer from %u bytes to %u bytes\n", (unsigned) bufsize, (unsigned) bufsize + 1024);
+				twine_logf(LOG_ERR, "failed to reallocate buffer from %u bytes to %u bytes\n", (unsigned) bufsize, (unsigned) bufsize + 1024);
 				return 1;
 			}
 			buffer = p;
@@ -118,7 +118,7 @@ main(int argc, char **argv)
 		r = fread(&(buffer[buflen]), 1, 1023, stdin);
 		if(r < 0)
 		{
-			log_printf(LOG_CRIT, "error reading from standard input: %s\n", strerror(errno));
+			twine_logf(LOG_CRIT, "error reading from standard input: %s\n", strerror(errno));
 			free(buffer);
 			return -1;
 		}
@@ -133,16 +133,16 @@ main(int argc, char **argv)
 	}
 	else
 	{
-		subject = config_geta("inject:subject", NULL);
+		subject = twine_config_geta(TWINE_APP_NAME ":subject", NULL);
 		if(!subject)
 		{
-			subject = config_geta("amqp:subject", NULL);
+			subject = twine_config_geta("amqp:subject", NULL);
 		}
 		subj = subject;
 	}
 	mq_message_set_subject(msg, subj);
 	mq_message_set_type(msg, mime);
-	log_printf(LOG_DEBUG, "sending %s message '%s' to <%s>\n", mime, subj, utils_mq_uri());
+	twine_logf(LOG_DEBUG, "sending %s message '%s' to <%s>\n", mime, subj, utils_mq_uri());
 	mq_message_add_bytes(msg, (unsigned char *) buffer, buflen);
 	mq_message_send(msg);
 
@@ -155,7 +155,8 @@ main(int argc, char **argv)
 	free(buffer);
 
 	mq_disconnect(messenger);
-	
+	twine_destroy(twine);
+
 	return 0;
 }
 

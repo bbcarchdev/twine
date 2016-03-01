@@ -48,8 +48,13 @@ twine_create(void)
 	}
 	p->prev = twine_;
 	twine_ = p;
-	p->logger = vsyslog;
+	p->logger = log_vprintf;
+	/* Use this configuration until the configuration is loaded */
+	log_set_stderr(1);
+	log_set_syslog(0);
+	log_set_level(LOG_NOTICE);
 	twine_rdf_init_(p);
+	twine_config_setup_(p);
 	return p;
 }
 
@@ -124,6 +129,15 @@ twine_set_appname(TWINE *restrict context, const char *appname)
 	free(context->appname);
 	context->appname = p;
 	context->appnamelen = strlen(p);
+	log_set_ident(p);
+	return 0;
+}
+
+/* Internal API: Specify whether this application is a daemon or not */
+int
+twine_set_daemon(TWINE *context, int isdaemon)
+{
+	context->is_daemon = !!(isdaemon);
 	return 0;
 }
 
@@ -133,6 +147,10 @@ twine_set_appname(TWINE *restrict context, const char *appname)
 int
 twine_ready(TWINE *context)
 {
+	if(twine_config_ready_(context))
+	{
+		return -1;
+	}
 	if(twine_sparql_init_(context))
 	{
 		return -1;
@@ -153,5 +171,6 @@ static void
 twine_global_init_(void)
 {
 	curl_global_init(CURL_GLOBAL_ALL);
+	config_init(NULL);
 }
 

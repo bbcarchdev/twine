@@ -1,8 +1,8 @@
-/* Twine: Writer AMQP receive loop
+/* Twine: Writer message processing loop
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2016 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ static int writerd_should_exit;
 int
 writerd_exit(void)
 {
-	log_printf(LOG_NOTICE, "received request to terminate\n");
+	twine_logf(LOG_NOTICE, "received request to terminate\n");
 	writerd_should_exit = 1;
 	return 0;
 }
@@ -47,10 +47,10 @@ writerd_runloop(void)
 	messenger = utils_mq_messenger();
 	if(!messenger)
 	{
-		log_printf(LOG_CRIT, "failed to create message queue conenction\n");
+		twine_logf(LOG_CRIT, "failed to create message queue conenction\n");
 		return -1;
 	}
-	log_printf(LOG_NOTICE, TWINE_APP_NAME " ready and waiting for messages\n");
+	twine_logf(LOG_NOTICE, TWINE_APP_NAME " ready and waiting for messages\n");
 	while(!writerd_should_exit)
 	{
 		msg = mq_next(messenger);
@@ -64,7 +64,7 @@ writerd_runloop(void)
 		}
 		if(!msg)
 		{
-			log_printf(LOG_CRIT, "failed to receive message: %s\n", mq_errmsg(messenger));
+			twine_logf(LOG_CRIT, "failed to receive message: %s\n", mq_errmsg(messenger));
 			return -1;
 		}
 		mime = mq_message_type(msg);
@@ -73,23 +73,23 @@ writerd_runloop(void)
 		len = mq_message_len(msg);
 		if(!mime)
 		{				
-			log_printf(LOG_ERR, "rejecting message with no content type\n");
+			twine_logf(LOG_ERR, "rejecting message with no content type\n");
 			mq_message_reject(msg);
 			continue;
 		}		 
-		log_printf(LOG_DEBUG, "received a %s '%s' message via %s\n", mime, mq_message_subject(msg), mq_message_address(msg));
+		twine_logf(LOG_DEBUG, "received a %s '%s' message via %s\n", mime, mq_message_subject(msg), mq_message_address(msg));
 		if(twine_plugin_process(mime, body, len, subject))
 		{
-			log_printf(LOG_ERR, "processing of a %s '%s' message via %s failed\n", mime, mq_message_subject(msg), mq_message_address(msg));
+			twine_logf(LOG_ERR, "processing of a %s '%s' message via %s failed\n", mime, mq_message_subject(msg), mq_message_address(msg));
 			mq_message_reject(msg);
 		}
 		else
 		{
-			log_printf(LOG_INFO, "processing of a %s '%s' message via %s completed successfully\n", mime, mq_message_subject(msg), mq_message_address(msg));
+			twine_logf(LOG_INFO, "processing of a %s '%s' message via %s completed successfully\n", mime, mq_message_subject(msg), mq_message_address(msg));
 			mq_message_accept(msg);
 		}
 	}
-	log_printf(LOG_NOTICE, "shutting down\n");
+	twine_logf(LOG_NOTICE, "shutting down\n");
 	return 0;
 }
 
