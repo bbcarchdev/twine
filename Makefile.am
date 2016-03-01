@@ -2,7 +2,7 @@
 ##
 ## Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
 ##
-## Copyright (c) 2014-2015 BBC
+## Copyright (c) 2014-2016 BBC
 ##
 ##  Licensed under the Apache License, Version 2.0 (the "License");
 ##  you may not use this file except in compliance with the License.
@@ -19,11 +19,11 @@
 ACLOCAL_AMFLAGS = -I m4
 
 DIST_SUBDIRS = libsupport libtwine libutils \
-	writer bridges handlers processors \
+	writer cli bridges handlers processors \
 	conf docs m4 docbook-html5
 
 SUBDIRS = libsupport @subdirs@ libtwine libutils \
-	writer bridges handlers processors \
+	writer cli bridges handlers processors \
 	conf docs
 
 pkgconfigdir = @libdir@/pkgconfig

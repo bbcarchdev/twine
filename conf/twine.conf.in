@@ -1,39 +1,38 @@
+[twine]
+;; Configuration settings in this section apply to all applications which
+;; support them; any settings in application-specific sections will override
+;; those provided here.
+
+;; The URI of the message queue endpoint
+mq=amqp://localhost/amq.direct
+
+;; SPARQL connection configuration
+sparql=http://localhost/
+;sparql-verbose=yes
+;sparql-query=http://localhost/sparql/
+;sparql-update=http://localhost/update/
+;sparql-data=http://localhost/data/
+
+;; Loadable modules for Twine processors
+plugin=rdf.so
+plugin=xslt.so
+plugin=geonames.so
+
 ;; Configuration specifically for the writer daemon (twine-writerd)
 [writerd]
 ;; If twine-writerd should use a specific message queue URI, specify it here
 ;mq=amqp://localhost/custom-inbound
-
 ;; The location of the writer PID file
 pidfile=@LOCALSTATEDIR@/run/twine-writerd.pid
 
-;; Loadable modules for Twine processors
-module=rdf.so
-module=xslt.so
-module=geonames.so
-
-;; The Spindle module is a post-processor which generates co-reference proxy
-;; objects within a specific set of internal graph. Because it alters the way
-;; that data is processed, it's not enabled by default.
-; module=spindle.so
+;; Configuraiton specifically for the command-line tool ("twine")
+[twine-cli]
+; sparql=http://otherhost/
 
 ;; Configuration specifically for the inject tool (twine-inject)
 [inject]
 ;; If twine-inject should use a specific message queue URI, specify it here
 ;mq=amqp://localhost/custom-outbound
-
-;; Messagw queue defaults
-[mq]
-;; Default message queue URI -- overridden by specific mq values where supplied
-uri=amqp://localhost/amq.direct
-
-;; SPARQL server configuration 
-[sparql]
-;; The URI to the SPARQL Update endpoint
-update=http://localhost/update/
-;; The URI to the RESTful endpoint (supporting PUT for graphs)
-data=http://localhost/data/
-;; The URI to the query endpoint
-query=http://localhost/sparql/
 
 ;; Logging options for daemons
 [log]
@@ -46,7 +45,7 @@ level=notice
 ;; Logging facility
 facility=daemon
 
-;; Define a MIME type to be processed via the XSLT processor
+;; Define a MIME type to be processed via the loadable XSLT processor
 [xslt:application/x-example+xml]
 ;; A description of this type
 desc=Example XSLT-transformable XML

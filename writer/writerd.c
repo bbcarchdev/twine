@@ -33,6 +33,8 @@ static int writerd_init(int argc, char **argv);
 static int writerd_process_args(int argc, char **argv);
 static void writerd_signal(int sig);
 
+static TWINE *twine;
+
 int
 main(int argc, char **argv)
 {
@@ -79,7 +81,7 @@ main(int argc, char **argv)
 	{
 		return 1;
 	}
-	twine_cleanup_();
+	twine_destroy(twine);
 	return 0;
 }
 
@@ -87,15 +89,25 @@ static int
 writerd_init(int argc, char **argv)
 {
 	struct twine_configfn_struct configfn;
-		
+
 	/* Initialise libtwine */
-	twine_init_(log_vprintf);
+	twine = twine_create();
+	if(!twine)
+	{
+		fprintf(stderr, "%s: failed to initialise Twine context\n", argv[0]);
+		return -1;
+	}
+	/* Set the app name, which is used when reading configuration settings */
+	twine_set_appname(twine, TWINE_APP_NAME);
+	/* Set the logging callback */
+	twine_set_logger(twine, log_vprintf);
+	/* Set the configuration callbacks */
 	configfn.config_get = config_get;
 	configfn.config_geta = config_geta;
 	configfn.config_get_int = config_get_int;
 	configfn.config_get_bool = config_get_bool;
 	configfn.config_get_all = config_get_all;
-	twine_config_init_(&configfn);
+	twine_set_config(twine, &configfn);
 	
 	/* Initialise the utilities library */
 	if(utils_init(argc, argv, 1))
@@ -127,7 +139,7 @@ writerd_init(int argc, char **argv)
 	{
 		return -1;
 	}
-	if(twine_preflight_())
+	if(twine_ready(twine))
 	{
 		return -1;
 	}
@@ -210,19 +222,6 @@ writerd_process_args(int argc, char **argv)
 	{
 		/* There should not be any remaining command-line arguments */
 		writerd_usage();
-		return -1;
-	}
-	return 0;
-}
-
-static int
-writerd_plugin_config_cb(const char *key, const char *value, void *data)
-{
-	(void) key;
-	(void) data;
-
-	if(twine_plugin_load_(value))
-	{
 		return -1;
 	}
 	return 0;

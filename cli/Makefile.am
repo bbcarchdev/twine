@@ -22,18 +22,13 @@ AM_CPPFLAGS = @AM_CPPFLAGS@ \
 	-I$(top_builddir)/libtwine -I$(top_srcdir)/libtwine \
 	-I$(top_builddir)/libsparqlclient -I$(top_srcdir)/libsparqlclient
 
-sbin_PROGRAMS = twine-writerd
+bin_PROGRAMS = twine
 
-twine_writerd_SOURCES = p_writerd.h \
-	writerd.c runloop.c
+twine_SOURCES = p_twinecli.h \
+	twinecli.c
 
-twine_writerd_LDADD = \
+twine_LDADD = \
 	$(top_builddir)/libutils/libutils.la \
 	$(top_builddir)/libsupport/libsupport.la \
 	$(top_builddir)/libtwine/libtwine.la \
 	@LIBMQ_LOCAL_LIBS@ @LIBMQ_LIBS@
-
-dist_man8_MANS = twine-writerd.8
-
-twine-writerd.8: $(top_srcdir)/docs/twine-writerd.xml
-	$(XML2MAN) $<

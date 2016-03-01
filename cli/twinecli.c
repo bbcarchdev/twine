@@ -28,6 +28,7 @@ static int twinecli_init(int argc, char **argv);
 static int twinecli_process_args(int argc, char **argv);
 static int twinecli_import(const char *type, const char *filename);
 
+static TWINE *twine;
 static const char *bulk_import_type = NULL, *bulk_import_file = NULL;
 static const char *cache_update_name = NULL, *cache_update_ident = NULL;
 static int schema_update_only = 0;
@@ -69,7 +70,7 @@ main(int argc, char **argv)
 			r = twinecli_import(bulk_import_type, bulk_import_file);
 		}
 	}
-	twine_cleanup_();
+	twine_destroy(twine);
 	return r ? 1 : 0;
 }
 
@@ -79,13 +80,23 @@ twinecli_init(int argc, char **argv)
 	struct twine_configfn_struct configfn;
 		
 	/* Initialise libtwine */
-	twine_init_(log_vprintf);
+	twine = twine_create();
+	if(!twine)
+	{
+		fprintf(stderr, "%s: failed to initialise Twine context\n", argv[0]);
+		return -1;
+	}
+	/* Set the app name, which is used when reading configuration settings */
+	twine_set_appname(twine, TWINE_APP_NAME);
+	/* Set the logging callback */
+	twine_set_logger(twine, log_vprintf);
+	/* Set the configuration callbacks */
 	configfn.config_get = config_get;
 	configfn.config_geta = config_geta;
 	configfn.config_get_int = config_get_int;
 	configfn.config_get_bool = config_get_bool;
 	configfn.config_get_all = config_get_all;
-	twine_config_init_(&configfn);
+	twine_set_config(twine, &configfn);
 	
 	/* Initialise the utilities library */
 	if(utils_init(argc, argv, 0))
@@ -113,7 +124,7 @@ twinecli_init(int argc, char **argv)
 	/* Initialise libCURL */
 	curl_global_init(CURL_GLOBAL_ALL);
 	/* Perform final pre-flight checks */
-	if(twine_preflight_())
+	if(twine_ready(twine) < 0)
 	{
 		return -1;
 	}

@@ -1,8 +1,8 @@
 ##  Twine: A Linked Data workflow engine
 ##
-##  Author: Mo McRoberts
+##  Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
 ##
-##  Copyright (c) 2014-2015 BBC
+##  Copyright (c) 2014-2016 BBC
 ##
 ##  Licensed under the Apache License, Version 2.0 (the "License");
 ##  you may not use this file except in compliance with the License.
@@ -82,6 +82,7 @@ libsupport/Makefile
 libutils/Makefile
 libtwine/Makefile
 writer/Makefile
+cli/Makefile
 bridges/Makefile
 handlers/Makefile
 processors/Makefile

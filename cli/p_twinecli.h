@@ -31,7 +31,7 @@
 # include "libutils.h"
 # include "libtwine-internal.h"
 
-# define TWINE_APP_NAME                 "twine"
+# define TWINE_APP_NAME                 "twinecli"
 
 struct twinecli_extmime_struct
 {
