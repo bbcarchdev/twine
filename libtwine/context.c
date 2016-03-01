@@ -141,7 +141,7 @@ twine_ready(TWINE *context)
 	{
 		return -1;
 	}
-	if(twine_workflow_init_())
+	if(twine_workflow_init_(context))
 	{
 		return -1;
 	}

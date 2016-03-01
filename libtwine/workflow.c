@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014-2015 BBC
+ * Copyright (c) 2014-2016 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -23,8 +23,10 @@
 
 #include "p_libtwine.h"
 
-/* Built-in workflow processors */
+static int twine_workflow_parse_(TWINE *context, char *str);
 static int twine_workflow_config_cb_(const char *key, const char *value, void *data);
+
+/* Built-in workflow processors */
 static int twine_workflow_preprocess_(twine_graph *graph, void *dummy);
 static int twine_workflow_postprocess_(twine_graph *graph, void *dummy);
 static int twine_workflow_sparql_get_(twine_graph *graph, void *dummy);
@@ -34,22 +36,51 @@ static char **workflow;
 static size_t nworkflow;
 
 int
-twine_workflow_init_(void)
+twine_workflow_init_(TWINE *context)
 {
-	twine_plugin_internal_(1);
-	twine_graph_register("preprocess", twine_workflow_preprocess_, NULL);
-	twine_graph_register("postprocess", twine_workflow_postprocess_, NULL);
-	twine_graph_register("sparql-get", twine_workflow_sparql_get_, NULL);
-	twine_graph_register("sparql-put", twine_workflow_sparql_put_, NULL);
-	twine_plugin_internal_(0);
-	twine_config_get_all("workflow", "invoke", twine_workflow_config_cb_, NULL);
+	int r;
+	char *s;
+
+	twine_plugin_allow_internal_(context, 1);
+	twine_graph_register("deprecated:preprocess", twine_workflow_preprocess_, context);
+	twine_graph_register("deprecated:postprocess", twine_workflow_postprocess_, context);
+	twine_graph_register("sparql-get", twine_workflow_sparql_get_, context);
+	twine_graph_register("sparql-put", twine_workflow_sparql_put_, context);
+	twine_plugin_allow_internal_(context, 0);
+	r = twine_config_get_all("workflow", "invoke", twine_workflow_config_cb_, context);
+	if(r < 0)
+	{
+		return -1;
+	}
+	if(r)
+	{
+		if(context->appname && strcmp(context->appname, DEFAULT_CONFIG_SECTION_NAME))
+		{
+			twine_logf(LOG_NOTICE, "The [workflow] configuration section has been deprecated; you should use workflow=NAME,NAME... in the common [%s] section or the application-specific [%s] section instead\n", DEFAULT_CONFIG_SECTION_NAME, context->appname);
+		}
+		else
+		{
+			twine_logf(LOG_NOTICE, "The [workflow] configuration section has been deprecated; you should use workflow=NAME,NAME... in the common [%s] section instead\n", DEFAULT_CONFIG_SECTION_NAME, context->appname);
+		}
+		return 0;
+	}
+	s = twine_config_geta("*:workflow", "");
+	if(s)
+	{		
+		r = twine_workflow_parse_(context, s);
+		free(s);
+		if(r < 0)
+		{
+			return -1;
+		}
+	}
 	if(!nworkflow)
 	{
 		twine_logf(LOG_NOTICE, "no processing workflow was configured; using defaults\n");
-		twine_workflow_config_cb_(NULL, "sparql-get", NULL);
-		twine_workflow_config_cb_(NULL, "preprocess", NULL);
-		twine_workflow_config_cb_(NULL, "sparql-put", NULL);
-		twine_workflow_config_cb_(NULL, "postprocess", NULL);
+		twine_workflow_config_cb_(NULL, "sparql-get", context);
+		twine_workflow_config_cb_(NULL, "deprecated:preprocess", context);
+		twine_workflow_config_cb_(NULL, "sparql-put", context);
+		twine_workflow_config_cb_(NULL, "deprecated:postprocess", context);
 	}
 	return 0;
 }
@@ -159,6 +190,44 @@ twine_workflow_sparql_put_(twine_graph *graph, void *dummy)
 		r = -1;
 	}
 	sparql_destroy(conn);
+	return 0;
+}
+
+static int
+twine_workflow_parse_(TWINE *context, char *str)
+{
+	char *p, *s;
+
+	/* Parse a workflow=foo,bar,baz configuration option
+	 * Note that processor names can be separated either with whitespace or
+	 * with commas or semicolons (or any combination of them), and empty
+	 * elements in the list are skipped.
+	 */
+	for(p = str; *p; p = s)
+	{
+		while(isspace(*p) || *p == ',' || *p == ';')
+		{
+			p++;
+		}
+		if(!*p)
+		{
+			break;
+		}
+		for(s = p; *s && !isspace(*s) && *s != ',' && *s != ';'; s++) { }
+		if(*s)
+		{
+			*s = 0;
+			s++;
+		}
+		if(!*p)
+		{
+			continue;
+		}		
+		if(twine_workflow_config_cb_(NULL, p, context) < 0)
+		{
+			return -1;
+		}
+	}
 	return 0;
 }
 

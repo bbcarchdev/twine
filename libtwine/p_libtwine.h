@@ -20,7 +20,9 @@
 #ifndef P_LIBTWINE_H_
 # define P_LIBTWINE_H_                  1
 
+# include <stdio.h>
 # include <stdlib.h>
+# include <ctype.h>
 # include <dlfcn.h>
 # include <errno.h>
 # include <string.h>
@@ -112,7 +114,8 @@ struct twine_context_struct
 	char *sparql_uri;
 	char *sparql_query_uri;
 	char *sparql_update_uri;
-	char *sparql_data_uri;   
+	char *sparql_data_uri;
+	int allow_internal;
 };
 
 extern TWINE *twine_;
@@ -126,13 +129,13 @@ int twine_graph_process_(const char *name, twine_graph *graph);
 
 int twine_plugin_init_(TWINE *context);
 int twine_plugin_unload_all_(TWINE *context);
+int twine_plugin_allow_internal_(TWINE *context, int);
 
-int twine_workflow_init_(void);
+int twine_workflow_init_(TWINE *context);
 int twine_workflow_process_(twine_graph *graph);
 
 int twine_preproc_process_(twine_graph *graph);
 int twine_postproc_process_(twine_graph *graph);
-int twine_plugin_internal_(int);
 
 int twine_sparql_init_(TWINE *context);
 

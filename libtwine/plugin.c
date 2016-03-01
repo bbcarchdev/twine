@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014-2015 BBC
+ * Copyright (c) 2014-2016 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -31,9 +31,8 @@ static void *current;
 
 static struct twine_callback_struct *callbacks;
 static size_t cbcount, cbsize;
-static int internal;
 
-static struct twine_callback_struct *twine_plugin_callback_add_(void *data);
+static struct twine_callback_struct *twine_plugin_callback_add_(TWINE *context, void *data);
 static int twine_plugin_config_cb_(const char *key, const char *value, void *data);
 
 /* Internal API: load a plug-in and invoke its initialiser callback */
@@ -166,9 +165,9 @@ twine_plugin_unload(TWINE *restrict context, void *handle)
 
 /* Private: temporarily enable or disable internal registration of plug-ins */
 int
-twine_plugin_internal_(int enable)
+twine_plugin_allow_internal_(TWINE *context, int enable)
 {
-	internal = enable;
+	context->allow_internal = enable;
 	return 0;
 }
 
@@ -211,7 +210,11 @@ twine_plugin_register(const char *mimetype, const char *description, twine_proce
 {
 	struct twine_callback_struct *p;
 
-	p = twine_plugin_callback_add_(data);
+	if(!twine_)
+	{
+		return -1;
+	}
+	p = twine_plugin_callback_add_(twine_, data);
 	if(!p)
 	{
 		return -1;
@@ -237,7 +240,11 @@ twine_bulk_register(const char *mimetype, const char *description, twine_bulk_fn
 {
 	struct twine_callback_struct *p;
 
-	p = twine_plugin_callback_add_(data);
+	if(!twine_)
+	{
+		return -1;
+	}
+	p = twine_plugin_callback_add_(twine_, data);
 	if(!p)
 	{
 		return -1;
@@ -264,7 +271,11 @@ twine_graph_register(const char *name, twine_graph_fn fn, void *data)
 {
 	struct twine_callback_struct *g;
 
-	g = twine_plugin_callback_add_(data);
+	if(!twine_)
+	{
+		return -1;
+	}
+	g = twine_plugin_callback_add_(twine_, data);
 	if(!g)
 	{
 		return -1;
@@ -287,7 +298,11 @@ twine_postproc_register(const char *name, twine_postproc_fn fn, void *data)
 {
 	struct twine_callback_struct *g;
 
-	g = twine_plugin_callback_add_(data);
+	if(!twine_)
+	{
+		return -1;
+	}
+	g = twine_plugin_callback_add_(twine_, data);
 	if(!g)
 	{
 		return -1;
@@ -313,7 +328,11 @@ twine_preproc_register(const char *name, twine_preproc_fn fn, void *data)
 {
 	struct twine_callback_struct *g;
 
-	g = twine_plugin_callback_add_(data);
+	if(!twine_)
+	{
+		return -1;
+	}
+	g = twine_plugin_callback_add_(twine_, data);
 	if(!g)
 	{
 		return -1;
@@ -339,7 +358,11 @@ twine_update_register(const char *name, twine_update_fn fn, void *data)
 {
 	struct twine_callback_struct *p;
 
-	p = twine_plugin_callback_add_(data);
+	if(!twine_)
+	{
+		return -1;
+	}
+	p = twine_plugin_callback_add_(twine_, data);
 	if(!p)
 	{
 		return -1;
@@ -709,11 +732,11 @@ twine_graph_process_(const char *name, twine_graph *graph)
 
 /* Private: add a new callback */
 static struct twine_callback_struct *
-twine_plugin_callback_add_(void *data)
+twine_plugin_callback_add_(TWINE *restrict context, void *restrict data)
 {
 	struct twine_callback_struct *p;
 
-	if(!current && !internal)
+	if(!current && !context->allow_internal)
 	{
 		twine_logf(LOG_ERR, "attempt to register a new callback outside of a module\n");
 		return NULL;
@@ -753,15 +776,19 @@ twine_plugin_init_(TWINE *context)
 	{
 		if(context->appname && strcmp(context->appname, DEFAULT_CONFIG_SECTION_NAME))
 		{
-			twine_logf(LOG_NOTICE, "The [plugins] configuration section has been deprecated; you should use the common [%s] section or application-specific [%s] section instead\n", DEFAULT_CONFIG_SECTION_NAME, context->appname);
+			twine_logf(LOG_NOTICE, "The [plugins] configuration section has been deprecated; you should use plugin=name.so in the common [%s] section or application-specific [%s] section instead\n", DEFAULT_CONFIG_SECTION_NAME, context->appname);
 		}
 		else
 		{
-			twine_logf(LOG_NOTICE, "The [plugins] configuration section has been deprecated; you should use the common [%s] section instead\n", DEFAULT_CONFIG_SECTION_NAME);
+			twine_logf(LOG_NOTICE, "The [plugins] configuration section has been deprecated; you should use plugin=name.so in the common [%s] section instead\n", DEFAULT_CONFIG_SECTION_NAME);
 		}
 		return 0;
 	}
-	return twine_config_get_all("*", "module", twine_plugin_config_cb_, context);
+	if(twine_config_get_all("*", "plugin", twine_plugin_config_cb_, context) < 0)
+	{
+		return -1;
+	}
+	return 0;
 }
 
 static int
