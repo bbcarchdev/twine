@@ -124,6 +124,7 @@ struct twine_context_struct
 	char *sparql_data_uri;
 	int allow_internal;
 	int is_daemon;
+	int plugins_enabled;
 };
 
 extern TWINE *twine_;

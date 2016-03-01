@@ -59,7 +59,7 @@ twine_daemonize(TWINE *context, const char *default_pidfile)
 	/* Child process */
 	free(file);
 	umask(0);
-	log_reset()
+	log_reset();
 	if(setsid() < 0)
 	{
 		twine_logf(LOG_CRIT, "failed to create new process group: %s\n", strerror(errno));

@@ -176,8 +176,9 @@ int
 twine_plugin_unload_all_(TWINE *context)
 {
 	void *handle;
-	size_t c;
+	size_t c, n;
 
+	n = 0;
 	for(c = 0; c < cbcount;)
 	{
 		if(callbacks[0].context != context)
@@ -185,6 +186,7 @@ twine_plugin_unload_all_(TWINE *context)
 			c++;
 			continue;
 		}
+		n++;
 		handle = callbacks[c].module;
 		twine_plugin_unload(context, handle);
 		if(c < cbcount && callbacks[c].module == handle)
@@ -200,7 +202,10 @@ twine_plugin_unload_all_(TWINE *context)
 		cbcount = 0;
 		cbsize = 0;
 	} 
-	twine_logf(LOG_INFO, "all plug-ins unregistered\n");
+	if(context->plugins_enabled || n)
+	{
+		twine_logf(LOG_DEBUG, "all plug-ins unregistered\n");
+	}
 	return 0;
 }
 
@@ -767,6 +772,10 @@ twine_plugin_init_(TWINE *context)
 {
 	int r;
 
+	if(!context->plugins_enabled)
+	{
+		return 0;
+	}
 	r = twine_config_get_all("plugins", "module", twine_plugin_config_cb_, context);
 	if(r < 0)
 	{

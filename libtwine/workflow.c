@@ -41,6 +41,10 @@ twine_workflow_init_(TWINE *context)
 	int r;
 	char *s;
 
+	if(!context->plugins_enabled)
+	{
+		return 0;
+	}
 	twine_plugin_allow_internal_(context, 1);
 	twine_graph_register("deprecated:preprocess", twine_workflow_preprocess_, context);
 	twine_graph_register("deprecated:postprocess", twine_workflow_postprocess_, context);

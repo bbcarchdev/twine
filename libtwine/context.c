@@ -141,6 +141,14 @@ twine_set_daemon(TWINE *context, int isdaemon)
 	return 0;
 }
 
+/* Internal API: Specify whether plugins are used by this application or not */
+int
+twine_set_plugins_enabled(TWINE *context, int enabled)
+{
+	context->plugins_enabled = !!(enabled);
+	return 0;
+}
+
 /* Internal API: The application is ready to begin processing; perform any
  * final initialisation required before this can happen.
  */

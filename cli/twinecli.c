@@ -86,7 +86,9 @@ twinecli_init(int argc, char **argv)
 	}
 	/* Set the app name, which is used when reading configuration settings */
 	twine_set_appname(twine, TWINE_APP_NAME);
-	
+	/* twine-cli needs plug-ins enabled to work */
+	twine_set_plugins_enabled(twine, 1);
+
 	/* Initialise the utilities library */
 	if(utils_init(argc, argv, 0))
 	{

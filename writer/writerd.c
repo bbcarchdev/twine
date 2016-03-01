@@ -97,6 +97,8 @@ writerd_init(int argc, char **argv)
 	}
 	/* Set the app name, which is used when reading configuration settings */
 	twine_set_appname(twine, TWINE_APP_NAME);
+	/* writerd needs plug-ins loaded to work */
+	twine_set_plugins_enabled(twine, 1);
 	/* twine-writerd is a daemon under normal operation */
 	twine_set_daemon(twine, 0);
 	/* Initialise the utilities library */

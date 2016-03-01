@@ -73,6 +73,7 @@ int twine_set_logger(TWINE *context, TWINELOGFN logger);
 int twine_set_config(TWINE *restrict context, TWINECONFIGFNS *restrict config);
 int twine_set_appname(TWINE *restrict context, const char *name);
 int twine_set_sparql(TWINE *restrict context, const char *base_uri, const char *query_uri, const char *update_uri, const char *data_uri, int verbose);
+int twine_set_plugins_enabled(TWINE *context, int enabled);
 void *twine_plugin_load(TWINE *restrict context, const char *restrict pathname);
 int twine_plugin_unload(TWINE *restrict context, void *handle);
 const char *twine_config_path(void);
