@@ -23,9 +23,6 @@
 # include <stdint.h>
 # include "libmq.h"
 
-# include <proton/message.h>
-# include <proton/messenger.h>
-
 /* The name of the process, defined as basename(argv[0]) */
 const char *utils_progname;
 /* Non-zero if the process is a daemon */
@@ -45,12 +42,6 @@ int utils_mq_init_recv(const char *confkey);
 int utils_mq_init_send(const char *confkey);
 const char *utils_mq_uri(void);
 MQ *utils_mq_messenger(void);
-
-/* Interface with the Qpid Proton AMQP messenger library */
-int utils_proton_init_recv(const char *confkey);
-int utils_proton_init_send(const char *confkey);
-const char *utils_proton_uri(void);
-pn_messenger_t *utils_proton_messenger(void);
 
 /* URL encoding */
 size_t utils_urlencode_size(const char *src);

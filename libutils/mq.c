@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2016 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -108,8 +108,17 @@ utils_mq_init(const char *confkey)
 	}
 	if(!l || l > sizeof(mq_uri))
 	{
+		/* Try the global 'uri' key in the [twine] section */
+		l = config_get(DEFAULT_CONFIG_SECTION_NAME ":mq", NULL, mq_uri, sizeof(mq_uri));
+	}
+	if(!l || l > sizeof(mq_uri))
+	{
 		/* If that fails, try the global 'uri' key in the [mq] section */
 		l = config_get("mq:uri", NULL, mq_uri, sizeof(mq_uri));
+		if(l)
+		{
+			log_printf(LOG_NOTICE, "The [mq] configuration section has been deprecated; you should use mq=URI in the application-specific or common [%s] section instead\n", DEFAULT_CONFIG_SECTION_NAME);
+		}
 	}
 	if(!l || l == (size_t) -1 || l > sizeof(mq_uri))
 	{
