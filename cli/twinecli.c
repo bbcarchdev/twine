@@ -77,7 +77,7 @@ main(int argc, char **argv)
 static int
 twinecli_init(int argc, char **argv)
 {
-	struct twine_configfn_struct configfn;
+	TWINECONFIGFNS configfn;
 		
 	/* Initialise libtwine */
 	twine = twine_create();

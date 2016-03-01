@@ -24,7 +24,7 @@
 #include "p_libtwine.h"
 
 int
-twine_init_(twine_log_fn logger)
+twine_init_(TWINELOGFN logger)
 {
 	TWINE *p;
 
@@ -34,7 +34,6 @@ twine_init_(twine_log_fn logger)
 		return -1;
 	}
 	twine_set_logger(p, logger);
-	twine_rdf_init_(p);
 	return 0;
 }
 
@@ -55,7 +54,7 @@ twine_preflight_(void)
 }
 
 int
-twine_config_init_(struct twine_configfn_struct *fns)
+twine_config_init_(TWINECONFIGFNS *fns)
 {
 	twine_set_config(twine_, fns);
 	return 0;

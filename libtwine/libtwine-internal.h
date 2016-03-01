@@ -50,7 +50,9 @@
 
 BEGIN_DECLS_
 
-typedef void (*twine_log_fn)(int prio, const char *fmt, va_list ap);
+typedef void (*TWINELOGFN)(int prio, const char *fmt, va_list ap);
+
+typedef struct twine_configfn_struct TWINECONFIGFNS;
 
 struct twine_configfn_struct
 {
@@ -64,8 +66,8 @@ struct twine_configfn_struct
 TWINE *twine_create(void);
 int twine_destroy(TWINE *context);
 int twine_ready(TWINE *context);
-int twine_set_logger(TWINE *context, twine_log_fn logger);
-int twine_set_config(TWINE *restrict context, struct twine_configfn_struct *restrict config);
+int twine_set_logger(TWINE *context, TWINELOGFN logger);
+int twine_set_config(TWINE *restrict context, TWINECONFIGFNS *restrict config);
 int twine_set_appname(TWINE *restrict context, const char *name);
 int twine_set_sparql(TWINE *restrict context, const char *base_uri, const char *query_uri, const char *update_uri, const char *data_uri, int verbose);
 void *twine_plugin_load(TWINE *restrict context, const char *restrict pathname);
@@ -73,10 +75,12 @@ int twine_plugin_unload(TWINE *restrict context, void *handle);
 const char *twine_config_path(void);
 
 /* Deprecated internal APIs */
-int twine_init_(twine_log_fn logger) DEPRECATED_;
+typedef TWINELOGFN twine_log_fn;
+
+int twine_init_(TWINELOGFN logger) DEPRECATED_;
 int twine_preflight_(void) DEPRECATED_;
 int twine_cleanup_(void) DEPRECATED_;
-int twine_config_init_(struct twine_configfn_struct *fns) DEPRECATED_;
+int twine_config_init_(TWINECONFIGFNS *fns) DEPRECATED_;
 int twine_sparql_defaults_(const char *base_uri, const char *query_uri, const char *update_uri, const char *data_uri, int verbose) DEPRECATED_;
 int twine_plugin_load_(const char *pathname) DEPRECATED_;
 int twine_plugin_unregister_all_(void *handle) DEPRECATED_;

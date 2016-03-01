@@ -91,7 +91,7 @@ twine_destroy(TWINE *context)
 
 /* Internal API: Set the logging callback used by Twine and plug-ins */
 int
-twine_set_logger(TWINE *context, twine_log_fn logger)
+twine_set_logger(TWINE *context, TWINELOGFN logger)
 {
 	context->logger = logger;
 	return 0;
@@ -99,7 +99,7 @@ twine_set_logger(TWINE *context, twine_log_fn logger)
 
 /* Internal API: Set the configuration callbacks used by Twine and plug-ins */
 int
-twine_set_config(TWINE *restrict context, struct twine_configfn_struct *restrict config)
+twine_set_config(TWINE *restrict context, TWINECONFIGFNS *restrict config)
 {
 	context->config = *config;
 	return 0;

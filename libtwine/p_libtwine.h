@@ -103,9 +103,9 @@ struct twine_callback_struct
 struct twine_context_struct
 {
 	TWINE *prev;
-	twine_log_fn logger;
+	TWINELOGFN logger;
 	librdf_world *world;
-	struct twine_configfn_struct config;
+	TWINECONFIGFNS config;
 	char *appname;
 	size_t appnamelen;
 	char *keybuf;
