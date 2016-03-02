@@ -84,8 +84,11 @@ libtwine/Makefile
 writer/Makefile
 cli/Makefile
 bridges/Makefile
-handlers/Makefile
-processors/Makefile
+plug-ins/Makefile
+plug-ins/rdf/Makefile
+plug-ins/s3/Makefile
+plug-ins/xslt/Makefile
+plug-ins/geonames/Makefile
 conf/Makefile
 conf/twine.conf
 docs/Makefile

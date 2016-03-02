@@ -36,6 +36,7 @@ libtwine_la_SOURCES = p_libtwine.h libtwine.h libtwine-internals.h \
 	workflow.c daemon.c legacy-api.c
 
 libtwine_la_LDFLAGS = -avoid-version \
+	-no-undefined \
 	-export-symbols-regex '^twine_'
 
 libtwine_la_LIBADD = $(top_builddir)/libsupport/libsupport.la

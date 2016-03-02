@@ -1,8 +1,8 @@
 ##  Twine: A Linked Data workflow engine
 ##
-##  Author: Mo McRoberts
+##  Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
 ##
-##  Copyright (c) 2014-2015 BBC
+##  Copyright (c) 2014-2016 BBC
 ##
 ##  Licensed under the Apache License, Version 2.0 (the "License");
 ##  you may not use this file except in compliance with the License.
@@ -17,19 +17,13 @@
 ##  limitations under the License.
 
 AM_CPPFLAGS = @AM_CPPFLAGS@ \
-	-I$(top_builddir)/libtwine -I$(top_srcdir)/libtwine \
-	-I$(top_builddir)/libs3client -I$(top_srcdir)/libs3client
+	-I$(top_builddir)/libtwine -I$(top_srcdir)/libtwine
+
 LIBS = $(top_builddir)/libtwine/libtwine.la
 
 moduledir = $(libdir)/twine
 
-module_LTLIBRARIES = rdf.la xslt.la geonames.la
-
-rdf_la_SOURCES = rdf.c
-rdf_la_LDFLAGS = -no-undefined -module -avoid-version
-
-geonames_la_SOURCES = geonames.c
-geonames_la_LDFLAGS = -no-undefined -module -avoid-version
+module_LTLIBRARIES = xslt.la
 
 xslt_la_SOURCES = xslt.c
 xslt_la_LIBADD = \

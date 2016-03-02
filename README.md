@@ -2,88 +2,90 @@
 
 ## What is Twine?
 
-This is Twine, a framework for pushing RDF into quad-stores for later serving
-as Linked Open Data (LOD).
+Twine is a workflow engine for processing RDF in customisable ways.
 
-Twine consists of:
+## Source tree structure
 
-* A queue-driven daemon (`twine-writerd`)
-* 'Processor' modules which are baked into the writer daemon
-* 'Bridge' components which feed data into the queues
+* `libsupport` contains support for handling configuration files and logging
+and is used by (and built into) `libtwine`
+* `libutils` contains some supporting code which will over time be merged into
+`libtwine`
+* `libtwine` contains the core of the workflow engine, and is linked against
+by both tools and daemons which perform processing and also any loadable
+plug-in modules which provide different kinds of processing functionality.
+* `cli` contains the command-line processor, installed as
+`${exec_prefix}/bin/twine`. This processor applies a configured workflow to
+some input file in a synchronous fashion.
+* `writer` contains the queue-driven processing daemon, `twine-writerd`, which
+performs the same job as the command-line processor, except that it
+continuously reads messages from a queue and processes those, instead of
+reading from a file supplied on the command-line or via standard input.
+* `bridges` currently contains a single example 'bridge', `twine-inject`,
+which can be used as a basis for developing others and is useful for testing;
+a bridge is a mechanism for feeding messages into a message queue that can be
+processed by `twine-writerd`. `twine-inject` simply posts an arbitrary
+message, of a MIME type specified on the command-line, whose contents
+are read from standard input. No validation is performed by the bridge itself.
+* `plug-ins` contains modules which can be configured to be loaded by Twine.
+Twine plug-ins are responsible for fetching, parsing and transforming data,
+and optionally for writing the result to files, an RDF store, or some other
+kind of database. `libtwine` includes built-in plug-ins for fetching
+previously-stored RDF via SPARQL (so that a processing plug-in can compare
+new and old data), and for writing RDF back to a store via SPARQL Update.
 
-The intention is that you will write your own processors and bridges to
-support your particular application's needs.
+## Plug-ins
 
-Twine can use any AMQP 1.0-compliant message broker, and any
-SPARQL 1.1-compliant quad-store. In development, we use Apache Qpid's C++
-broker and 4store. Twine uses the Apache Qpid Proton messaging libraries
-to speak to AMQP servers and libcurl to speak to quad-stores.
+Plug-ins can perform various different functions within Twine. In principle,
+they can perform any action one might reasonably wish to on some RDF data.
 
-Twine is constructed with the assumption that the quad-store you use for your
-RDF will contain one named graph per resource you intend to serve to consuming
-applications. This means that retrieval can happen very quickly and easily,
-but of course you can write processors which store data in a different way
-if your prefer.
+Typically, they will:
 
-The role of a processor module is to receive a chunk of arbitrary data and
-transform or interpret it such that the quad-store can be updated. A simple
-case might be parsing a JSON or XML blob, creating some triples from that
-blob, and then performing an HTTP PUT into a particular named graph.
+* Deal with indirection: where messages don't contain actual source data, but
+the location where it can be found (e.g., the `s3` plug-in).
+* Handle different input formats, parsing and translating source data into
+RDF so that it can be further processed or stored (e.g., the `xslt` plug-in).
+* Perform transformation on RDF data (such as stripping triples out, or
+generating new ones) - [Spindle](https://github.com/bbcarchdev/spindle/tree/develop/twine) is an example of a plug-in which does this.
+* Storing the resultant RDF data somewhere, via SPARQL Update or some other
+means (e.g., the built-in `sparql-put` plug-in).
 
-Twine includes a simple processor module which can parse quads in either
-N-Quads or TriG serialisations, and which are processed by iterating each
-of the named graphs in them and pushing them into the quad-store.
+### rdf
 
-The role of a bridge is to obtain change data from some source and submit
-those changes as messages on the queue that the writer daemon listens on.
+The `rdf` input plug-in parses messages (which may be files on disk or piped via
+standard input if the standalone `twine` utility is used) which contain TriG-
+or N-Quads-formatted RDF. The resulting graphs are then available for
+transformation by other modules, or simply for storing (for example via the
+built-in `sparql-put` processor).
 
-A simple bridge, `twine-inject`, is provided: this simply reads data from
-a file and submits it as a message. You must specify the MIME type of the
-file on the command-line, which must be a typed registered by a processor
-module loaded by the writer daemon.
+### s3
 
-A more complex bridge might wait on a change-feed provided by another system,
-receiving updates and continually submitting them to Twine for processing.
+The `s3` input plug-in handles messages which have a type of
+`application/x-s3-url` and which are expected to contain a series of one or
+more URLs (one per line) in the form `s3://BUCKETNAME/OBJECTNAME`. These URLs
+are fetched in turn, using the S3 endpoint and credentials specified in the
+Twine configuration file, and each is passed as-is back to Twine for
+processing as though their contents had been sent directly.
 
-The rationale for splitting the processors and bridges (despite many
-applications having a need for them to be tightly-coupled) is:
+### xslt
 
-1. the processor may need to have more involved interaction with the
-   quad-store than a simple push/replace operation, which wouldn't be
-   appropriate for a bridge, as it shouldn't (and indeed may not be able
-   to) access the quad-store directly.
+The `xslt` input plug-in is a configurable transformation processor which can
+translate XML documents into a form such that they can be parsed as RDF/XML
+and used for onward processing. The plug-in registers itself as being
+able to handle MIME types specified in the Twine configuration file, and
+applies the corresponding XSL stylesheet to the source document in order to
+transform it into RDF/XML before parsing.
 
-2. it should be possible to push the same format of updates (i.e., content
-   types) from multiple sources, resulting in consistent processing regardless
-   of where the message came from.
+An example stylesheet and source XML document is provided as part of the
+plug-in.
 
-## Building Twine from Git
+### geonames
 
-Twine uses `autoconf`, `libtool` and `automake` to build. It also depends
-upon `libcurl`, `libdl`, `libqpid-proton`, and `librdf`. Most modern Linux
-distributions ship with development packages for these (especially `libcurl`
-and `libdl`, the latter being part of `glibc`).
+The `geonames` input plug-in reads data in the GeoNames RDF dump format, which
+consists of a repeating sequence of lines in the form:
 
-At the time of writing:
+* Graph URI (newline)
+* RDF/XML document for this graph (with any newlines stripped out)
 
-* You may find you need to build `libqpid-proton` from source, as it is not
-  yet widely-packaged.
-
-* In order for the `rdf` processor module (which accepts TriG or N-Quads
-  messages and imports them into the quad-store directly) to work, you will
-  need a version of `librdf` which parses quad-based formats into contexts.
-  If version 1.0.18 or newer of `librdf` has been released, you should use
-  that, otherwise you may need to fetch it directly from
-  [GitHub](https://github.com/dajobe/librdf).
-
-Once the dependencies are in place, you can check out and built Twine with:
-
-```shell
-$ git clone git://github.com/bbcarchdev/twine.git
-$ cd twine
-$ git submodule update --init --recursive
-$ autoreconf -i
-$ ./configure [--prefix=/opt/twine]
-$ make
-$ sudo make install
-```
+The plug-in simply reads the graph URI, then the RDF/XML document, and pushes
+a model into Twine for processing which contains the triples from the RDF/XML
+associated with that graph.
