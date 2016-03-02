@@ -81,11 +81,12 @@ plug-in.
 ### geonames
 
 The `geonames` input plug-in reads data in the GeoNames RDF dump format, which
-consists of a repeating sequence of lines in the form:
+consists of a repeating sequence of the following, each separated by newlines:
 
-* Graph URI (newline)
+* Geonames URL (e.g., `http://sws.geonames.org/3/`)
 * RDF/XML document for this graph (with any newlines stripped out)
 
-The plug-in simply reads the graph URI, then the RDF/XML document, and pushes
-a model into Twine for processing which contains the triples from the RDF/XML
-associated with that graph.
+The plug-in simply reads the Geonames URL and transforms it into a graph URI
+(by appending `about.rdf`), then reads the RDF/XML document into an RDF model
+as part of that named graph. The resulting model is pushed into Twine for
+onward processing or storage.
