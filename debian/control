@@ -7,7 +7,7 @@ Build-Depends: debhelper (>= 8.0.0), autoconf, automake, libtool, libcurl4-gnutl
 
 Package: libtwine
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}, libsparqlclient, libmq
+Depends: ${misc:Depends}, ${shlibs:Depends}, libsparqlclient, libmq, libcluster
 Description: Linked Data workflow engine (module API)
 
 Package: twine
@@ -17,5 +17,5 @@ Description: Linked Data workflow engine
 
 Package: libtwine-dev
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}, libtwine (= ${binary:Version}), libsparqlclient-dev, librdf0-dev, libmq-dev
+Depends: ${misc:Depends}, ${shlibs:Depends}, libtwine (= ${binary:Version}), libsparqlclient-dev, librdf0-dev, libmq-dev, libcluster-dev
 Description: Linked Data workflow engine (module API development files)
