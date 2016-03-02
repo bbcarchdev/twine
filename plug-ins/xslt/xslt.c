@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014-2015 BBC
+ * Copyright (c) 2014-2016 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@
 
 #include "libtwine.h"
 
+#define TWINE_PLUGIN_NAME               "xslt"
 #define XSLT_MIME_LEN                   63
 
 struct xslt_mime_struct
@@ -55,45 +56,55 @@ static struct xslt_mime_struct *xslt_mime_find(const char *mimetype);
 
 /* Twine plug-in entry-point */
 int
-twine_plugin_init(void)
+twine_entry(TWINE *context, TWINEENTRYTYPE type, void *handle)
 {
 	struct xslt_mime_struct *p;
 	size_t c;
 
-	twine_logf(LOG_DEBUG, "XSLT: initialising\n");
-	twine_config_get_all(NULL, NULL, xslt_config_cb, NULL);
-	c = 0;
-	for(p = first; p; p = p->next)
+	(void) context;
+	(void) handle;
+
+	switch(type)
 	{
-		if(!p->path)
+	case TWINE_ATTACHED:
+		twine_logf(LOG_DEBUG, TWINE_PLUGIN_NAME " plug-in: initialising\n");
+		twine_config_get_all(NULL, NULL, xslt_config_cb, NULL);
+		c = 0;
+		for(p = first; p; p = p->next)
 		{
-			twine_logf(LOG_ERR, "XSLT: MIME type '%s' cannot be registered because no path to a stylesheet was provided\n", p->mimetype);
-			continue;
+			if(!p->path)
+			{
+				twine_logf(LOG_ERR, TWINE_PLUGIN_NAME ": MIME type '%s' cannot be registered because no path to a stylesheet was provided\n", p->mimetype);
+				continue;
+			}
+			if(!p->xpath)
+			{
+				twine_logf(LOG_ERR, TWINE_PLUGIN_NAME ": MIME type '%s' cannot be registered because no XPath expression for graph URIs was provided\n", p->mimetype);
+				continue;
+			}
+			p->doc = xmlParseFile(p->path);
+			if(!p->doc)
+			{
+				twine_logf(LOG_ERR, TWINE_PLUGIN_NAME ": failed to parse '%s' as well-formed XML\n", p->path);
+				continue;
+			}
+			p->xslt = xsltParseStylesheetDoc(p->doc);
+			if(!p->xslt)
+			{
+				twine_logf(LOG_ERR, TWINE_PLUGIN_NAME ": failed to process '%s' as an XSLT stylesheet\n", p->path);
+				continue;
+			}
+			c++;
+			twine_plugin_register(p->mimetype, p->desc, xslt_process, NULL);
 		}
-		if(!p->xpath)
+		if(!c)
 		{
-			twine_logf(LOG_ERR, "XSLT: MIME type '%s' cannot be registered because no XPath expression for graph URIs was provided\n", p->mimetype);
-			continue;
+			twine_logf(LOG_ERR, TWINE_PLUGIN_NAME ": no MIME types registered\n");
+			return -1;
 		}
-		p->doc = xmlParseFile(p->path);
-		if(!p->doc)
-		{
-			twine_logf(LOG_ERR, "XSLT: failed to parse '%s' as well-formed XML\n", p->path);
-			continue;
-		}
-		p->xslt = xsltParseStylesheetDoc(p->doc);
-		if(!p->xslt)
-		{
-			twine_logf(LOG_ERR, "XSLT: failed to process '%s' as an XSLT stylesheet\n", p->path);
-			continue;
-		}
-		c++;
-		twine_plugin_register(p->mimetype, p->desc, xslt_process, NULL);
-	}
-	if(!c)
-	{
-		twine_logf(LOG_ERR, "XSLT: no MIME types registered\n");
-		return -1;
+		break;
+	case TWINE_DETACHED:
+		break;
 	}
 	return 0;
 }
@@ -138,7 +149,7 @@ xslt_config_cb(const char *key, const char *value, void *data)
 	mime = xslt_mime_find(mimebuf);
 	if(!mime)
 	{
-		twine_logf(LOG_ERR, "XSLT: unable to locate internal MIME type structure for '%s'\n", mimebuf);
+		twine_logf(LOG_ERR, TWINE_PLUGIN_NAME ": unable to locate internal MIME type structure for '%s'\n", mimebuf);
 		return -1;
 	}
 	if(!strcmp(t, "desc"))
@@ -148,13 +159,13 @@ xslt_config_cb(const char *key, const char *value, void *data)
 			mime->desc = strdup(value);
 			if(!mime->desc)
 			{
-				twine_logf(LOG_CRIT, "XSLT: failed to allocate string for MIME type description for '%s'\n", mimebuf);
+				twine_logf(LOG_CRIT, TWINE_PLUGIN_NAME ": failed to allocate string for MIME type description for '%s'\n", mimebuf);
 				return -1;
 			}
 		}
 		else
 		{
-			twine_logf(LOG_WARNING, "XSLT: description of '%s' specified more than once; only the first will take effect\n", mimebuf);
+			twine_logf(LOG_WARNING, TWINE_PLUGIN_NAME ": description of '%s' specified more than once; only the first will take effect\n", mimebuf);
 		}
 	}
 	else if(!strcmp(t, "xslt"))
@@ -164,13 +175,13 @@ xslt_config_cb(const char *key, const char *value, void *data)
 			mime->path = strdup(value);
 			if(!mime->path)
 			{
-				twine_logf(LOG_CRIT, "XSLT: failed to allocate string for XSLT stylesheet path for '%s'\n", mimebuf);
+				twine_logf(LOG_CRIT, TWINE_PLUGIN_NAME ": failed to allocate string for XSLT stylesheet path for '%s'\n", mimebuf);
 				return -1;
 			}
 		}
 		else
 		{
-			twine_logf(LOG_WARNING, "XSLT: XSLT stylesheet path for '%s' specified more than once; only the first will take effect\n", mimebuf);
+			twine_logf(LOG_WARNING, TWINE_PLUGIN_NAME ": XSLT stylesheet path for '%s' specified more than once; only the first will take effect\n", mimebuf);
 		}
 	}
 	else if(!strcmp(t, "graph-uri"))
@@ -180,18 +191,18 @@ xslt_config_cb(const char *key, const char *value, void *data)
 			mime->xpath = strdup(value);
 			if(!mime->xpath)
 			{
-				twine_logf(LOG_CRIT, "XSLT: failed to allocate string for graph URI XPath expression for '%s'\n", mimebuf);
+				twine_logf(LOG_CRIT, TWINE_PLUGIN_NAME ": failed to allocate string for graph URI XPath expression for '%s'\n", mimebuf);
 				return -1;
 			}
 		}
 		else
 		{
-			twine_logf(LOG_WARNING, "XSLT: graph URI XPath expression for '%s' specified more than once; only the first will take effect\n", mimebuf);
+			twine_logf(LOG_WARNING, TWINE_PLUGIN_NAME ": graph URI XPath expression for '%s' specified more than once; only the first will take effect\n", mimebuf);
 		}
 	}
 	else
 	{
-		twine_logf(LOG_WARNING, "XSLT: unrecognised key '%s' while processing configuration of '%s'\n", t, mimebuf);
+		twine_logf(LOG_WARNING, TWINE_PLUGIN_NAME ": unrecognised key '%s' while processing configuration of '%s'\n", t, mimebuf);
 	}
 	return 0;
 }
@@ -203,13 +214,13 @@ xslt_mime_add(const char *mimetype)
 	
 	if(strlen(mimetype) > XSLT_MIME_LEN)
 	{
-		twine_logf(LOG_ERR, "XSLT: cannot add MIME type '%s' because it is too long\n", mimetype);
+		twine_logf(LOG_ERR, TWINE_PLUGIN_NAME ": cannot add MIME type '%s' because it is too long\n", mimetype);
 		return -1;
 	}
 	p = (struct xslt_mime_struct *) calloc(1, sizeof(struct xslt_mime_struct));
 	if(!p)
 	{
-		twine_logf(LOG_CRIT, "XSLT: failed to allocate %u bytes for MIME type information\n", (unsigned) sizeof(struct xslt_mime_struct));
+		twine_logf(LOG_CRIT, TWINE_PLUGIN_NAME ": failed to allocate %u bytes for MIME type information\n", (unsigned) sizeof(struct xslt_mime_struct));
 		return -1;
 	}
 	strcpy(p->mimetype, mimetype);
@@ -222,7 +233,7 @@ xslt_mime_add(const char *mimetype)
 	{
 		first = last = p;
 	}
-	twine_logf(LOG_DEBUG, "XSLT: added MIME type '%s'\n", mimetype);
+	twine_logf(LOG_DEBUG, TWINE_PLUGIN_NAME ": added MIME type '%s'\n", mimetype);
 	return 0;
 }
 

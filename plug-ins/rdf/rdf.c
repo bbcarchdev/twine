@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014-2015 BBC
+ * Copyright (c) 2014-2016 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -26,16 +26,28 @@
 
 #include "libtwine.h"
 
+#define TWINE_PLUGIN_NAME               "rdf"
+
 static int process_rdf(const char *mime, const unsigned char *buf, size_t buflen, void *data);
 
 /* Twine plug-in entry-point */
 int
-twine_plugin_init(void)
+twine_entry(TWINE *context, TWINEENTRYTYPE type, void *handle)
 {
-	twine_logf(LOG_DEBUG, "rdf plug-in: initialising\n");
-	twine_plugin_register("application/trig", "RDF TriG", process_rdf, NULL);
-	twine_plugin_register("application/n-quads", "RDF N-Quads", process_rdf, NULL);
-	twine_plugin_register("text/x-nquads", "RDF N-Quads", process_rdf, NULL);
+	(void) context;
+	(void) handle;
+
+	switch(type)
+	{
+	case TWINE_ATTACHED:
+		twine_logf(LOG_DEBUG, TWINE_PLUGIN_NAME " plug-in: initialising\n");
+		twine_plugin_register("application/trig", "RDF TriG", process_rdf, NULL);
+		twine_plugin_register("application/n-quads", "RDF N-Quads", process_rdf, NULL);
+		twine_plugin_register("text/x-nquads", "RDF N-Quads", process_rdf, NULL);
+		break;
+	case TWINE_DETACHED:
+		break;
+	}
 	return 0;
 }
 

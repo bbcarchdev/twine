@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014-2015 BBC
+ * Copyright (c) 2014-2016 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -25,13 +25,6 @@
 
 static char *twine_config_key_alloc_(TWINE *restrict context, const char *restrict name);
 /* static int twine_config_defaults_(TWINE *restrict context); */
-
-/* Internal API: Return the path to the default configuration file used by Twine */
-const char *
-twine_config_path(void)
-{
-	return SYSCONFDIR "/twine.conf";
-}
 
 /* Public API: Retrieve a configuration key by copying its value into the
  * supplied buffer.
@@ -284,7 +277,7 @@ int
 twine_config_ready_(TWINE *context)
 {
 	/* Apply configuration defaults */
-	config_set_default("global:configFile", twine_config_path());
+	config_set_default("global:configFile", DEFAULT_CONFIG_PATH);
 	config_set_default("log:level", "notice");
 	if(context->appname)
 	{
@@ -301,7 +294,7 @@ twine_config_ready_(TWINE *context)
 		config_set_default("log:syslog", "0");
 		config_set_default("log:stderr", "1");
 	}
-	config_set_default(DEFAULT_CONFIG_SECTION "mq", twine_mq_default_uri());
+	config_set_default(DEFAULT_CONFIG_SECTION "mq", DEFAULT_MQ_URI);
 	config_load(NULL);
 	log_set_use_config(1);
 	return 0;	

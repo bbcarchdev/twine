@@ -40,10 +40,12 @@ void *
 twine_plugin_load(TWINE *restrict context, const char *restrict pathname)
 {
 	void *handle;
+	TWINEENTRYFN entry;
 	twine_plugin_init_fn fn;
 	char *fnbuf;
 	size_t len;
 	TWINE *prevtwine;
+	int r;
 
 	twine_logf(LOG_DEBUG, "loading plug-in %s\n", pathname);
 	if(strchr(pathname, '/'))
@@ -73,19 +75,33 @@ twine_plugin_load(TWINE *restrict context, const char *restrict pathname)
 		twine_ = prevtwine;
 		return NULL;
 	}
-	fn = (twine_plugin_init_fn) dlsym(handle, "twine_plugin_init");
-	if(!fn)
+	entry = (TWINEENTRYFN) dlsym(handle, "twine_entry");
+	fn = NULL;
+	if(!entry)
 	{
-		twine_logf(LOG_ERR, "%s is not a Twine plug-in\n", pathname);
-		dlclose(handle);
-		free(fnbuf);
-		twine_ = prevtwine;
-		errno = EINVAL;
-		return NULL;
+		fn = (twine_plugin_init_fn) dlsym(handle, "twine_plugin_init");
+		if(!fn)
+		{
+			twine_logf(LOG_ERR, "%s is not a Twine plug-in\n", pathname);
+			dlclose(handle);
+			free(fnbuf);
+			twine_ = prevtwine;
+			errno = EINVAL;
+			return NULL;
+		}
 	}
 	twine_logf(LOG_DEBUG, "invoking plug-in initialisation function for %s\n", pathname);
 	current = handle;
-	if(fn())
+	if(entry)
+	{
+		r = entry(context, TWINE_ATTACHED, handle);
+	}
+	else
+	{
+		twine_logf(LOG_WARNING, "plug-in '%s' uses deprecated APIs\n", pathname);
+		r = fn();
+	}
+	if(r)
 	{
 		twine_logf(LOG_ERR, "initialisation of plug-in %s failed\n", pathname);
 		current = NULL;
@@ -94,7 +110,7 @@ twine_plugin_load(TWINE *restrict context, const char *restrict pathname)
 		free(fnbuf);
 		return NULL;
 	}
-	twine_logf(LOG_INFO, "loaded plug-in %s\n", pathname);
+	twine_logf(LOG_DEBUG, "loaded plug-in %s\n", pathname);
 	free(fnbuf);
 	current = NULL;
 	twine_ = prevtwine;
@@ -108,13 +124,13 @@ int
 twine_plugin_unload(TWINE *restrict context, void *handle)
 {
 	size_t l;
+	TWINEENTRYFN entry;
 	twine_plugin_cleanup_fn fn;
+	void *prev;
 
 	/* We don't actually use the context, because there's a single shared
 	 * list of callbacks which we can iterate.
 	 */
-	(void) context;
-
 	l = 0;
 	while(l < cbcount)
 	{
@@ -150,13 +166,25 @@ twine_plugin_unload(TWINE *restrict context, void *handle)
 	}
 	if(handle)
 	{
-		fn = (twine_plugin_cleanup_fn) dlsym(handle, "twine_plugin_done");
-		if(fn)
+		entry = (TWINEENTRYFN) dlsym(handle, "twine_entry");
+		if(entry)
 		{
+			prev = current;
 			current = handle;
-			fn();
-			current = NULL;
-		}	   
+			entry(context, TWINE_DETACHED, handle);
+			current = prev;
+		}
+		else
+		{
+			fn = (twine_plugin_cleanup_fn) dlsym(handle, "twine_plugin_done");
+			if(fn)
+			{
+				prev = current;
+				current = handle;
+				fn();
+				current = prev;
+			}
+		}
 		dlclose(handle);
 	}
 	return 0;

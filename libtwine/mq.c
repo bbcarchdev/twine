@@ -23,8 +23,3 @@
 
 #include "p_libtwine.h"
 
-const char *
-twine_mq_default_uri(void)
-{
-	return DEFAULT_MQ_URI;
-}

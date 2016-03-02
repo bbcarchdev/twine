@@ -78,7 +78,7 @@ typedef enum
 	TWINE_DETACHED
 } TWINEENTRYTYPE;
 
-typedef int (*TWINEENTRY)(TWINE *context, TWINEENTRYTYPE type, void *handle);
+typedef int (*TWINEENTRYFN)(TWINE *context, TWINEENTRYTYPE type, void *handle);
 
 /* This function must be provided by plug-ins themselves - it is not an API
  * which can be invoked as part of libtwine
@@ -109,6 +109,18 @@ typedef int (*TWINEPROCESSORFN)(TWINE *restrict context, TWINEGRAPH *restrict gr
  * indexes, this can be used to trigger a re-build when required.
  */
 typedef int (*TWINEUPDATEFN)(TWINE *restrict context, const char *restrict name, const char *restrict identifier, void *userdata);
+
+/* Log events */
+void twine_logf(int prio, const char *fmt, ...);
+void twine_vlogf(int prio, const char *fmt, va_list ap);
+
+/* Obtain or set configuration settings */
+size_t twine_config_get(const char *key, const char *defval, char *buf, size_t bufsize);
+char *twine_config_geta(const char *key, const char *defval);
+int twine_config_get_int(const char *key, int defval);
+int twine_config_get_bool(const char *key, int defval);
+int twine_config_get_all(const char *section, const char *key, int (*fn)(const char *key, const char *value, void *data), void *data);
+int twine_config_set(const char *key, const char *value);
 
 /* The interface defined below is now considered legacy. It will continue to
  * be provided for binary compatibility, but plug-ins built from source must
@@ -183,18 +195,18 @@ typedef int (*twine_update_fn)(const char *name, const char *identifier, void *u
 /* Twine plug-in entry-point (this is not an API, but the signature for the function
  * provided by a plug-in)
  */
-int twine_plugin_init(void);
+int twine_plugin_init(void) DEPRECATED_;
 
 /* Twine plug-in clean-up entry-point (this is not an API, but the signature for the
  * function provided by a plug-in)
  */
-int twine_plugin_done(void);
+int twine_plugin_done(void) DEPRECATED_;
 
 /* Obtain the path to the Twine configuration file */
-const char *twine_config_path(void);
+const char *twine_config_path(void) DEPRECATED_;
 
 /* Obtain the default URI of the message broker */
-const char *twine_mq_default_uri(void);
+const char *twine_mq_default_uri(void) DEPRECATED_;
 
 /* Register a processor callback for a given MIME type */
 int twine_plugin_register(const char *mimetype, const char *description, twine_processor_fn fn, void *data);
@@ -295,18 +307,6 @@ int twine_sparql_put_stream(const char *uri, librdf_stream *stream);
 
 /* Replace a graph contained within a librdf model */
 int twine_sparql_put_model(const char *uri, librdf_model *model);
-
-/* Log an event */
-void twine_logf(int prio, const char *fmt, ...);
-void twine_vlogf(int prio, const char *fmt, va_list ap);
-
-/* Obtain configuration values */
-size_t twine_config_get(const char *key, const char *defval, char *buf, size_t bufsize);
-char *twine_config_geta(const char *key, const char *defval);
-int twine_config_get_int(const char *key, int defval);
-int twine_config_get_bool(const char *key, int defval);
-int twine_config_get_all(const char *section, const char *key, int (*fn)(const char *key, const char *value, void *data), void *data);
-int twine_config_set(const char *key, const char *value);
 
 # endif /*TWINE_USE_DEPRECATED_API*/
 

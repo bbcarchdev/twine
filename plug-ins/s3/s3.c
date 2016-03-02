@@ -3,7 +3,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014 BBC
+ * Copyright (c) 2014-2016 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@
 #include "liburi.h"
 #include "libawsclient.h"
 
-#define PLUGIN_NAME                     "S3"
+#define TWINE_PLUGIN_NAME               "s3"
 
 struct bucketinfo_struct
 {
@@ -58,10 +58,20 @@ static size_t maxbuckets = 8;
 
 /* Twine plug-in entry-point */
 int
-twine_plugin_init(void)
+twine_entry(TWINE *context, TWINEENTRYTYPE type, void *handle)
 {
-	twine_logf(LOG_DEBUG, PLUGIN_NAME " plug-in: initialising\n");
-	twine_plugin_register("application/x-s3-url", "S3 URL", process_s3, NULL);
+	(void) context;
+	(void) handle;
+	
+	switch(type)
+	{
+	case TWINE_ATTACHED:
+		twine_logf(LOG_DEBUG, TWINE_PLUGIN_NAME " plug-in: initialising\n");
+		twine_plugin_register("application/x-s3-url", "S3 URL", process_s3, NULL);
+		break;
+	case TWINE_DETACHED:
+		break;
+	}
 	return 0;
 }
 
@@ -93,18 +103,18 @@ static int process_s3(const char *mime, const unsigned char *buf, size_t buflen,
 	{
 		*t = 0;
 	}
-	twine_logf(LOG_DEBUG, PLUGIN_NAME ": URI is <%s>\n", str);
+	twine_logf(LOG_DEBUG, TWINE_PLUGIN_NAME ": URI is <%s>\n", str);
 	uri = uri_create_str(str, NULL);
 	if(!uri)
 	{
-		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to parse <%s>\n", str);
+		twine_logf(LOG_ERR, TWINE_PLUGIN_NAME ": failed to parse <%s>\n", str);
 		free(str);
 		return -1;
 	}
 	info = uri_info(uri);
 	if(!info->scheme || strcasecmp(info->scheme, "s3") || !info->host || !info->path)
 	{
-		twine_logf(LOG_ERR, PLUGIN_NAME ": <%s> is not a valid S3 URL\n", str);
+		twine_logf(LOG_ERR, TWINE_PLUGIN_NAME ": <%s> is not a valid S3 URL\n", str);
 		uri_info_destroy(info);
 		uri_destroy(uri);
 		free(str);
@@ -113,7 +123,7 @@ static int process_s3(const char *mime, const unsigned char *buf, size_t buflen,
 	bucket = get_bucket(info->host);
 	if(!bucket)
 	{
-		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to obtain bucket for <%s>\n", str);
+		twine_logf(LOG_ERR, TWINE_PLUGIN_NAME ": failed to obtain bucket for <%s>\n", str);
 		uri_info_destroy(info);
 		uri_destroy(uri);
 		free(str);
@@ -206,7 +216,7 @@ ingest_resource(AWSS3BUCKET *bucket, const char *resource)
 	curl_easy_setopt(ch, CURLOPT_VERBOSE, twine_config_get_bool("s3:verbose", 0));
 	if(aws_request_perform(req) || !info.buf)
 	{
-		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to request resource '%s'\n", resource);
+		twine_logf(LOG_ERR, TWINE_PLUGIN_NAME ": failed to request resource '%s'\n", resource);
 		free(info.buf);
 		aws_request_destroy(req);
 		return -1;
@@ -215,7 +225,7 @@ ingest_resource(AWSS3BUCKET *bucket, const char *resource)
 	curl_easy_getinfo(ch, CURLINFO_RESPONSE_CODE, &status);
 	if(status != 200)
 	{
-		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to request resource '%s' with status %ld\n", resource, status);
+		twine_logf(LOG_ERR, TWINE_PLUGIN_NAME ": failed to request resource '%s' with status %ld\n", resource, status);
 		free(info.buf);
 		aws_request_destroy(req);
 		return -1;
@@ -224,7 +234,7 @@ ingest_resource(AWSS3BUCKET *bucket, const char *resource)
 	curl_easy_getinfo(ch, CURLINFO_CONTENT_TYPE, &type);
 	if(!type)
 	{
-		twine_logf(LOG_ERR, PLUGIN_NAME ": failed to request resource '%s': no Content-Type in response\n", resource, status);
+		twine_logf(LOG_ERR, TWINE_PLUGIN_NAME ": failed to request resource '%s': no Content-Type in response\n", resource, status);
 		free(info.buf);
 		aws_request_destroy(req);
 		return -1;
@@ -249,7 +259,7 @@ ingest_write(char *ptr, size_t size, size_t nemb, void *userdata)
 		p = (char *) realloc(info->buf, info->size + size + 1);
 		if(!p)
 		{
-			twine_logf(LOG_CRIT, PLUGIN_NAME ": failed to reallocate buffer to %lu bytes\n", (unsigned long) (info->size + size + 1));
+			twine_logf(LOG_CRIT, TWINE_PLUGIN_NAME ": failed to reallocate buffer to %lu bytes\n", (unsigned long) (info->size + size + 1));
 			return 0;
 		}
 		info->buf = p;

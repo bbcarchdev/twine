@@ -22,3 +22,16 @@
 #endif
 
 #include "p_libtwine.h"
+
+const char *
+twine_config_path(void)
+{
+	return DEFAULT_CONFIG_PATH;
+}
+
+const char *
+twine_mq_default_uri(void)
+{
+	return DEFAULT_MQ_URI;
+}
+

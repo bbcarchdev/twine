@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014-2015 BBC
+ * Copyright (c) 2014-2016 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@
 
 #include "libtwine.h"
 
-#define PLUGIN_NAME                     "geonames"
+#define TWINE_PLUGIN_NAME               "geonames"
 
 static const unsigned char *bulk_geonames(const char *mime, const unsigned char *buf, size_t buflen, void *data);
 
@@ -52,10 +52,20 @@ strnchr(const char *src, int ch, size_t max)
 
 /* Twine plug-in entry-point */
 int
-twine_plugin_init(void)
+twine_entry(TWINE *context, TWINEENTRYTYPE type, void *handle)
 {
-	twine_logf(LOG_DEBUG, PLUGIN_NAME " plug-in: initialising\n");
-	twine_bulk_register("text/x-geonames-dump", "Geonames dump", bulk_geonames, NULL);
+	(void) context;
+	(void) handle;
+
+	switch(type)
+	{
+	case TWINE_ATTACHED:
+		twine_logf(LOG_DEBUG, TWINE_PLUGIN_NAME " plug-in: initialising\n");
+		twine_bulk_register("text/x-geonames-dump", "Geonames dump", bulk_geonames, NULL);
+		break;
+	case TWINE_DETACHED:
+		break;
+	}
 	return 0;
 }
 
@@ -114,7 +124,7 @@ bulk_geonames(const char *mime, const unsigned char *buf, size_t buflen, void *d
 			return NULL;
 		}
 		stream = librdf_model_as_stream(model);
-		twine_logf(LOG_INFO, PLUGIN_NAME ": importing <%s>\n", graph);
+		twine_logf(LOG_INFO, TWINE_PLUGIN_NAME ": importing <%s>\n", graph);
 		if(twine_sparql_put_stream(graph, stream))
 		{
 			twine_logf(LOG_ERR, "failed to update graph <%s>\n", graph);
