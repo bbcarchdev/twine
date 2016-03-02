@@ -128,7 +128,6 @@ struct twine_context_struct
 };
 
 extern TWINE *twine_;
-extern twine_log_fn twine_logger_;
 
 int twine_rdf_init_(TWINE *context);
 int twine_rdf_cleanup_(TWINE *context);

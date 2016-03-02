@@ -79,17 +79,6 @@ int twine_plugin_unload(TWINE *restrict context, void *handle);
 const char *twine_config_path(void);
 pid_t twine_daemonize(TWINE *context, const char *pidfile);
 
-/* Deprecated internal APIs */
-typedef TWINELOGFN twine_log_fn;
-
-int twine_init_(TWINELOGFN logger) DEPRECATED_;
-int twine_preflight_(void) DEPRECATED_;
-int twine_cleanup_(void) DEPRECATED_;
-int twine_config_init_(TWINECONFIGFNS *fns) DEPRECATED_;
-int twine_sparql_defaults_(const char *base_uri, const char *query_uri, const char *update_uri, const char *data_uri, int verbose) DEPRECATED_;
-int twine_plugin_load_(const char *pathname) DEPRECATED_;
-int twine_plugin_unregister_all_(void *handle) DEPRECATED_;
-
 END_DECLS_
 
 #endif /*!LIBTWINE_INTERNAL_H_*/
