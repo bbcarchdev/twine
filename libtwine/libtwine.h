@@ -24,6 +24,7 @@
 # include <librdf.h>
 # include <syslog.h>
 # include <libsparqlclient.h>
+# include <libcluster.h>
 
 # undef BEGIN_DECLS_
 # undef END_DECLS_
