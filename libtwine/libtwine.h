@@ -52,9 +52,84 @@
 #  define restrict
 # endif
 
+/* For the moment, this is always defined */
+# ifndef TWINE_USE_DEPRECATED_API
+#  define TWINE_USE_DEPRECATED_API      1
+# endif
+
 BEGIN_DECLS_
 
 typedef struct twine_context_struct TWINE;
+typedef struct twine_graph_struct TWINEGRAPH;
+
+/* Plug-in callbacks
+ *
+ * Functions of this type are invoked by Twine at different points in the
+ * processing flow. The order in which they're invoked (apart from the
+ * entry-point callback), is defined by the 'workflow' configuration
+ * option.
+ */
+
+/* Plug-in entry-point: invoked when a plug-in is loaded or un-loaded */
+
+typedef enum
+{
+	TWINE_ATTACHED,
+	TWINE_DETACHED
+} TWINEENTRYTYPE;
+
+typedef int (*TWINEENTRY)(TWINE *context, TWINEENTRYTYPE type, void *handle);
+
+/* This function must be provided by plug-ins themselves - it is not an API
+ * which can be invoked as part of libtwine
+ */
+
+int twine_entry(TWINE *restrict context, TWINEENTRYTYPE type, void *restrict handle);
+
+/* Input callbacks process messages of a particular type, and transform them
+ * into RDF, storing the result in a graph object.
+ */
+typedef int (*TWINEINPUTFN)(TWINE *restrict context, const char *restrict mimetype, const unsigned char *restrict data, size_t length, void *userdata);
+
+/* Bulk callbacks are invoked in preference to input callbacks when invoked
+ * via a bulk-import process (e.g., the Twine command-line utility) rather
+ * than upon receipt of a message.
+ */
+typedef int (*TWINEBULKFN)(TWINE *restrict context, const char *restrict mimetype, const unsigned char *restrict data, size_t length, void *userdata);
+
+/* Processing callbacks operate on a twine graph object and are responsible
+ * for any transformations which should be performed, as well as storing the
+ * data somewhere (such as a SPARQL-capable RDF store).
+ */
+typedef int (*TWINEPROCESSORFN)(TWINE *restrict context, TWINEGRAPH *restrict graph, void *userdata);
+
+/* Update callbacks are registered with a name (typically the module name),
+ * and are called with an identifier when invoked by the Twine command-line
+ * processing utility. For workflows which involve deriving data or generating
+ * indexes, this can be used to trigger a re-build when required.
+ */
+typedef int (*TWINEUPDATEFN)(TWINE *restrict context, const char *restrict name, const char *restrict identifier, void *userdata);
+
+/* The interface defined below is now considered legacy. It will continue to
+ * be provided for binary compatibility, but plug-ins built from source must
+ * define TWINE_USE_DEPRECATED_API in order for the definitions to be visible.
+ *
+ * Eventually, source-level compatibility will be removed.
+ */
+# ifdef TWINE_USE_DEPRECATED_API
+
+typedef struct twine_graph_struct twine_graph;
+
+struct twine_graph_struct
+{
+	/* The graph URI */
+	const char *uri;
+	void *reserved;
+	/* The new graph, possibly modified by processors */
+	librdf_model *store;
+	/* The old graph in the quad store, if available */
+	librdf_model *old;
+};
 
 /* A Twine processor callback
  *
@@ -78,19 +153,6 @@ typedef int (*twine_processor_fn)(const char *mimetype, const unsigned char *dat
 typedef const unsigned char *(*twine_bulk_fn)(const char *mimetype, const unsigned char *data, size_t length, void *userdata);
 
 /* Graph processing */
-
-typedef struct twine_graph_struct twine_graph;
-
-struct twine_graph_struct
-{
-	/* The graph URI */
-	const char *uri;
-	void *reserved;
-	/* The new graph, possibly modified by processors */
-	librdf_model *store;
-	/* The old graph in the quad store, if available */
-	librdf_model *old;
-};
 
 /* A Twine graph-processing callback */
 typedef int (*twine_graph_fn)(twine_graph *graph, void *userdata);
@@ -245,6 +307,8 @@ int twine_config_get_int(const char *key, int defval);
 int twine_config_get_bool(const char *key, int defval);
 int twine_config_get_all(const char *section, const char *key, int (*fn)(const char *key, const char *value, void *data), void *data);
 int twine_config_set(const char *key, const char *value);
+
+# endif /*TWINE_USE_DEPRECATED_API*/
 
 END_DECLS_
 
