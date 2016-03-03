@@ -81,21 +81,21 @@ process_rdf(const char *mime, const unsigned char *buf, size_t buflen, void *dat
 	if(twine_rdf_model_parse(model, mime, (const char *) buf, buflen))
 	{
 		twine_logf(LOG_ERR, "failed to parse string into model\n");
-		librdf_free_model(model);
+		twine_rdf_model_destroy(model);
 		return -1;
 	}
 	iter = librdf_model_get_contexts(model);
 	if(!iter)
 	{
 		twine_logf(LOG_ERR, "failed to retrieve contexts from model\n");
-		librdf_free_model(model);
+		twine_rdf_model_destroy(model);
 		return -1;
 	}
 	if(librdf_iterator_end(iter))
 	{
 		twine_logf(LOG_ERR, "model contains no named graphs\n");
 		librdf_free_iterator(iter);
-		librdf_free_model(model);
+		twine_rdf_model_destroy(model);
 		return -1;
 	}
 	while(!librdf_iterator_end(iter))
@@ -122,7 +122,7 @@ process_rdf(const char *mime, const unsigned char *buf, size_t buflen, void *dat
 	}
 
 	librdf_free_iterator(iter);
-	librdf_free_model(model);
+	twine_rdf_model_destroy(model);
 
 	return r;
 }
