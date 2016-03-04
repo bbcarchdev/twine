@@ -29,6 +29,7 @@
 #define TWINE_PLUGIN_NAME               "rdf"
 
 static int process_rdf(TWINE *restrict context, const char *restrict mime, const unsigned char *restrict buf, size_t buflen, const char *restrict subject, void *data);
+static int dump_nquads(TWINE *restrict context, TWINEGRAPH *restrict graph, void *data);
 
 /* Twine plug-in entry-point */
 int
@@ -43,6 +44,7 @@ twine_entry(TWINE *context, TWINEENTRYTYPE type, void *handle)
 		twine_plugin_add_input(context, "application/trig", "RDF TriG", process_rdf, NULL);
 		twine_plugin_add_input(context, "application/n-quads", "RDF N-Quads", process_rdf, NULL);
 		twine_plugin_add_input(context, "text/x-nquads", "RDF N-Quads", process_rdf, NULL);
+		twine_plugin_add_processor(context, "dump-nquads", dump_nquads, NULL);
 		break;
 	case TWINE_DETACHED:
 		break;
@@ -128,3 +130,26 @@ process_rdf(TWINE *restrict context, const char *restrict mime, const unsigned c
 	return r;
 }
 
+/* Graph processor which simply outputs the contents of the graph as N-Quads,
+ * for debugging or conversion purposes. The serialised quads are written to
+ * standard output.
+ */
+static int
+dump_nquads(TWINE *restrict context, TWINEGRAPH *restrict graph, void *data)
+{
+	char *quads;
+	size_t quadlen;
+	
+	(void) context;
+	(void) data;
+
+	quads = twine_rdf_model_nquads(twine_graph_model(graph), &quadlen);
+	if(!quads)
+	{
+		twine_logf(LOG_ERR, TWINE_PLUGIN_NAME ": failed to generate N-Quads for <%s>\n", twine_graph_uri(graph));
+		return -1;
+	}
+	fwrite(quads, quadlen, 1, stdout);
+	librdf_free_memory(quads);
+	return 0;
+}
