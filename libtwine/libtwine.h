@@ -164,7 +164,9 @@ int twine_rdf_model_destroy(librdf_model *model);
 
 /* Parse a buffer into a librdf model */
 int twine_rdf_model_parse(librdf_model *model, const char *mime, const char *buf, size_t buflen);
+int twine_rdf_model_parse_graph(librdf_model *model, const char *mime, const char *buf, size_t buflen, librdf_node *graph);
 int twine_rdf_model_parse_base(librdf_model *model, const char *mime, const char *buf, size_t buflen, librdf_uri *uri);
+int twine_rdf_model_parse_base_graph(librdf_model *model, const char *mime, const char *buf, size_t buflen, librdf_uri *base, librdf_node *graph);
 
 /* Add a statement to a model if it doesn't exist */
 int twine_rdf_model_add_st(librdf_model *model, librdf_statement *statement, librdf_node *ctx);

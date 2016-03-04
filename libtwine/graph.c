@@ -53,17 +53,28 @@ TWINEGRAPH *
 twine_graph_create_rdf(TWINE *restrict context, const char *restrict uri, const unsigned char *restrict buf, size_t buflen, const char *restrict type)
 {
 	TWINEGRAPH *p;
+	librdf_node *node;
 
 	p = twine_graph_create(context, uri);
 	if(!p)
 	{
 		return NULL;
 	}
-	if(twine_rdf_model_parse(p->store, type, (const char *) buf, buflen))
+	if(uri)
+	{
+		node = twine_rdf_node_createuri(uri);
+	}
+	else
+	{
+		node = NULL;
+	}
+	if(twine_rdf_model_parse_graph(p->store, type, (const char *) buf, buflen, node))
 	{
 		twine_graph_destroy(p);
+		twine_rdf_node_destroy(node);
 		return NULL;
 	}
+	twine_rdf_node_destroy(node);
 	return p;
 }
 

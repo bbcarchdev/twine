@@ -133,9 +133,33 @@ twine_rdf_model_destroy(librdf_model *model)
 int
 twine_rdf_model_parse_base(librdf_model *model, const char *mime, const char *buf, size_t buflen, librdf_uri *base)
 {
+	return twine_rdf_model_parse_base_graph(model, mime, buf, buflen, base, NULL);
+}
+
+/* Parse a buffer of a particular MIME type into a model, specifying a base
+ * URI for resolution and an optional default graph node
+ */
+int
+twine_rdf_model_parse_base_graph(librdf_model *model, const char *mime, const char *buf, size_t buflen, librdf_uri *base, librdf_node *graph)
+{
 	const char *name, *t;
-	librdf_parser *parser;
+	librdf_parser *parser;	
 	int r, sl;
+	librdf_model *pmodel;
+	librdf_stream *stream;
+	librdf_node *ctx;
+
+	if(graph)
+	{
+		/* If a graph has been specified, create a model just for parsing
+		 * the buffer into
+		 */
+		pmodel = twine_rdf_model_create();
+	}
+	else
+	{
+		pmodel = NULL;
+	}
 
 	t = strchr(mime, ';');
 	if(t)
@@ -183,12 +207,39 @@ twine_rdf_model_parse_base(librdf_model *model, const char *mime, const char *bu
 			name = "auto";
 		}
 		twine_logf(LOG_ERR, "failed to create a new parser for %s (%s)\n", mime, name);
+		if(pmodel)
+		{
+			twine_rdf_model_destroy(pmodel);
+		}
 		return -1;
 	}
-	r = librdf_parser_parse_counted_string_into_model(parser, (const unsigned char *) buf, buflen, base, model);
+	r = librdf_parser_parse_counted_string_into_model(parser, (const unsigned char *) buf, buflen, base, pmodel ? pmodel : model);
 	if(r)
 	{
 		twine_logf(LOG_DEBUG, "failed to parse buffer of %u bytes as %s\n", (unsigned int) buflen, mime ? mime : name);
+	}
+	else if(pmodel)
+	{
+		/* r = 0 and pmodel is not NULL; we have successfully parsed the
+		 * buffer into pmodel and must now add the statements to the
+		 * supplied model
+		 */
+		for(stream = librdf_model_as_stream(pmodel);
+			!librdf_stream_end(stream);
+			librdf_stream_next(stream))
+		{
+			ctx = librdf_stream_get_context2(stream);
+			if(!ctx)
+			{
+				ctx = graph;
+			}
+			librdf_model_context_add_statement(model, ctx, librdf_stream_get_object(stream));
+		}
+		librdf_free_stream(stream);
+	}
+	if(pmodel)
+	{
+		twine_rdf_model_destroy(pmodel);
 	}
 	librdf_free_parser(parser);
 	return r;	
@@ -209,7 +260,25 @@ twine_rdf_model_parse(librdf_model *model, const char *mime, const char *buf, si
 			return -1;
 		}
 	}
-	return twine_rdf_model_parse_base(model, mime, buf, buflen, base);
+	return twine_rdf_model_parse_base_graph(model, mime, buf, buflen, base, NULL);
+}
+
+/* Parse a buffer of a particular MIME type into a model */
+int
+twine_rdf_model_parse_graph(librdf_model *model, const char *mime, const char *buf, size_t buflen, librdf_node *graph)
+{	
+	static librdf_uri *base;
+	
+	if(!base)
+	{
+		base = librdf_new_uri(twine_->world, (const unsigned char *) "/");
+		if(!base)
+		{
+			twine_logf(LOG_CRIT, "failed to parse URI </>\n");
+			return -1;
+		}
+	}
+	return twine_rdf_model_parse_base_graph(model, mime, buf, buflen, base, graph);
 }
 
 /* Add a statement to a model, provided it doesn't already exist */
