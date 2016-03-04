@@ -47,10 +47,10 @@ struct ingestinfo_struct
 	size_t size;
 };
 
-static int process_s3(const char *mime, const unsigned char *buf, size_t buflen, void *data);
+static int process_s3(TWINE *restrict context, const char *restrict mime, const unsigned char *restrict buf, size_t buflen, const char *restrict subject, void *data);
 static AWSS3BUCKET *get_bucket(const char *name);
 static AWSS3BUCKET *add_bucket(struct bucketinfo_struct *info, const char *name);
-static int ingest_resource(AWSS3BUCKET *bucket, const char *resource);
+static int ingest_resource(TWINE *restrict context, AWSS3BUCKET *restrict bucket, const char *restrict resource);
 static size_t ingest_write(char *ptr, size_t size, size_t nemb, void *userdata);
 
 static struct bucketinfo_struct bucketinfo[8];
@@ -60,14 +60,13 @@ static size_t maxbuckets = 8;
 int
 twine_entry(TWINE *context, TWINEENTRYTYPE type, void *handle)
 {
-	(void) context;
 	(void) handle;
 	
 	switch(type)
 	{
 	case TWINE_ATTACHED:
 		twine_logf(LOG_DEBUG, TWINE_PLUGIN_NAME " plug-in: initialising\n");
-		twine_plugin_register("application/x-s3-url", "S3 URL", process_s3, NULL);
+		twine_plugin_add_input(context, "application/x-s3-url", "S3 URL", process_s3, NULL);
 		break;
 	case TWINE_DETACHED:
 		break;
@@ -75,7 +74,8 @@ twine_entry(TWINE *context, TWINEENTRYTYPE type, void *handle)
 	return 0;
 }
 
-static int process_s3(const char *mime, const unsigned char *buf, size_t buflen, void *data)
+static int
+process_s3(TWINE *restrict context, const char *restrict mime, const unsigned char *restrict buf, size_t buflen, const char *restrict subject, void *data)
 {
 	char *str, *t;
 	URI *uri;
@@ -84,6 +84,7 @@ static int process_s3(const char *mime, const unsigned char *buf, size_t buflen,
 	int r;
 
 	(void) mime;
+	(void) subject;
 	(void) data;
 
 	/* Impose a hard limit on URL lengths */
@@ -129,7 +130,7 @@ static int process_s3(const char *mime, const unsigned char *buf, size_t buflen,
 		free(str);
 		return -1;
 	}
-	r = ingest_resource(bucket, info->path);
+	r = ingest_resource(context, bucket, info->path);
 	uri_info_destroy(info);
 	uri_destroy(uri);
 	free(str);
@@ -199,7 +200,7 @@ add_bucket(struct bucketinfo_struct *info, const char *name)
 }
 
 static int
-ingest_resource(AWSS3BUCKET *bucket, const char *resource)
+ingest_resource(TWINE *restrict context, AWSS3BUCKET *restrict bucket, const char *restrict resource)
 {
 	AWSREQUEST *req;
 	CURL *ch;
@@ -239,7 +240,7 @@ ingest_resource(AWSS3BUCKET *bucket, const char *resource)
 		aws_request_destroy(req);
 		return -1;
 	}
-	r = twine_plugin_process(type, (const unsigned char *) info.buf, info.pos, NULL);
+	r = twine_workflow_process_message(context, type, (const unsigned char *) info.buf, info.pos, NULL);
 	free(info.buf);
 	aws_request_destroy(req);
 	return r;

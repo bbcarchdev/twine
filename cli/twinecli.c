@@ -63,7 +63,7 @@ main(int argc, char **argv)
 	{
 		if(cache_update_name)
 		{
-			r = twine_update(cache_update_name, cache_update_ident);
+			r = twine_workflow_process_update(twine, cache_update_name, cache_update_ident);
 		}
 		else
 		{
@@ -332,16 +332,16 @@ twinecli_import(const char *type, const char *filename)
 	{
 		f = stdin;
 	}
-	if(twine_bulk_supported(type))
+	if(twine_plugin_bulk_exists(twine, type))
 	{
-		r = twine_bulk_import(type, f);
+		r = twine_workflow_process_file(twine, type, f);
 		if(filename)
 		{
 			fclose(f);
 		}
 		return (r ? -1 : 0);
 	}
-	if(!twine_plugin_supported(type))
+	if(!twine_plugin_input_exists(twine, type))
 	{
 		twine_logf(LOG_CRIT, "no registered plug-in supports the MIME type '%s'\n", type);
 		if(filename)
@@ -393,7 +393,7 @@ twinecli_import(const char *type, const char *filename)
 		buflen += r;
 		buffer[buflen] = 0;
 	}
-	r = twine_plugin_process(type, buffer, buflen, NULL);
+	r = twine_workflow_process_message(twine, type, buffer, buflen, NULL);
 	if(r)
 	{
 		twine_logf(LOG_CRIT, "failed to process input as '%s'\n", type);

@@ -27,13 +27,194 @@
 #define POSTPROC_BLOCKSIZE              4
 #define PLUGINDIR                       LIBDIR "/" PACKAGE_TARNAME "/"
 
-static void *current;
-
-static struct twine_callback_struct *callbacks;
-static size_t cbcount, cbsize;
-
-static struct twine_callback_struct *twine_plugin_callback_add_(TWINE *context, void *data);
 static int twine_plugin_config_cb_(const char *key, const char *value, void *data);
+
+/* Public: register an input handler for a particular MIME type */
+int
+twine_plugin_add_input(TWINE *context, const char *mimetype, const char *description, TWINEINPUTFN fn, void *userdata)
+{
+	struct twine_callback_struct *p;
+
+	p = twine_plugin_callback_add_(context, userdata);
+	if(!p)
+	{
+		return -1;
+	}
+	p->m.input.type = strdup(mimetype);
+	p->m.input.desc = strdup(description);
+	if(!p->m.input.type || !p->m.input.desc)
+	{
+		free(p->m.input.type);
+		free(p->m.input.desc);
+		twine_logf(LOG_CRIT, "failed to allocate memory to register input handler for type '%s'\n", mimetype);
+		return -1;
+	}
+	p->m.input.fn = fn;
+	p->type = TCB_INPUT;
+	twine_logf(LOG_INFO, "registered input handler for type: '%s' (%s)\n", mimetype, description);
+	return 0;
+}
+
+/* Public: determine whether an input handler for a MIME type has been
+ * registered
+ */
+int
+twine_plugin_input_exists(TWINE *restrict context, const char *mimetype)
+{
+	size_t l;
+
+	for(l = 0; l < context->cbcount; l++)
+	{
+		if(context->callbacks[l].type == TCB_INPUT &&
+		   !strcasecmp(context->callbacks[l].m.input.type, mimetype))
+		{
+			return 1;
+		}
+		if(context->callbacks[l].type == TCB_LEGACY_MIME &&
+		   !strcasecmp(context->callbacks[l].m.legacy_mime.type, mimetype))
+		{
+			return 1;
+		}
+	}
+	return 0;	
+}
+
+/* Public: register a bulk input handler for a particular MIME type */
+int twine_plugin_add_bulk(TWINE *restrict context, const char *restrict mimetype, const char *restrict description, TWINEBULKFN fn, void *userdata)
+{
+	struct twine_callback_struct *p;
+
+	p = twine_plugin_callback_add_(context, userdata);
+	if(!p)
+	{
+		return -1;
+	}
+	p->m.bulk.type = strdup(mimetype);
+	p->m.bulk.desc = strdup(description);
+	if(!p->m.bulk.type || !p->m.bulk.desc)
+	{
+		free(p->m.bulk.type);
+		free(p->m.bulk.desc);
+		twine_logf(LOG_CRIT, "failed to allocate memory to register bulk handler for type '%s'\n", mimetype);
+		return -1;
+	}
+	p->m.bulk.fn = fn;
+	p->type = TCB_BULK;
+	twine_logf(LOG_INFO, "registered bulk handler for type: '%s' (%s)\n", mimetype, description);
+	return 0;
+}
+
+/* Public: determine whether a bulk input handler for a particular MIME type
+ * has been registered
+ */
+int
+twine_plugin_bulk_exists(TWINE *restrict context, const char *mimetype)
+{
+	size_t l;
+
+	for(l = 0; l < context->cbcount; l++)
+	{
+		if(context->callbacks[l].type == TCB_BULK &&
+		   !strcasecmp(context->callbacks[l].m.bulk.type, mimetype))
+		{
+			return 1;
+		}
+		if(context->callbacks[l].type == TCB_LEGACY_BULK &&
+		   !strcasecmp(context->callbacks[l].m.legacy_bulk.type, mimetype))
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
+/* Public: register a graph processor */
+int
+twine_plugin_add_processor(TWINE *context, const char *name, TWINEPROCESSORFN fn, void *userdata)
+{
+	struct twine_callback_struct *p;
+
+	p = twine_plugin_callback_add_(context, userdata);
+	if(!p)
+	{
+		return -1;
+	}
+	p->m.processor.name = strdup(name);
+	if(!p->m.processor.name)
+	{
+		twine_logf(LOG_CRIT, "failed to allocate memory to register graph processor '%s'\n", name);
+		return -1;
+	}
+	p->m.processor.fn = fn;
+	p->type = TCB_PROCESSOR;
+	twine_logf(LOG_INFO, "registered graph processor: '%s'\n", name);
+	return 0;
+}
+
+/* Public: determine whether a particular named graph processor has been
+ * registered
+ */
+int
+twine_plugin_processor_exists(TWINE *restrict context, const char *restrict name)
+{
+	size_t l;
+
+	for(l = 0; l < context->cbcount; l++)
+	{
+		if(context->callbacks[l].type == TCB_PROCESSOR &&
+		   !strcasecmp(context->callbacks[l].m.processor.name, name))
+		{
+			return 1;
+		}
+		if(context->callbacks[l].type == TCB_LEGACY_GRAPH &&
+		   !strcasecmp(context->callbacks[l].m.legacy_graph.name, name))
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
+/* Public: register an update handler */
+int twine_plugin_add_update(TWINE *restrict context, const char *restrict name, TWINEUPDATEFN fn, void *userdata)
+{
+	struct twine_callback_struct *p;
+
+	p = twine_plugin_callback_add_(context, userdata);
+	if(!p)
+	{
+		return -1;
+	}
+	p->m.update.name = strdup(name);
+	if(!p->m.update.name)
+	{
+		twine_logf(LOG_CRIT, "failed to allocate memory to register update handler '%s'\n", name);
+		return -1;
+	}
+	p->m.update.fn = fn;
+	p->type = TCB_UPDATE;
+	twine_logf(LOG_INFO, "registered update handler: '%s'\n", name);
+	return 0;	
+}
+
+/* Public: determine whether a particular named update handler has been
+ * registered
+ */
+int
+twine_plugin_update_exists(TWINE *restrict context, const char *restrict name)
+{
+	size_t l;
+
+	for(l = 0; l < context->cbcount; l++)
+	{
+		if(context->callbacks[l].type == TCB_LEGACY_UPDATE &&
+		   !strcasecmp(context->callbacks[l].m.legacy_update.name, name))
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
 
 /* Internal API: load a plug-in and invoke its initialiser callback */
 void *
@@ -90,8 +271,7 @@ twine_plugin_load(TWINE *restrict context, const char *restrict pathname)
 			return NULL;
 		}
 	}
-	twine_logf(LOG_DEBUG, "invoking plug-in initialisation function for %s\n", pathname);
-	current = handle;
+	context->plugin_current = handle;
 	if(entry)
 	{
 		r = entry(context, TWINE_ATTACHED, handle);
@@ -104,7 +284,7 @@ twine_plugin_load(TWINE *restrict context, const char *restrict pathname)
 	if(r)
 	{
 		twine_logf(LOG_ERR, "initialisation of plug-in %s failed\n", pathname);
-		current = NULL;
+		context->plugin_current = NULL;
 		twine_ = prevtwine;
 		twine_plugin_unload(context, handle);		
 		free(fnbuf);
@@ -112,7 +292,7 @@ twine_plugin_load(TWINE *restrict context, const char *restrict pathname)
 	}
 	twine_logf(LOG_DEBUG, "loaded plug-in %s\n", pathname);
 	free(fnbuf);
-	current = NULL;
+	context->plugin_current = NULL;
 	twine_ = prevtwine;
 	return handle;
 }
@@ -128,68 +308,77 @@ twine_plugin_unload(TWINE *restrict context, void *handle)
 	twine_plugin_cleanup_fn fn;
 	void *prev;
 
-	/* We don't actually use the context, because there's a single shared
-	 * list of callbacks which we can iterate.
-	 */
 	l = 0;
-	while(l < cbcount)
+	while(l < context->cbcount)
 	{
-		if(callbacks[l].module != handle)
+		if(context->callbacks[l].module != handle)
 		{
 			l++;
 			continue;
 		}
-		switch(callbacks[l].type)
+		switch(context->callbacks[l].type)
 		{
 		case TCB_NONE:
 			break;
-		case TCB_MIME:
-			free(callbacks[l].m.mime.type);
-			free(callbacks[l].m.mime.desc);
+		case TCB_INPUT:
+			free(context->callbacks[l].m.input.type);
+			free(context->callbacks[l].m.input.desc);
 			break;
 		case TCB_BULK:
-			free(callbacks[l].m.bulk.type);
-			free(callbacks[l].m.bulk.desc);
+			free(context->callbacks[l].m.bulk.type);
+			free(context->callbacks[l].m.bulk.desc);
 			break;
 		case TCB_UPDATE:
-			free(callbacks[l].m.update.name);
 			break;
-		case TCB_GRAPH:
-			free(callbacks[l].m.graph.name);
+		case TCB_PROCESSOR:
+			free(context->callbacks[l].m.processor.name);
+			break;
+		case TCB_LEGACY_MIME:
+			free(context->callbacks[l].m.legacy_mime.type);
+			free(context->callbacks[l].m.legacy_mime.desc);
+			break;
+		case TCB_LEGACY_BULK:
+			free(context->callbacks[l].m.legacy_bulk.type);
+			free(context->callbacks[l].m.legacy_bulk.desc);
+			break;
+		case TCB_LEGACY_UPDATE:
+			free(context->callbacks[l].m.legacy_update.name);
+			break;
+		case TCB_LEGACY_GRAPH:
+			free(context->callbacks[l].m.legacy_graph.name);
 			break;
 		}
-		if(l + 1 < cbcount)
+		if(l + 1 < context->cbcount)
 		{
-			memmove(&(callbacks[l]), &(callbacks[l + 1]), sizeof(struct twine_callback_struct) * (cbcount - l - 1));
+			memmove(&(context->callbacks[l]), &(context->callbacks[l + 1]), sizeof(struct twine_callback_struct) * (context->cbcount - l - 1));
 		}
-		cbcount--;
+		context->cbcount--;
 	}
 	if(handle)
 	{
 		entry = (TWINEENTRYFN) dlsym(handle, "twine_entry");
 		if(entry)
 		{
-			prev = current;
-			current = handle;
+			prev = context->plugin_current;
+			context->plugin_current = handle;
 			entry(context, TWINE_DETACHED, handle);
-			current = prev;
+			context->plugin_current = prev;
 		}
 		else
 		{
 			fn = (twine_plugin_cleanup_fn) dlsym(handle, "twine_plugin_done");
 			if(fn)
 			{
-				prev = current;
-				current = handle;
+				prev = context->plugin_current;
+				context->plugin_current = handle;
 				fn();
-				current = prev;
+				context->plugin_current = prev;
 			}
 		}
 		dlclose(handle);
 	}
 	return 0;
 }
-
 
 /* Private: temporarily enable or disable internal registration of plug-ins */
 int
@@ -207,28 +396,23 @@ twine_plugin_unload_all_(TWINE *context)
 	size_t c, n;
 
 	n = 0;
-	for(c = 0; c < cbcount;)
+	for(c = 0; c < context->cbcount;)
 	{
-		if(callbacks[0].context != context)
-		{
-			c++;
-			continue;
-		}
 		n++;
-		handle = callbacks[c].module;
+		handle = context->callbacks[c].module;
 		twine_plugin_unload(context, handle);
-		if(c < cbcount && callbacks[c].module == handle)
+		if(c < context->cbcount && context->callbacks[c].module == handle)
 		{
-			twine_logf(LOG_ERR, "failed to unregister callbacks for handle 0x%08x; aborting clean-up\n", (unsigned long) handle);
+			twine_logf(LOG_ERR, "failed to unregister context->callbacks for handle 0x%08x; aborting clean-up\n", (unsigned long) handle);
 			return -1;
 		}
 	}
-	if(!cbcount)
+	if(!context->cbcount)
 	{		
-		free(callbacks);
-		callbacks = NULL;
-		cbcount = 0;
-		cbsize = 0;
+		free(context->callbacks);
+		context->callbacks = NULL;
+		context->cbcount = 0;
+		context->cbsize = 0;
 	} 
 	if(context->plugins_enabled || n)
 	{
@@ -237,560 +421,33 @@ twine_plugin_unload_all_(TWINE *context)
 	return 0;
 }
 
-/* Public: register a MIME type */
-int
-twine_plugin_register(const char *mimetype, const char *description, twine_processor_fn fn, void *data)
-{
-	struct twine_callback_struct *p;
-
-	if(!twine_)
-	{
-		return -1;
-	}
-	p = twine_plugin_callback_add_(twine_, data);
-	if(!p)
-	{
-		return -1;
-	}
-	p->m.mime.type = strdup(mimetype);
-	p->m.mime.desc = strdup(description);
-	if(!p->m.mime.type || !p->m.mime.desc)
-	{
-		free(p->m.mime.type);
-		free(p->m.mime.desc);
-		twine_logf(LOG_CRIT, "failed to allocate memory to register MIME type '%s'\n", mimetype);
-		return -1;
-	}
-	p->m.mime.fn = fn;
-	p->type = TCB_MIME;
-	twine_logf(LOG_INFO, "registered MIME type: '%s' (%s)\n", mimetype, description);
-	return 0;
-}
-
-/* Public: register a bulk processor for a MIME type */
-int
-twine_bulk_register(const char *mimetype, const char *description, twine_bulk_fn fn, void *data)
-{
-	struct twine_callback_struct *p;
-
-	if(!twine_)
-	{
-		return -1;
-	}
-	p = twine_plugin_callback_add_(twine_, data);
-	if(!p)
-	{
-		return -1;
-	}
-	p->m.bulk.type = strdup(mimetype);
-	p->m.bulk.desc = strdup(description);
-	if(!p->m.bulk.type || !p->m.bulk.desc)
-	{
-		p->type = TCB_NONE;
-		free(p->m.bulk.type);
-		free(p->m.bulk.desc);
-		twine_logf(LOG_CRIT, "failed to allocate memory to register MIME type '%s'\n", mimetype);
-		return -1;
-	}
-	p->m.bulk.fn = fn;
-	p->type = TCB_BULK;
-	twine_logf(LOG_INFO, "registered bulk processor for MIME type: '%s' (%s)\n", mimetype, description);
-	return 0;
-}
-
-/* Public: Register a graph processing handler */
-int
-twine_graph_register(const char *name, twine_graph_fn fn, void *data)
-{
-	struct twine_callback_struct *g;
-
-	if(!twine_)
-	{
-		return -1;
-	}
-	g = twine_plugin_callback_add_(twine_, data);
-	if(!g)
-	{
-		return -1;
-	}
-	g->m.graph.name = strdup(name);
-	if(!g->m.graph.name)
-	{
-		twine_logf(LOG_CRIT, "failed to allocate memory to register graph processor\n");
-		return -1;
-	}
-	g->m.graph.fn = fn;
-	g->type = TCB_GRAPH;
-	twine_logf(LOG_INFO, "registered graph processor: '%s'\n", name);
-	return 0;
-}
-
-/* Deprecated: register a post-processing handler */
-int
-twine_postproc_register(const char *name, twine_postproc_fn fn, void *data)
-{
-	struct twine_callback_struct *g;
-
-	if(!twine_)
-	{
-		return -1;
-	}
-	g = twine_plugin_callback_add_(twine_, data);
-	if(!g)
-	{
-		return -1;
-	}
-	g->m.graph.name = (char *) calloc(1, strlen(name) + 6);
-	if(!g->m.graph.name)
-	{
-		twine_logf(LOG_CRIT, "failed to allocate memory to register post-processor\n");
-		return -1;
-	}
-	strcpy(g->m.graph.name, "post:");
-	strcpy(&(g->m.graph.name[5]), name);
-	g->m.graph.fn = fn;
-	g->type = TCB_GRAPH;
-
-	twine_logf(LOG_INFO, "registered graph processor: 'post:%s'\n", name);
-	return 0;
-}
-
-/* Deprecated: register a pre-processing handler */
-int
-twine_preproc_register(const char *name, twine_preproc_fn fn, void *data)
-{
-	struct twine_callback_struct *g;
-
-	if(!twine_)
-	{
-		return -1;
-	}
-	g = twine_plugin_callback_add_(twine_, data);
-	if(!g)
-	{
-		return -1;
-	}
-	g->m.graph.name = (char *) calloc(1, strlen(name) + 5);
-	if(!g->m.graph.name)
-	{
-		twine_logf(LOG_CRIT, "failed to allocate memory to register pre-processor\n");
-		return -1;
-	}
-	strcpy(g->m.graph.name, "pre:");
-	strcpy(&(g->m.graph.name[4]), name);
-	g->m.graph.fn = fn;
-	g->type = TCB_GRAPH;
-
-	twine_logf(LOG_INFO, "registered graph processor: 'pre:%s'\n", name);
-	return 0;
-}
-
-/* Public: Register an update handler */
-int
-twine_update_register(const char *name, twine_update_fn fn, void *data)
-{
-	struct twine_callback_struct *p;
-
-	if(!twine_)
-	{
-		return -1;
-	}
-	p = twine_plugin_callback_add_(twine_, data);
-	if(!p)
-	{
-		return -1;
-	}
-	p->m.update.name = strdup(name);
-	if(!p->m.update.name)
-	{
-		twine_logf(LOG_CRIT, "failed to allocate memory to register update handler\n");
-		return -1;
-	}
-	p->m.update.fn = fn;
-	p->type = TCB_UPDATE;
-	twine_logf(LOG_INFO, "registered update handler: '%s'\n", name);
-	return 0;
-}
-
-/* Public: Forward a message to a plug-in for processing */
-int
-twine_plugin_process(const char *mimetype, const unsigned char *message, size_t msglen, const char *subject)
-{
-	size_t l, tl;
-	const char *s;
-	void *prev;
-	int r;
-
-	(void) subject;
-	
-	s = strchr(mimetype, ';');
-	if(s)
-	{
-		tl = s - mimetype;
-	}
-	else
-	{
-		tl = strlen(mimetype);
-	}
-	prev = current;
-	for(l = 0; l < cbcount; l++)
-	{
-		if(callbacks[l].type != TCB_MIME)
-		{
-			continue;
-		}
-		twine_logf(LOG_DEBUG, "found MIME processor for '%s'\n", callbacks[l].m.mime.type);
-		if(!strncasecmp(callbacks[l].m.mime.type, mimetype, tl) && !callbacks[l].m.mime.type[tl])
-		{
-			current = callbacks[l].module;
-			r = callbacks[l].m.mime.fn(mimetype, message, msglen, callbacks[l].data);
-			current = prev;
-			return r;
-		}
-	}
-	twine_logf(LOG_ERR, "no available processor for messages of type '%s'\n", mimetype);
-	return -1;
-}
-
-/* Public: Check whether a MIME type is supported by any processor plugin */
-int
-twine_plugin_supported(const char *mimetype)
-{
-	size_t l;
-
-	for(l = 0; l < cbcount; l++)
-	{
-		if(callbacks[l].type != TCB_MIME)
-		{
-			continue;
-		}
-		twine_logf(LOG_DEBUG, "found MIME processor for '%s'\n", callbacks[l].m.mime.type);
-		if(!strcasecmp(callbacks[l].m.mime.type, mimetype))
-		{
-			return 1;
-		}
-	}
-	return 0;
-}
-
-/* Public: Check whether a MIME type is supported by any bulk processor */
-int
-twine_bulk_supported(const char *mimetype)
-{
-	size_t l;
-
-	for(l = 0; l < cbcount; l++)
-	{
-		if(callbacks[l].type != TCB_BULK)
-		{
-			continue;
-		}
-		if(!strcasecmp(callbacks[l].m.bulk.type, mimetype))
-		{
-			return 1;
-		}
-	}
-	return 0;
-}
-
-/* Public: Check whether a plug-in name is recognised as an update handler */
-int
-twine_update_supported(const char *name)
-{
-	size_t l;
-
-	for(l = 0; l < cbcount; l++)
-	{
-		if(callbacks[l].type != TCB_UPDATE)
-		{
-			continue;
-		}
-		if(!strcasecmp(callbacks[l].m.update.name, name))
-		{
-			return 1;
-		}
-	}
-	return 0;
-}
-
-/* Public: Check whether a plug-in name is recognised as an graph processing
- * handler */
-int
-twine_graph_supported(const char *name)
-{
-	size_t l;
-
-	for(l = 0; l < cbcount; l++)
-	{
-		if(callbacks[l].type != TCB_GRAPH)
-		{
-			continue;
-		}
-		if(!strcasecmp(callbacks[l].m.graph.name, name))
-		{
-			return 1;
-		}
-	}
-	return 0;
-}
-
-/* Public: Perform a bulk import from a file */
-int
-twine_bulk_import(const char *mimetype, FILE *file)
-{
-	struct twine_callback_struct *importer;
-	void *prev;
-	unsigned char *buffer;
-	const unsigned char *p;
-	size_t l, bufsize, buflen;
-	ssize_t r;
-	
-	prev = current;
-	importer = NULL;
-	for(l = 0; l < cbcount; l++)
-	{
-		if(callbacks[l].type != TCB_BULK)
-		{
-			continue;
-		}
-		if(!strcmp(callbacks[l].m.bulk.type, mimetype))
-		{
-			importer = &(callbacks[l]);
-			break;
-		}
-	}
-	if(!importer)
-	{
-		twine_logf(LOG_ERR, "no bulk importer registered for '%s'\n", mimetype);
-		return -1;
-	}
-	buffer = NULL;
-	bufsize = 0;
-	buflen = 0;
-	current = importer->module;
-	while(!feof(file))
-	{
-		if(bufsize - buflen < 1024)
-		{
-			p = (unsigned char *) realloc(buffer, bufsize + 1024);
-			if(!p)
-			{
-				twine_logf(LOG_CRIT, "failed to reallocate buffer from %u bytes to %u bytes\n", (unsigned) bufsize, (unsigned) bufsize + 1024);
-				free(buffer);
-				current = prev;
-				return -1;
-			}
-			buffer = (unsigned char *) p;
-			bufsize += 1024;
-		}
-		r = fread(&(buffer[buflen]), 1, 1023, file);
-		if(r < 0)
-		{
-			twine_logf(LOG_CRIT, "I/O error during bulk import: %s\n", strerror(errno));
-			free(buffer);
-			current = prev;
-			return -1;
-		}
-		buflen += r;
-		buffer[buflen] = 0;
-		if(!buflen)
-		{
-			/* Nothing new was read */
-			continue;
-		}
-		p = importer->m.bulk.fn(importer->m.bulk.type, buffer, buflen, importer->data);
-		if(!p)
-		{
-			twine_logf(LOG_ERR, "bulk importer failed\n");
-			free(buffer);
-			current = prev;
-			return -1;
-		}
-		if(p == buffer)
-		{
-			continue;
-		}
-		if(p < buffer || p > buffer + buflen)
-		{
-			twine_logf(LOG_ERR, "bulk importer returned a buffer pointer out of bounds\n");
-			free(buffer);
-			current = prev;
-			return -1;
-		}
-		l = buflen - (p - buffer);
-		memmove(buffer, p, l);
-		buflen = l;
-	}
-	if(buflen)
-	{
-		p = importer->m.bulk.fn(importer->m.bulk.type, buffer, buflen, importer->data);
-		if(!p)
-		{
-			twine_logf(LOG_ERR, "bulk importer failed\n");
-			free(buffer);
-			current = prev;
-			return -1;			
-		}
-	}
-	current = prev;
-	free(buffer);
-	return 0;
-}
-
-/* Public: Ask a plug-in to update its caches about an identifier */
-int
-twine_update(const char *name, const char *identifier)
-{
-	struct twine_callback_struct *plugin;
-	void *prev;
-	size_t l;
-	int r;
-	
-	prev = current;
-	plugin = NULL;
-	for(l = 0; l < cbcount; l++)
-	{
-		if(callbacks[l].type != TCB_UPDATE)
-		{
-			continue;
-		}
-		if(!strcmp(callbacks[l].m.update.name, name))
-		{
-			plugin = &(callbacks[l]);
-			break;
-		}
-	}
-	if(!plugin)
-	{
-		twine_logf(LOG_ERR, "no update handler '%s' has been registered\n", name);
-		return -1;
-	}
-	current = plugin->module;
-	r = plugin->m.update.fn(plugin->m.update.name, identifier, plugin->data);
-	current = prev;
-	if(r)
-	{
-		twine_logf(LOG_ERR, "handler '%s' failed to update\n", name);
-		return -1;
-	}
-	return 0;
-}
-
-/* Internal: invoke post-processing handlers before a graph is replaced */
-int
-twine_preproc_process_(twine_graph *graph)
-{
-	void *prev;
-	size_t c;
-	int r;
-
-	twine_logf(LOG_DEBUG, "invoking pre-processors for <%s>\n", graph->uri);
-	prev = current;
-	r = 0;
-	for(c = 0; c < cbcount; c++)
-	{
-		if(callbacks[c].type == TCB_GRAPH &&
-		   !strncmp(callbacks[c].m.graph.name, "pre:", 4))
-		{
-			current = callbacks[c].module;
-			if(callbacks[c].m.graph.fn(graph, callbacks[c].data))
-			{
-				twine_logf(LOG_ERR, "graph processor '%s' failed\n", callbacks[c].m.graph.name);
-				r = -1;
-				break;
-			}
-		}
-	}
-	current = prev;
-	return r;
-}
-
-/* Internal: invoke post-processing handlers after a graph has been replaced */
-int
-twine_postproc_process_(twine_graph *graph)
-{
-	size_t c;
-	void *prev;
-	int r;
-
-	twine_logf(LOG_DEBUG, "invoking post-processors for <%s>\n", graph->uri);
-	prev = current;
-	r = 0;
-	for(c = 0; c < cbcount; c++)
-	{
-		if(callbacks[c].type == TCB_GRAPH &&
-		   !strncmp(callbacks[c].m.graph.name, "post:", 5))
-		{
-			current = callbacks[c].module;
-			if(callbacks[c].m.graph.fn(graph, callbacks[c].data))
-			{
-				twine_logf(LOG_ERR, "graph processor '%s' failed\n", callbacks[c].m.graph.name);
-				r = -1;
-				break;
-			}
-		}
-	}
-	current = prev;
-	return r;
-}
-
-/* Internal: invoke a graph processing handler */
-int
-twine_graph_process_(const char *name, twine_graph *graph)
-{
-	void *prev;
-	size_t c;
-	int r;
-
-	twine_logf(LOG_DEBUG, "invoking graph processor '%s' for <%s>\n", name, graph->uri);
-	prev = current;
-	r = 0;
-	for(c = 0; c < cbcount; c++)
-	{
-		if(callbacks[c].type == TCB_GRAPH &&
-		   !strcmp(callbacks[c].m.graph.name, name))
-		{
-			current = callbacks[c].module;
-			if(callbacks[c].m.graph.fn(graph, callbacks[c].data))
-			{
-				twine_logf(LOG_ERR, "graph processor '%s' failed\n", callbacks[c].m.graph.name);
-				r = -1;
-			}
-			break;
-		}
-	}
-	current = prev;
-	return r;
-}
-
 /* Private: add a new callback */
-static struct twine_callback_struct *
+struct twine_callback_struct *
 twine_plugin_callback_add_(TWINE *restrict context, void *restrict data)
 {
 	struct twine_callback_struct *p;
 
-	if(!current && !context->allow_internal)
+	if(!context->plugin_current && !context->allow_internal)
 	{
 		twine_logf(LOG_ERR, "attempt to register a new callback outside of a module\n");
 		return NULL;
 	}
-	if(cbcount >= cbsize)
+	if(context->cbcount >= context->cbsize)
 	{
-		p = (struct twine_callback_struct *) realloc(callbacks, sizeof(struct twine_callback_struct) * (cbsize + CALLBACK_BLOCKSIZE));
+		p = (struct twine_callback_struct *) realloc(context->callbacks, sizeof(struct twine_callback_struct) * (context->cbsize + CALLBACK_BLOCKSIZE));
 		if(!p)
 		{
 			twine_logf(LOG_CRIT, "failed to allocate memory to register callback\n");
 			return NULL;
 		}
-		callbacks = p;
-		cbsize += CALLBACK_BLOCKSIZE;
+		context->callbacks = p;
+		context->cbsize += CALLBACK_BLOCKSIZE;
 	}
-	p = &(callbacks[cbcount]);
+	p = &(context->callbacks[context->cbcount]);
 	memset(p, 0, sizeof(struct twine_callback_struct));
-	p->context = twine_;
-	p->module = current;
+	p->module = context->plugin_current;
 	p->data = data;
-	cbcount++;
+	context->cbcount++;
 	return p;
 }
 
@@ -828,6 +485,9 @@ twine_plugin_init_(TWINE *context)
 	return 0;
 }
 
+/* Private: callback invoked for each plugin=NAME.so which appears in the
+ * configuration
+ */
 static int
 twine_plugin_config_cb_(const char *key, const char *value, void *data)
 {

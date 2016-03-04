@@ -55,6 +55,7 @@ twine_create(void)
 	log_set_level(LOG_NOTICE);
 	twine_rdf_init_(p);
 	twine_config_setup_(p);
+	twine_cluster_init_(p);
 	return p;
 }
 
@@ -81,7 +82,8 @@ twine_destroy(TWINE *context)
 			}
 		}
 	}
-	twine_rdf_cleanup_(context);	
+	twine_rdf_cleanup_(context);
+	twine_cluster_done_(context);
 	/* sparql_verbose will never be explicitly set to this value */
 	context->sparql_debug = -2;
 	free(context->sparql_uri);
@@ -160,6 +162,10 @@ twine_ready(TWINE *context)
 		return -1;
 	}
 	if(twine_sparql_init_(context))
+	{
+		return -1;
+	}
+	if(twine_cluster_init_(context))
 	{
 		return -1;
 	}

@@ -89,13 +89,13 @@ int twine_entry(TWINE *restrict context, TWINEENTRYTYPE type, void *restrict han
 /* Input callbacks process messages of a particular type, and transform them
  * into RDF, storing the result in a graph object.
  */
-typedef int (*TWINEINPUTFN)(TWINE *restrict context, const char *restrict mimetype, const unsigned char *restrict data, size_t length, void *userdata);
+typedef int (*TWINEINPUTFN)(TWINE *restrict context, const char *restrict mimetype, const unsigned char *restrict data, size_t length, const char *restrict subject, void *userdata);
 
 /* Bulk callbacks are invoked in preference to input callbacks when invoked
  * via a bulk-import process (e.g., the Twine command-line utility) rather
  * than upon receipt of a message.
  */
-typedef int (*TWINEBULKFN)(TWINE *restrict context, const char *restrict mimetype, const unsigned char *restrict data, size_t length, void *userdata);
+typedef const unsigned char *(*TWINEBULKFN)(TWINE *restrict context, const char *restrict mimetype, const unsigned char *restrict data, size_t length, void *userdata);
 
 /* Processing callbacks operate on a twine graph object and are responsible
  * for any transformations which should be performed, as well as storing the
@@ -122,6 +122,97 @@ int twine_config_get_bool(const char *key, int defval);
 int twine_config_get_all(const char *section, const char *key, int (*fn)(const char *key, const char *value, void *data), void *data);
 int twine_config_set(const char *key, const char *value);
 
+/* Callback registration */
+int twine_plugin_add_input(TWINE *restrict context, const char *restrict mimetype, const char *restrict description, TWINEINPUTFN fn, void *userdata);
+int twine_plugin_input_exists(TWINE *restrict context, const char *mimetype);
+int twine_plugin_add_bulk(TWINE *restrict context, const char *restrict mimetype, const char *restrict description, TWINEBULKFN fn, void *userdata);
+int twine_plugin_bulk_exists(TWINE *restrict context, const char *mimetype);
+int twine_plugin_add_processor(TWINE *restrict context, const char *restrict name, TWINEPROCESSORFN fn, void *userdata);
+int twine_plugin_processor_exists(TWINE *restrict context, const char *restrict name);
+int twine_plugin_add_update(TWINE *restrict context, const char *restrict name, TWINEUPDATEFN fn, void *userdata);
+int twine_plugin_update_exists(TWINE *restrict context, const char *restrict name);
+
+/* Graph objects */
+TWINEGRAPH *twine_graph_create(TWINE *restrict context, const char *restrict uri);
+TWINEGRAPH *twine_graph_create_rdf(TWINE *restrict context, const char *restrict uri, const unsigned char *restrict buf, size_t buflen, const char *restrict type);
+int twine_graph_destroy(TWINEGRAPH *graph);
+const char *twine_graph_uri(TWINEGRAPH *graph);
+librdf_model *twine_graph_model(TWINEGRAPH *graph);
+librdf_model *twine_graph_orig_model(TWINEGRAPH *graph);
+
+/* Workflow processing */
+int twine_workflow_process_message(TWINE *restrict context, const char *restrict mimetype, const unsigned char *restrict message, size_t messagelen, const char *restrict subject);
+int twine_workflow_process_file(TWINE *restrict context, const char *restrict mimetype, FILE *restrict file);
+int twine_workflow_process_graph(TWINE *restrict context, TWINEGRAPH *restrict graph);
+int twine_workflow_process_update(TWINE *restrict context, const char *restrict type, const char *restrict id);
+int twine_workflow_process_rdf(TWINE *restrict context, const char *restrict uri, const unsigned char *restrict buf, size_t buflen, const char *restrict type);
+int twine_workflow_process_stream(TWINE *restrict context, const char *restrict uri, librdf_stream *stream);
+
+/* RDF utility wrappers */
+
+/* Obtain the shared librdf world */
+librdf_world *twine_rdf_world(void);
+
+/* Convenience API for creating a new librdf model */
+librdf_model *twine_rdf_model_create(void);
+
+/* Convenience API for cloning librdf model */
+librdf_model *twine_rdf_model_clone(librdf_model *model);
+
+/* Destroy a model */
+int twine_rdf_model_destroy(librdf_model *model);
+
+/* Parse a buffer into a librdf model */
+int twine_rdf_model_parse(librdf_model *model, const char *mime, const char *buf, size_t buflen);
+int twine_rdf_model_parse_base(librdf_model *model, const char *mime, const char *buf, size_t buflen, librdf_uri *uri);
+
+/* Add a statement to a model if it doesn't exist */
+int twine_rdf_model_add_st(librdf_model *model, librdf_statement *statement, librdf_node *ctx);
+/* Add a stream to a model, provided the statements don't already exist */
+int twine_rdf_model_add_stream(librdf_model *model, librdf_stream *stream, librdf_node *ctx);
+/* Create a new statement */
+librdf_statement *twine_rdf_st_create(void);
+
+/* Duplicate a statement */
+librdf_statement *twine_rdf_st_clone(librdf_statement *src);
+
+/* Destroy a statement */
+int twine_rdf_st_destroy(librdf_statement *statement);
+
+/* Obtain the integer value of the object of a statement */
+int twine_rdf_st_obj_intval(librdf_statement *statement, long *value);
+
+/* Clone a node */
+librdf_node *twine_rdf_node_clone(librdf_node *node);
+
+/* Create a new URI node */
+librdf_node *twine_rdf_node_createuri(const char *uri);
+
+/* Destroy a node */
+int twine_rdf_node_destroy(librdf_node *node);
+
+/* Check if a node is an integer type */
+int twine_rdf_node_isint(librdf_node *node);
+
+/* Obtain the integer value of a node */
+int twine_rdf_node_intval(librdf_node *node, long *value);
+
+/* Serialise a model to a string */
+char *twine_rdf_model_ntriples(librdf_model *model, size_t *buflen);
+char *twine_rdf_model_nquads(librdf_model *model, size_t *buflen);
+
+/* Serialise a stream to a string */
+char *twine_rdf_stream_ntriples(librdf_stream *model, size_t *buflen);
+
+/* SPARQL handling */
+
+/* Create a SPARQL connection */
+SPARQL *twine_sparql_create(void);
+
+/* Clustering */
+CLUSTER *twine_cluster(TWINE *context);
+int twine_cluster_enable(TWINE *context, int enabled);
+
 /* The interface defined below is now considered legacy. It will continue to
  * be provided for binary compatibility, but plug-ins built from source must
  * define TWINE_USE_DEPRECATED_API in order for the definitions to be visible.
@@ -135,7 +226,7 @@ typedef struct twine_graph_struct twine_graph;
 struct twine_graph_struct
 {
 	/* The graph URI */
-	const char *uri;
+	char *uri;
 	void *reserved;
 	/* The new graph, possibly modified by processors */
 	librdf_model *store;
@@ -209,104 +300,45 @@ const char *twine_config_path(void) DEPRECATED_;
 const char *twine_mq_default_uri(void) DEPRECATED_;
 
 /* Register a processor callback for a given MIME type */
-int twine_plugin_register(const char *mimetype, const char *description, twine_processor_fn fn, void *data);
+int twine_plugin_register(const char *mimetype, const char *description, twine_processor_fn fn, void *data) DEPRECATED_;
 
 /* Register a bulk processor callback for a given MIME type */
-int twine_bulk_register(const char *mimetype, const char *description, twine_bulk_fn fn, void *data);
+int twine_bulk_register(const char *mimetype, const char *description, twine_bulk_fn fn, void *data) DEPRECATED_;
 
 /* Check whether a MIME type is supported by any registered processor */
-int twine_plugin_supported(const char *mimetype);
-int twine_bulk_supported(const char *mimetype);
-int twine_update_supported(const char *name);
-int twine_graph_supported(const char *name);
+int twine_plugin_supported(const char *mimetype) DEPRECATED_;
+int twine_bulk_supported(const char *mimetype) DEPRECATED_;
+int twine_update_supported(const char *name) DEPRECATED_;
+int twine_graph_supported(const char *name) DEPRECATED_;
 
 /* Process a single message */
-int twine_plugin_process(const char *mimetype, const unsigned char *message, size_t msglen, const char *subject);
-
-/* Perform a bulk import from a file */
-int twine_bulk_import(const char *mimetype, FILE *file);
+int twine_plugin_process(const char *mimetype, const unsigned char *message, size_t msglen, const char *subject) DEPRECATED_;
 
 /* Ask a named plug-in to update a resource */
-int twine_update(const char *plugin, const char *identifier);
+int twine_update(const char *plugin, const char *identifier) DEPRECATED_;
 
 /* Register a graph processor */
-int twine_graph_register(const char *name, twine_graph_fn fn, void *data);
+int twine_graph_register(const char *name, twine_graph_fn fn, void *data) DEPRECATED_;
 
 /* Deprecated (see twine_graph_register): register a pre-processor */
-int twine_preproc_register(const char *name, twine_preproc_fn fn, void *data);
+int twine_preproc_register(const char *name, twine_preproc_fn fn, void *data) DEPRECATED_;
 
 /* Deprecated (see twine_graph_register): register a post-processor */
-int twine_postproc_register(const char *name, twine_postproc_fn fn, void *data);
+int twine_postproc_register(const char *name, twine_postproc_fn fn, void *data) DEPRECATED_;
 
 /* Register an update handler */
-int twine_update_register(const char *name, twine_update_fn fn, void *data);
+int twine_update_register(const char *name, twine_update_fn fn, void *data) DEPRECATED_;
 
-/* Obtain the shared librdf world */
-librdf_world *twine_rdf_world(void);
-
-/* Convenience API for creating a new librdf model */
-librdf_model *twine_rdf_model_create(void);
-
-/* Convenience API for cloning librdf model */
-librdf_model *twine_rdf_model_clone(librdf_model *model);
-
-/* Destroy a model */
-int twine_rdf_model_destroy(librdf_model *model);
-
-/* Parse a buffer into a librdf model */
-int twine_rdf_model_parse(librdf_model *model, const char *mime, const char *buf, size_t buflen);
-int twine_rdf_model_parse_base(librdf_model *model, const char *mime, const char *buf, size_t buflen, librdf_uri *uri);
-
-/* Add a statement to a model if it doesn't exist */
-int twine_rdf_model_add_st(librdf_model *model, librdf_statement *statement, librdf_node *ctx);
-/* Add a stream to a model, provided the statements don't already exist */
-int twine_rdf_model_add_stream(librdf_model *model, librdf_stream *stream, librdf_node *ctx);
-/* Create a new statement */
-librdf_statement *twine_rdf_st_create(void);
-
-/* Duplicate a statement */
-librdf_statement *twine_rdf_st_clone(librdf_statement *src);
-
-/* Destroy a statement */
-int twine_rdf_st_destroy(librdf_statement *statement);
-
-/* Obtain the integer value of the object of a statement */
-int twine_rdf_st_obj_intval(librdf_statement *statement, long *value);
-
-/* Clone a node */
-librdf_node *twine_rdf_node_clone(librdf_node *node);
-
-/* Create a new URI node */
-librdf_node *twine_rdf_node_createuri(const char *uri);
-
-/* Destroy a node */
-int twine_rdf_node_destroy(librdf_node *node);
-
-/* Check if a node is an integer type */
-int twine_rdf_node_isint(librdf_node *node);
-
-/* Obtain the integer value of a node */
-int twine_rdf_node_intval(librdf_node *node, long *value);
-
-/* Serialise a model to a string */
-char *twine_rdf_model_ntriples(librdf_model *model, size_t *buflen);
-char *twine_rdf_model_nquads(librdf_model *model, size_t *buflen);
-
-/* Serialise a stream to a string */
-char *twine_rdf_stream_ntriples(librdf_stream *model, size_t *buflen);
-
-/* Create a SPARQL connection */
-SPARQL *twine_sparql_create(void);
 
 /* Replace a graph with supplied triples */
-int twine_sparql_put(const char *uri, const char *triples, size_t length);
-int twine_sparql_put_format(const char *uri, const char *triples, size_t length, const char *type);
+int twine_sparql_put(const char *uri, const char *triples, size_t length) DEPRECATED_;
+int twine_sparql_put_format(const char *uri, const char *triples, size_t length, const char *type) DEPRECATED_;
 
 /* Replace a graph contained within a librdf stream */
-int twine_sparql_put_stream(const char *uri, librdf_stream *stream);
+int twine_sparql_put_stream(const char *uri, librdf_stream *stream) DEPRECATED_;
 
 /* Replace a graph contained within a librdf model */
-int twine_sparql_put_model(const char *uri, librdf_model *model);
+int twine_sparql_put_model(const char *uri, librdf_model *model) DEPRECATED_;
 
 # endif /*TWINE_USE_DEPRECATED_API*/
 

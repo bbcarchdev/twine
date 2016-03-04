@@ -79,6 +79,9 @@ int twine_plugin_unload(TWINE *restrict context, void *handle);
 const char *twine_config_path(void);
 pid_t twine_daemonize(TWINE *context, const char *pidfile);
 
+/* Perform a bulk import from a file */
+int twine_bulk(TWINE *context, const char *mimetype, FILE *file);
+
 END_DECLS_
 
 #endif /*!LIBTWINE_INTERNAL_H_*/

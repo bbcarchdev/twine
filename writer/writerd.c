@@ -77,7 +77,7 @@ main(int argc, char **argv)
 		}
 	}
 	/* Execute the runloop */
-	if(writerd_runloop())
+	if(writerd_runloop(twine))
 	{
 		return 1;
 	}

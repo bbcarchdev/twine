@@ -23,9 +23,6 @@
 
 #include "p_libtwine.h"
 
-static int
-twine_sparql_put_internal_(const char *uri, const char *triples, size_t length, const char *type, librdf_model *sourcemodel);
-
 /* Internal API: set configuration for SPARQL connections
  *
  * Note that this will have no effect on SPARQL connection objects which
@@ -103,66 +100,6 @@ twine_sparql_create(void)
 	return p;
 }
 
-/* Public: Replace a graph from a Turtle buffer */
-int
-twine_sparql_put(const char *uri, const char *triples, size_t length)
-{
-	return twine_sparql_put_internal_(uri, triples, length, "text/turtle", NULL);
-}
-
-int
-twine_sparql_put_format(const char *uri, const char *triples, size_t length, const char *type)
-{
-	return twine_sparql_put_internal_(uri, triples, length, type, NULL);
-}
-
-/* Public: Replace a graph from a librdf stream */
-int
-twine_sparql_put_stream(const char *uri, librdf_stream *stream)
-{
-	librdf_model *model;
-	char *buf;
-	size_t buflen;
-	int r;
-
-	model = twine_rdf_model_create();
-	if(!model)
-	{
-		return -1;
-	}
-	if(librdf_model_add_statements(model, stream))
-	{
-		return -1;
-	}
-	buf = twine_rdf_model_ntriples(model, &buflen);
-	if(!buf)
-	{
-		return -1;
-	}
-	r = twine_sparql_put_internal_(uri, buf, buflen, MIME_NTRIPLES, model);
-	librdf_free_memory(buf);
-	twine_rdf_model_destroy(model);
-	return r;
-}
-
-/* Public: Replace a graph from a librdf model */
-int
-twine_sparql_put_model(const char *uri, librdf_model *model)
-{
-	char *buf;
-	size_t buflen;
-	int r;
-
-	buf = twine_rdf_model_ntriples(model, &buflen);
-	if(!buf)
-	{
-		return -1;
-	}
-	r = twine_sparql_put_internal_(uri, buf, buflen, MIME_NTRIPLES, model);
-	librdf_free_memory(buf);
-	return r;
-}
-
 /* Private: Initialise the SPARQL connection details for a context */
 int
 twine_sparql_init_(TWINE *context)
@@ -209,35 +146,4 @@ twine_sparql_init_(TWINE *context)
 	context->sparql_update_uri = twine_config_geta("*:sparql-update", NULL);
 	context->sparql_data_uri = twine_config_geta("*:sparql-data", NULL);	
 	return 0;
-}
-
-/* Private: Construct an RDF graph and pass it to the processing modules which
- * constitute the workflow.
- */
-static int
-twine_sparql_put_internal_(const char *uri, const char *triples, size_t length, const char *type, librdf_model *sourcemodel)
-{
-	int r;
-	twine_graph graph;
-	librdf_stream *stream;
-
-	memset(&graph, 0, sizeof(twine_graph));
-	graph.uri = uri;
-	graph.store = twine_rdf_model_create();
-	if(sourcemodel)
-	{
-		stream = librdf_model_as_stream(sourcemodel);
-		r = librdf_model_add_statements(graph.store, stream);
-		librdf_free_stream(stream);
-	}
-	else
-	{
-		r = twine_rdf_model_parse(graph.store, type, triples, length);
-	}
-	if(!r)
-	{
-		r = twine_workflow_process_(&graph);
-	}
-	twine_graph_cleanup_(&graph);
-	return r;
 }

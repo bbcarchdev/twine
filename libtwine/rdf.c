@@ -28,6 +28,7 @@
 #endif
 
 static int twine_librdf_logger(void *data, librdf_log_message *message);
+static int nstrcasecmp(const char *a, const char *b, size_t alen);
 
 int
 twine_rdf_init_(TWINE *context)
@@ -126,16 +127,6 @@ twine_rdf_model_destroy(librdf_model *model)
 		librdf_free_model(model);
 	}
 	return 0;
-}
-
-static int
-nstrcasecmp(const char *a, const char *b, size_t alen)
-{
-	if(strlen(b) != alen)
-	{
-		return -1;
-	}
-	return strncasecmp(a, b, alen);
 }
 
 /* Parse a buffer of a particular MIME type into a model */
@@ -519,17 +510,12 @@ twine_rdf_stream_ntriples(librdf_stream *stream, size_t *buflen)
 	return buf;
 }
 
-int
-twine_graph_cleanup_(twine_graph *graph)
+static int
+nstrcasecmp(const char *a, const char *b, size_t alen)
 {
-	if(graph->old)
+	if(strlen(b) != alen)
 	{
-		twine_rdf_model_destroy(graph->old);
+		return -1;
 	}
-	if(graph->store)
-	{
-		twine_rdf_model_destroy(graph->store);
-	}
-	return 0;
+	return strncasecmp(a, b, alen);
 }
-

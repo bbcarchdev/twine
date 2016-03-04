@@ -36,7 +36,7 @@ writerd_exit(void)
 }
 
 int
-writerd_runloop(void)
+writerd_runloop(TWINE *context)
 {
 	MQ *messenger;
 	MQMESSAGE *msg;
@@ -78,7 +78,7 @@ writerd_runloop(void)
 			continue;
 		}		 
 		twine_logf(LOG_DEBUG, "received a %s '%s' message via %s\n", mime, mq_message_subject(msg), mq_message_address(msg));
-		if(twine_plugin_process(mime, body, len, subject))
+		if(twine_workflow_process_message(context, mime, body, len, subject))
 		{
 			twine_logf(LOG_ERR, "processing of a %s '%s' message via %s failed\n", mime, mq_message_subject(msg), mq_message_address(msg));
 			mq_message_reject(msg);

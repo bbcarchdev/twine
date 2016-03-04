@@ -37,6 +37,8 @@
 
 # include "libsupport.h"
 
+# define TWINE_USE_DEPRECATED_API       1
+
 # include "libtwine-internal.h"
 
 # define DEFAULT_MQ_URI                 "amqp://~0.0.0.0/amq.direct"
@@ -61,33 +63,38 @@ typedef int (*twine_plugin_cleanup_fn)(void);
 typedef enum
 {
 	TCB_NONE,
-	TCB_MIME,
+	TCB_INPUT,
 	TCB_BULK,
 	TCB_UPDATE,
-	TCB_GRAPH
+	TCB_PROCESSOR,
+	/* Legacy callback types */
+	TCB_LEGACY_MIME,
+	TCB_LEGACY_BULK,
+	TCB_LEGACY_UPDATE,
+	TCB_LEGACY_GRAPH	
 } twine_callback_type;
 
-struct twine_mime_struct
+struct twine_legacy_mime_struct
 {
 	char *type;
 	char *desc;
 	twine_processor_fn fn;
 };
 
-struct twine_bulk_struct
+struct twine_legacy_bulk_struct
 {
 	char *type;
 	char *desc;
 	twine_bulk_fn fn;
 };
 
-struct twine_graphproc_struct
+struct twine_legacy_graphproc_struct
 {
 	twine_preproc_fn fn;
 	char *name;
 };
 
-struct twine_update_struct
+struct twine_legacy_update_struct
 {
 	twine_update_fn fn;
 	char *name;
@@ -95,16 +102,41 @@ struct twine_update_struct
 
 struct twine_callback_struct
 {
-	TWINE *context;
 	twine_callback_type type;
 	void *module;
 	void *data;
 	union
 	{
-		struct twine_mime_struct mime;
-		struct twine_bulk_struct bulk;
-		struct twine_update_struct update;
-		struct twine_graphproc_struct graph;
+		struct
+		{
+			char *type;
+			char *desc;
+			TWINEINPUTFN fn;
+		} input;
+
+		struct
+		{
+			char *type;
+			char *desc;
+			TWINEBULKFN fn;
+		} bulk;
+
+		struct
+		{
+			char *name;
+			TWINEPROCESSORFN fn;
+		} processor;
+
+		struct
+		{
+			char *name;
+			TWINEUPDATEFN fn;
+		} update;
+			
+		struct twine_legacy_mime_struct legacy_mime;
+		struct twine_legacy_bulk_struct legacy_bulk;
+		struct twine_legacy_update_struct legacy_update;
+		struct twine_legacy_graphproc_struct legacy_graph;
 	} m;
 };
 
@@ -126,6 +158,12 @@ struct twine_context_struct
 	int allow_internal;
 	int is_daemon;
 	int plugins_enabled;
+	CLUSTER *cluster;
+	int cluster_enabled;
+	void *plugin_current;
+	struct twine_callback_struct *callbacks;
+	size_t cbcount;
+	size_t cbsize;
 };
 
 extern TWINE *twine_;
@@ -139,6 +177,7 @@ int twine_graph_process_(const char *name, twine_graph *graph);
 int twine_plugin_init_(TWINE *context);
 int twine_plugin_unload_all_(TWINE *context);
 int twine_plugin_allow_internal_(TWINE *context, int);
+struct twine_callback_struct *twine_plugin_callback_add_(TWINE *context, void *data);
 
 int twine_workflow_init_(TWINE *context);
 int twine_workflow_process_(twine_graph *graph);
@@ -148,8 +187,13 @@ int twine_postproc_process_(twine_graph *graph);
 
 int twine_sparql_init_(TWINE *context);
 
+int twine_cluster_init_(TWINE *context);
+int twine_cluster_ready_(TWINE *context);
+int twine_cluster_done_(TWINE *context);
+
 /* This can't be called twine_config_init_() because that's a legacy API */
 int twine_config_setup_(TWINE *context);
 int twine_config_ready_(TWINE *context);
+
 
 #endif /*!P_LIBTWINE_H_*/

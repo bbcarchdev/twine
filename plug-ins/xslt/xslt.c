@@ -38,6 +38,7 @@
 struct xslt_mime_struct
 {
 	struct xslt_mime_struct *next;
+	TWINE *context;
 	char mimetype[XSLT_MIME_LEN+1];
 	char *desc;
 	char *path;
@@ -48,11 +49,11 @@ struct xslt_mime_struct
 
 static struct xslt_mime_struct *first, *last;
 
-static int xslt_process(const char *mime, const unsigned char *buf, size_t buflen, void *data);
-static int xslt_process_buf(const char *buf, size_t buflen, xsltStylesheetPtr stylesheet, const char *xpath);
+static int xslt_process(TWINE *restrict context, const char *restrict mime, const unsigned char *restrict buf, size_t buflen, const char *restrict subject, void *data);
+static int xslt_process_buf(TWINE *restrict context, const char *restrict buf, size_t buflen, xsltStylesheetPtr stylesheet, const char *restrict xpath);
 static int xslt_config_cb(const char *key, const char *value, void *data);
-static int xslt_mime_add(const char *mimetype);
-static struct xslt_mime_struct *xslt_mime_find(const char *mimetype);
+static int xslt_mime_add(TWINE *restrict context, const char *restrict mimetype);
+static struct xslt_mime_struct *xslt_mime_find(TWINE *restrict context, const char *restrict mimetype);
 
 /* Twine plug-in entry-point */
 int
@@ -61,14 +62,13 @@ twine_entry(TWINE *context, TWINEENTRYTYPE type, void *handle)
 	struct xslt_mime_struct *p;
 	size_t c;
 
-	(void) context;
 	(void) handle;
 
 	switch(type)
 	{
 	case TWINE_ATTACHED:
 		twine_logf(LOG_DEBUG, TWINE_PLUGIN_NAME " plug-in: initialising\n");
-		twine_config_get_all(NULL, NULL, xslt_config_cb, NULL);
+		twine_config_get_all(NULL, NULL, xslt_config_cb, context);
 		c = 0;
 		for(p = first; p; p = p->next)
 		{
@@ -95,12 +95,12 @@ twine_entry(TWINE *context, TWINEENTRYTYPE type, void *handle)
 				continue;
 			}
 			c++;
-			twine_plugin_register(p->mimetype, p->desc, xslt_process, NULL);
+			twine_plugin_add_input(context, p->mimetype, p->desc, xslt_process, NULL);
 		}
 		if(!c)
 		{
-			twine_logf(LOG_ERR, TWINE_PLUGIN_NAME ": no MIME types registered\n");
-			return -1;
+			twine_logf(LOG_WARNING, TWINE_PLUGIN_NAME ": no MIME types registered\n");
+			return 0;
 		}
 		break;
 	case TWINE_DETACHED:
@@ -117,8 +117,9 @@ xslt_config_cb(const char *key, const char *value, void *data)
 {
 	char mimebuf[XSLT_MIME_LEN + 1], *t;
 	struct xslt_mime_struct *mime;
+	TWINE *context;
 
-	(void) data;
+	context = (TWINE *) data;
 
 	if(strncmp(key, "xslt:", 5))
 	{
@@ -131,7 +132,7 @@ xslt_config_cb(const char *key, const char *value, void *data)
 	}
 	if(!value)
 	{
-		if(xslt_mime_add(key))
+		if(xslt_mime_add(context, key))
 		{
 			return -1;
 		}
@@ -146,7 +147,7 @@ xslt_config_cb(const char *key, const char *value, void *data)
 	strncpy(mimebuf, key, t - key);
 	mimebuf[t - key] = 0;
 	t++;
-	mime = xslt_mime_find(mimebuf);
+	mime = xslt_mime_find(context, mimebuf);
 	if(!mime)
 	{
 		twine_logf(LOG_ERR, TWINE_PLUGIN_NAME ": unable to locate internal MIME type structure for '%s'\n", mimebuf);
@@ -208,7 +209,7 @@ xslt_config_cb(const char *key, const char *value, void *data)
 }
 
 static int
-xslt_mime_add(const char *mimetype)
+xslt_mime_add(TWINE *context, const char *mimetype)
 {
 	struct xslt_mime_struct *p;
 	
@@ -223,6 +224,7 @@ xslt_mime_add(const char *mimetype)
 		twine_logf(LOG_CRIT, TWINE_PLUGIN_NAME ": failed to allocate %u bytes for MIME type information\n", (unsigned) sizeof(struct xslt_mime_struct));
 		return -1;
 	}
+	p->context = context;
 	strcpy(p->mimetype, mimetype);
 	if(last)
 	{
@@ -238,13 +240,14 @@ xslt_mime_add(const char *mimetype)
 }
 
 static struct xslt_mime_struct *
-xslt_mime_find(const char *mimetype)
+xslt_mime_find(TWINE *context, const char *mimetype)
 {
 	struct xslt_mime_struct *p;
 
 	for(p = first; p; p = p->next)
 	{
-		if(!strcmp(p->mimetype, mimetype))
+		if(p->context == context &&
+		   !strcasecmp(p->mimetype, mimetype))
 		{
 			return p;
 		}
@@ -253,23 +256,23 @@ xslt_mime_find(const char *mimetype)
 }
 
 
-/* Process a block of application/x-example+xml using the stylesheet
- * and XPath expression above
+/* Process a block of XML using the confgiured stylesheet and XPath expression
  */
 static int
-xslt_process(const char *mime, const unsigned char *buf, size_t buflen, void *data)
+xslt_process(TWINE *restrict context, const char *restrict mime, const unsigned char *restrict buf, size_t buflen, const char *restrict subject, void *data)
 {
 	struct xslt_mime_struct *p;
 
 	(void) data;
+	(void) subject;
 
-	p = xslt_mime_find(mime);
+	p = xslt_mime_find(context, mime);
 	if(!p)
 	{
 		twine_logf(LOG_CRIT, "unable to locate MIME type information for '%s'\n", mime);
 		return -1;
 	}
-	return xslt_process_buf((const char *) buf, buflen, p->xslt, p->xpath);
+	return xslt_process_buf(context, (const char *) buf, buflen, p->xslt, p->xpath);
 }	
 
 /* Process a buffer using an XSLT stylesheet, and evaluate an XPath expression
@@ -277,7 +280,7 @@ xslt_process(const char *mime, const unsigned char *buf, size_t buflen, void *da
  * replace.
  */
 static int
-xslt_process_buf(const char *buf, size_t buflen, xsltStylesheetPtr stylesheet, const char *xpath)
+xslt_process_buf(TWINE *context, const char *restrict buf, size_t buflen, xsltStylesheetPtr stylesheet, const char *xpath)
 {
 	xmlDocPtr xmldoc, res;
 	xmlChar *xmlbuf;
@@ -373,7 +376,7 @@ xslt_process_buf(const char *buf, size_t buflen, xsltStylesheetPtr stylesheet, c
 	xmlFreeDoc(xmldoc);
 	/* Replace the graph */
 	stream = librdf_model_as_stream(model);	
-	twine_sparql_put_stream(p, stream);
+	twine_workflow_process_stream(context, p, stream);
 	/* Clean up */
 	free(p);
 	librdf_free_stream(stream);

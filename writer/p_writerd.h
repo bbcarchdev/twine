@@ -33,7 +33,7 @@
 
 # define TWINE_APP_NAME                 "writerd"
 
-int writerd_runloop(void);
+int writerd_runloop(TWINE *context);
 int writerd_exit(void);
 
 #endif /*!P_WRITERD_H_*/

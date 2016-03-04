@@ -28,22 +28,21 @@
 
 #define TWINE_PLUGIN_NAME               "rdf"
 
-static int process_rdf(const char *mime, const unsigned char *buf, size_t buflen, void *data);
+static int process_rdf(TWINE *restrict context, const char *restrict mime, const unsigned char *restrict buf, size_t buflen, const char *restrict subject, void *data);
 
 /* Twine plug-in entry-point */
 int
 twine_entry(TWINE *context, TWINEENTRYTYPE type, void *handle)
 {
-	(void) context;
 	(void) handle;
 
 	switch(type)
 	{
 	case TWINE_ATTACHED:
 		twine_logf(LOG_DEBUG, TWINE_PLUGIN_NAME " plug-in: initialising\n");
-		twine_plugin_register("application/trig", "RDF TriG", process_rdf, NULL);
-		twine_plugin_register("application/n-quads", "RDF N-Quads", process_rdf, NULL);
-		twine_plugin_register("text/x-nquads", "RDF N-Quads", process_rdf, NULL);
+		twine_plugin_add_input(context, "application/trig", "RDF TriG", process_rdf, NULL);
+		twine_plugin_add_input(context, "application/n-quads", "RDF N-Quads", process_rdf, NULL);
+		twine_plugin_add_input(context, "text/x-nquads", "RDF N-Quads", process_rdf, NULL);
 		break;
 	case TWINE_DETACHED:
 		break;
@@ -51,15 +50,16 @@ twine_entry(TWINE *context, TWINEENTRYTYPE type, void *handle)
 	return 0;
 }
 
-/* Process some kind of RDF and import the named graphs into the store
+/* Parse some supported RDF quads serialisation and trigger processing of
+ * the resulting graphs.
  *
  * Although in principle this processor can handle anything that librdf can
  * parse, it will do nothing unless there are named graphs present, and so
- * only N-Quads and TriG are listed in ../mimetypes.h
+ * only N-Quads and TriG MIME types are registered.
  */
 
 static int
-process_rdf(const char *mime, const unsigned char *buf, size_t buflen, void *data)
+process_rdf(TWINE *restrict context, const char *restrict mime, const unsigned char *restrict buf, size_t buflen, const char *restrict subject, void *data)
 {
 	librdf_model *model;
 	librdf_iterator *iter;
@@ -68,6 +68,7 @@ process_rdf(const char *mime, const unsigned char *buf, size_t buflen, void *dat
 	librdf_stream *stream;	
 	int r;
 
+	(void) subject;
 	(void) data;
 
 	r = 0;
@@ -109,10 +110,10 @@ process_rdf(const char *mime, const unsigned char *buf, size_t buflen, void *dat
 		{
 			uri = librdf_node_get_uri(node);
 			stream = librdf_model_context_as_stream(model, node);
-			twine_logf(LOG_DEBUG, "RDF: replacing graph <%s>\n", (const char *) librdf_uri_as_string(uri));
-			if(twine_sparql_put_stream((const char *) librdf_uri_as_string(uri), stream))
+			twine_logf(LOG_DEBUG, "RDF: processing graph <%s>\n", (const char *) librdf_uri_as_string(uri));
+			if(twine_workflow_process_stream(context, (const char *) librdf_uri_as_string(uri), stream))
 			{
-				twine_logf(LOG_ERR, "failed to update graph <%s>\n", (const char *) librdf_uri_as_string(uri));
+				twine_logf(LOG_ERR, "failed to process graph <%s>\n", (const char *) librdf_uri_as_string(uri));
 				r = 1;
 				break;
 			}
