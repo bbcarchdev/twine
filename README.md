@@ -90,3 +90,10 @@ The plug-in simply reads the Geonames URL and transforms it into a graph URI
 (by appending `about.rdf`), then reads the RDF/XML document into an RDF model
 as part of that named graph. The resulting model is pushed into Twine for
 onward processing or storage.
+
+For example, with the `rdf` and `geonames` plug-ins loaded, a GeoNames can be
+converted to N-Quads with:
+
+```
+$ twine -D twine:workflow=dump-nquads -t text/x-geonames-dump all-geonames-rdf.txt > geonames.nq
+```
