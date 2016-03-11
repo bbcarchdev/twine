@@ -64,8 +64,13 @@ writerd_runloop(TWINE *context)
 		}
 		if(!msg)
 		{
-			twine_logf(LOG_CRIT, "failed to receive message: %s\n", mq_errmsg(messenger));
-			return -1;
+			if(mq_error(messenger))
+			{
+				twine_logf(LOG_CRIT, "failed to receive message: %s\n", mq_errmsg(messenger));
+				return -1;
+			}
+			/* Timed out, loop and wait again */
+			continue;
 		}
 		mime = mq_message_type(msg);
 		subject = mq_message_subject(msg);
