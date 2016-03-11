@@ -290,7 +290,7 @@ twine_config_ready_(TWINE *context)
 		config_set_default("log:stderr", "0");
 	}
 	else
-	{		
+	{
 		config_set_default("log:syslog", "0");
 		config_set_default("log:stderr", "1");
 	}
