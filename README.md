@@ -169,4 +169,4 @@ Twine is licensed under the terms of the [Apache License, Version 2.0](http://ww
 
 Copyright © 2014-2016 BBC.
 
-[license]: //img.shields.io/badge/license-Apache%202.0-blue.svg
+[license]: https://img.shields.io/badge/license-Apache%202.0-blue.svg
