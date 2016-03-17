@@ -1,8 +1,64 @@
 # Twine
+A workflow engine for processing [RDF](https://www.w3.org/RDF/) in customisable ways.
 
-## What is Twine?
+[![Apache 2.0 licensed][license]](#license)
 
-Twine is a workflow engine for processing RDF in customisable ways.
+## Table of contents
+
+* [Requirements](#requirements)
+* [Building from source](#building-from-source)
+* [Source tree structure](#source-tree-structure)
+* [Plug-ins](#plug-ins)
+* [Contributing](#contributing)
+* [License](#license)
+
+## Requirements
+
+Twine requires the following common libraries which are available either
+out-of-the-box, or can be installed using native package management, on most
+Unix-like operating systems:
+
+* POSIX threads and libdl (generally shipped as part of the core C libraries on most Unix-like systems)
+* [Apple CommonCrypto](https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man3/Common%20Crypto.3cc.html#//apple_ref/doc/man/3cc/CommonCrypto) or [OpenSSL](https://www.openssl.org)
+* [cURL](https://curl.haxx.se)
+* [libxml2](http://www.xmlsoft.org) and [libxslt](http://xmlsoft.org/XSLT/)
+* [librdf](http://librdf.org)
+
+Note that in order to process source data in TriG or N-Quads formats correctly,
+you must use an up-to-date version of librdf. If you have an older version
+installed on your system, Twine will compile correctly, but will not be able to 
+locate any named graphs in the parsed RDF quads when attempting to import them.
+
+Twine also requires the following libraries which are available from
+the [BBC Archive Development Github account](https://github.com/bbcarchdev):
+
+* [libcluster](https://github.com/bbcarchdev/libcluster)
+* [libmq](https://github.com/bbcarchdev/libmq)
+* [libawsclient](https://github.com/bbcarchdev/libawsclient)
+* [liburi](https://github.com/bbcarchdev/liburi)
+* [libsparqlclient](https://github.com/bbcarchdev/libsparqlclient)
+
+Finally, building Twine requires working GNU autotools (`make`, `autoconf`,
+`automake`, `libtool`, and so on) as well as a C compiler and your operating
+system’s usual developer packages.
+
+## Building from source
+
+If building from a Git clone, you must first run:
+
+	$ git submodule update --init --recursive
+	$ autoreconf -i
+
+Then, you can configure and build Twine in the usual way:
+
+	$ ./configure --prefix=/opt/twine
+	$ make
+	$ sudo make install
+
+Use `./configure --help` to see a list of available `configure` options. As
+an Automake-based project, Twine supports building in a separate directory from
+the sources and installing to a staging area (via
+`make install DESTDIR=/some/path`).
 
 ## Source tree structure
 
@@ -97,3 +153,20 @@ converted to N-Quads with:
 ```
 $ twine -D twine:workflow=dump-nquads -t text/x-geonames-dump all-geonames-rdf.txt > geonames.nq
 ```
+
+## Contributing
+
+To contribute to Twine, fork this repository and commit your changes to the
+`develop` branch. For larger changes, you should create a feature branch with
+a meaningful name, for example one derived from the [issue number](https://github.com/bbcarchdev/twine/issues/).
+
+Once you are satisfied with your contribution, open a pull request and describe
+the changes you’ve made.
+
+## License
+
+Twine is licensed under the terms of the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0)
+
+Copyright © 2014-2016 BBC.
+
+[license]: //img.shields.io/badge/license-Apache%202.0-blue.svg
