@@ -3,19 +3,19 @@ Section: misc
 Priority: optional
 Maintainer: Mo McRoberts <mo.mcroberts@bbc.co.uk>
 Standards-Version: 3.9.3
-Build-Depends: debhelper (>= 8.0.0), autoconf, automake, libtool, libcurl4-gnutls-dev, librdf0-dev, uuid-dev, liburi-dev, libsparqlclient-dev, libltdl-dev, libqpid-proton-dev, libxml2-dev, libxslt1-dev, libawsclient-dev, libmq, libmq-dev, libcluster-dev
+Build-Depends: debhelper (>= 8.0.0), autoconf, automake, libtool, libcurl4-gnutls-dev, librdf0-dev, uuid-dev, liburi-dev, libsparqlclient-dev, libltdl-dev, libqpid-proton-dev, libxml2-dev, libxslt1-dev, libawsclient-dev, libmq-dev (>= 2.0.0), libcluster-dev
 
 Package: libtwine
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}, libsparqlclient, libmq, libcluster
+Depends: ${misc:Depends}, ${shlibs:Depends}, libsparqlclient, libmq (>= 2.0.0), libcluster
 Description: Linked Data workflow engine (module API)
 
 Package: twine
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}, libtwine (= ${binary:Version}), libmq, libawsclient
+Depends: ${misc:Depends}, ${shlibs:Depends}, libtwine (= ${binary:Version}), libmq (>= 2.0.0), libawsclient
 Description: Linked Data workflow engine
 
 Package: libtwine-dev
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}, libtwine (= ${binary:Version}), libsparqlclient-dev, librdf0-dev, libmq-dev, libcluster-dev
+Depends: ${misc:Depends}, ${shlibs:Depends}, libtwine (= ${binary:Version}), libsparqlclient-dev, librdf0-dev, libmq-dev (>= 2.0.0), libcluster-dev
 Description: Linked Data workflow engine (module API development files)
