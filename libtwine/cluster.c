@@ -23,6 +23,8 @@
 
 #include "p_libtwine.h"
 
+static int twine_cluster_balancer_(CLUSTER *cluster, CLUSTERSTATE *state);
+
 /* Public: obtain the cluster object used by this context */
 CLUSTER *
 twine_cluster(TWINE *context)
@@ -44,18 +46,64 @@ twine_cluster_enable(TWINE *context, int enabled)
 /* Private: initialise the cluster object */
 int
 twine_cluster_init_(TWINE *context)
-{   
-	context->cluster = cluster_create("twine");
-	return 0;
-}
-
-/* Private: join the configured cluster */
-int
-twine_cluster_ready_(TWINE *context)
 {
-	cluster_set_workers(context->cluster, 1);
-	cluster_static_set_index(context->cluster, 0);
-	cluster_static_set_total(context->cluster, 1);
+	char *t;
+	int i;
+	
+	if(context->cluster_enabled)
+	{
+		t = config_geta("*:cluster-name", "twine");
+		if(!t)
+		{
+			twine_logf(LOG_CRIT, "failed to determine cluster name from configuration\n");
+			return -1;
+		}
+		context->cluster = cluster_create(t);
+		if(!context->cluster)
+		{
+			twine_logf(LOG_CRIT, "failed to create cluster object\n");
+			free(t);
+			return -1;
+		}
+		free(t);
+		cluster_set_workers(context->cluster, 1);
+		cluster_set_logger(context->cluster, twine_vlogf);
+		cluster_set_balancer(context->cluster, twine_cluster_balancer_);
+		if(twine_config_get_bool("*:cluster-verbose", 0))
+		{
+			cluster_set_verbose(context->cluster, 1);
+		}
+		if((t = twine_config_geta("*:environment", NULL)))
+		{
+			cluster_set_env(context->cluster, t);
+			free(t);
+		}
+		if((t = config_geta("*:node-id", NULL)))
+		{
+			cluster_set_instance(context->cluster, t);
+			free(t);
+		}
+		if((t = twine_config_geta("*:registry", NULL)))
+		{
+			cluster_set_registry(context->cluster, t);
+			free(t);
+		}
+		else
+		{
+			i = twine_config_get_int("*:node-index", 0);
+			cluster_static_set_index(context->cluster, i);
+			i = twine_config_get_int("*:cluster-size", 1);
+			cluster_static_set_total(context->cluster, i);
+		}
+	}
+	else
+	{
+		context->cluster = cluster_create("twine");
+		cluster_set_logger(context->cluster, twine_vlogf);
+		cluster_set_workers(context->cluster, 1);
+		cluster_static_set_index(context->cluster, 0);
+		cluster_static_set_total(context->cluster, 1);
+	}
 	if(cluster_join(context->cluster))
 	{
 		return -1;
@@ -71,6 +119,27 @@ twine_cluster_done_(TWINE *context)
 	{
 		cluster_leave(context->cluster);
 		cluster_destroy(context->cluster);
+	}
+	return 0;
+}
+
+/* Private: log changes to cluster state */
+static int
+twine_cluster_balancer_(CLUSTER *cluster, CLUSTERSTATE *state)
+{
+	(void) cluster;
+
+	if(state->index == -1 || !state->total)
+	{
+		twine_logf(LOG_NOTICE, "cluster re-balanced: instance %s has left cluster %s/%s\n", cluster_instance(cluster), cluster_key(cluster), cluster_env(cluster));
+	}
+	else if(state->workers == 1)
+	{
+		twine_logf(LOG_NOTICE, "cluster re-balanced: instance %s single-thread index %d from cluster %s/%s of %d threads\n", cluster_instance(cluster), state->index + 1, cluster_key(cluster), cluster_env(cluster), state->total);
+	}
+	else
+	{
+		twine_logf(LOG_NOTICE, "cluster-re-balanced: instance %s thread indices %d..%d from cluster %s/%s of %d threads\n", cluster_instance(cluster), state->index + 1, state->index + state->workers, cluster_key(cluster), cluster_env(cluster), state->total);
 	}
 	return 0;
 }

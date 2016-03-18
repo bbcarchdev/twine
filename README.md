@@ -101,6 +101,41 @@ The workflow can be altered by specifying a `workflow=...` value in the
 Note that the actual graph processors that are available depends upon the
 modules that you have loaded, and the above names are examples only.
 
+### Clustering
+
+Twine now has the ability to operate as part of a [libcluster](https://github.com/bbcarchdev/libcluster)
+cluster. While this does not meaningfully affect the operation of Twine itself,
+the cluster and node status information is made available to plug-ins
+implementing message queues and graph processors. For example, a message
+queue implementation might use the node details to filter inbound messages
+from the queue in to balance load across the cluster.
+
+Cluster configuration is specified in the `[twine]` configuration section. If
+absent, Twine will configure itself to be part of a single-node (i.e.,
+standalone) cluster.
+
+The default values are as follows:—
+
+	[twine]
+	cluster-name=twine
+	cluster-verbose=no
+	node-index=0
+	cluster-size=1
+	environment=production
+	; registry=<registry URI>
+	; node-id=<some unique identifier>
+
+To use a registry service, remove the `node-index` and `cluster-size` options
+and add a `registry` URI instead:
+
+	[twine]
+	cluster-name=twine
+	cluster-verbose=no
+	environment=live
+	registry=http://registry:2323/
+
+
+
 ### API changes
 
 The `libtwine` API has been reorganised with the aim of making it work more

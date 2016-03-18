@@ -66,6 +66,8 @@ twine_destroy(TWINE *context)
 
 	/* Un-load plug-ins before removing the context */
 	twine_plugin_unload_all_(context);
+	twine_rdf_cleanup_(context);
+	twine_cluster_done_(context);
 	/* Remove this context from the chain */
 	if(context == twine_)
 	{
@@ -82,8 +84,6 @@ twine_destroy(TWINE *context)
 			}
 		}
 	}
-	twine_rdf_cleanup_(context);
-	twine_cluster_done_(context);
 	/* sparql_verbose will never be explicitly set to this value */
 	context->sparql_debug = -2;
 	free(context->sparql_uri);

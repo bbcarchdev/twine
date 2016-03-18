@@ -100,7 +100,7 @@ twine_rdf_model_clone(librdf_model *model)
 	{
 		twine_rdf_model_destroy(dest);
 		return NULL;
-	}	   
+	}
 	if(twine_rdf_model_parse(dest, MIME_NQUADS, nq, nqlen))
 	{
 		librdf_free_memory(nq);

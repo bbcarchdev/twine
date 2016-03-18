@@ -101,6 +101,8 @@ writerd_init(int argc, char **argv)
 	twine_set_plugins_enabled(twine, 1);
 	/* twine-writerd is a daemon under normal operation */
 	twine_set_daemon(twine, 0);
+	/* We will participate in a cluster if configured to do so */
+	twine_cluster_enable(twine, 1);
 	/* Initialise the utilities library */
 	if(utils_init(argc, argv, 1))
 	{
