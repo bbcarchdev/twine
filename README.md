@@ -6,6 +6,7 @@ A workflow engine for processing [RDF](https://www.w3.org/RDF/) in customisable 
 ## Table of contents
 
 * [Requirements](#requirements)
+* [Changes as of Twine 7.x](#changes)
 * [Building from source](#building-from-source)
 * [Source tree structure](#source-tree-structure)
 * [Plug-ins](#plug-ins)
@@ -41,6 +42,75 @@ the [BBC Archive Development Github account](https://github.com/bbcarchdev):
 Finally, building Twine requires working GNU autotools (`make`, `autoconf`,
 `automake`, `libtool`, and so on) as well as a C compiler and your operating
 system’s usual developer packages.
+
+## Changes
+
+Significant changes as of Twine 7.x:—
+
+### Configuration file structure
+
+The configuration file structure has been simplified, although
+older settings will be used (emitting a warning) if they are present.
+
+The majority of Twine’s configuration is now in the `[twine]` section, whose
+options apply to both the `twine` command-line utility, the `twine-writerd`
+daemon and the `twine-inject` tool. Individual options can be overridden by
+adding them to specific `[twine-cli]`, `[writerd]` or `[inject]` sections.
+Plug-ins will continue to use their own 
+
+See the [configuration file example](https://github.com/bbcarchdev/twine/blob/develop/conf/twine.conf.in) for further details.
+
+### Configurable workflows
+
+Earlier versions of Twine applied a fixed workflow to an RDF graph being
+processed, which consisted of:—
+
+* Fetching a copy of the existing data from the configured SPARQL store
+* Invoking any pre-processors
+* Replacing the data with the version of the graph in the SPARQL store
+* Invoking any post-processors
+
+As of Twine 7.x, pre- and post-processors have been deprecated, with module
+authors encouraged to implement generic graph processors instead. The
+fixed in-built workflow is now customisable in the configuration file, although
+the defaults are such that Twine will continue to apply the workflow described
+above until configured not to.
+
+A workflow configuration consists simply of a list of comma-separated graph
+processors (usually registered by plug-ins) to apply to ingested RDF data.
+By default, this consists of the following in-built processors:—
+
+* `sparql-get`: fetch a copy of existing data from the SPARQL store
+* `deprecated:preprocess`: invoke any registered pre-processors, for compatibility
+* `sparql-put`: store a copy of the new graph in the SPARQL store
+* `deprecated:postprocess`: invoke any registered post-processors, for compatiblity
+
+The workflow can be altered by specifying a `workflow=...` value in the
+`[twine]` configuration section:—
+
+	[twine]
+	;; A simple workflow which performs no processing and simply PUTs RDF
+	;; graphs to a SPARQL server
+	workflow=sparql-put
+	
+	;; A more complex workflow which passes graphs through a series of
+	;; loaded processors that manipulate the data, before storing the graph
+	;; via SPARQL PUT and finally invoking an additional indexing processor.
+	workflow=myplugin-rearrange,anotherplugin-process,sparql-put,elasticsearch-indexer
+
+Note that the actual graph processors that are available depends upon the
+modules that you have loaded, and the above names are examples only.
+
+### API changes
+
+The `libtwine` API has been reorganised with the aim of making it work more
+consistently and supporting new feature enhancements. Twine will warn when
+a plug-in is loaded which uses the older APIs and binary compatibility will
+be maintained for the forseeable future. Source compatiblity is currently
+being preserved (emitting compiler warnings where possible), but a future
+release will require the explicit definition of a macro in order to continue
+to make use of the deprecated APIs. Eventually the deprecated API prototypes
+will be removed from the `libtwine.h` header altogether.
 
 ## Building from source
 
