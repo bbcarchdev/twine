@@ -1,0 +1,55 @@
+FROM debian:wheezy
+MAINTAINER Simeon van der Steen <simeon.vandersteen@bbc.co.uk>
+
+# Add bbcarchdev apt repo
+ENV DEBIAN_FRONTEND noninteractive
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 9E16A4D302DA096A && \
+	echo "deb [arch=amd64] http://apt.bbcarchdev.net/debian/ wheezy main ports live stage dev" \
+	>> /etc/apt/sources.list.d/bbcarchdev-wheezy.list
+
+# Install everything needed
+RUN apt-get -y update && apt-get install -y --no-install-recommends \
+	vim ngrep procps tcpdump inotify-tools netcat netcat-traditional \
+	twine-anansi-bridge build-essential libtool libltdl-dev automake \
+	autoconf pkg-config libcurl4-gnutls-dev autotools-dev \
+	libraptor2-dev librasqal3-dev librdf0-dev libfcgi-dev \
+	libjansson-dev gtk-doc-tools xsltproc libxml2-dev libssl-dev \
+	cmake flex itstool docbook-xml docbook-xsl docbook-xsl-ns \
+	gettext python-libxml2 libpq-dev libmysqlclient-dev valgrind \
+	uuid-dev libncurses5-dev libedit-dev raptor2-utils gdb vim \
+	libqpid-proton-dev libawsclient-dev libsparqlclient-dev \
+	libmq-dev libquilt-dev libsql-dev python3 supervisor \
+	&& rm -rf /var/lib/apt/lists/*
+
+# Take care of Twine
+COPY src-twine /usr/local/src-twine
+WORKDIR /usr/local/src-twine
+RUN autoreconf -i && \
+	./configure --prefix=/usr --enable-debug && \
+	make && \
+	make install
+
+# Take care of Spindle
+COPY src-spindle /usr/local/src-spindle
+WORKDIR /usr/local/src-spindle
+RUN autoreconf -i && \
+	./configure --prefix=/usr --enable-debug && \
+	make && \
+	make install
+
+# Overwrite the default config
+COPY twine.conf /usr/etc/twine.conf
+
+#VOLUME /var/data/nquads
+#ENV DATA_DIR_NQUADS /var/data/nquads
+
+COPY run.sh /
+ENTRYPOINT ["/run.sh"]
+
+# Install the remote control
+COPY remote.py /usr/local/bin/remote.py
+EXPOSE 8000
+
+# Launch supervisord
+COPY supervisord.conf /etc/supervisor/supervisord.conf
+CMD ["/usr/bin/supervisord"]

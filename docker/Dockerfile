@@ -1,47 +1,29 @@
-FROM acropolis-base
+FROM debian:wheezy
 MAINTAINER Simeon van der Steen <simeon.vandersteen@bbc.co.uk>
 
+# Add bbcarchdev apt repo
 ENV DEBIAN_FRONTEND noninteractive
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 9E16A4D302DA096A && \
+	echo "deb [arch=amd64] http://apt.bbcarchdev.net/debian/ wheezy main ports live stage dev" \
+	>> /etc/apt/sources.list.d/bbcarchdev-wheezy.list
 
-# Install Twine-specific dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-	liburi libsparqlclient-dev libsql \
-	libawsclient-dev libmq-dev \
-	twine-processor-spindle
+# Install Twine and everything else needed
+# Note: we need twine-anansi-bridge here for a lib but it runs in its own container
+RUN apt-get -y update && apt-get install -y --no-install-recommends \
+	netcat netcat-traditional twine twine-processor-spindle twine-anansi-bridge \
+	&& rm -rf /var/lib/apt/lists/*
+	
+# Overwrite the default config
+COPY twine.conf /usr/etc/twine.conf
 
-# Mount dir
-COPY . /usr/local/src/
+# Set an entry point for configuring
+COPY run.sh /
+ENTRYPOINT ["/run.sh"]
 
-# Compile
-RUN 	cd /usr/local/src && \
-	autoreconf -i && \
-	./configure --prefix=/usr --enable-debug && \
-	make && \
-	make install
+# Install the remote control
+COPY remote.py /usr/local/bin/remote.py
+EXPOSE 8000
 
-# Adjust Twine config
-RUN 	sed -i -e 's|update=|; update=|' /usr/etc/twine.conf && \
-	sed -i -e 's|data=|; data=|' /usr/etc/twine.conf && \
-	sed -i -e 's|query=|; query=|' /usr/etc/twine.conf && \
-	echo '\n\
-[plugins]\n\
-module=rdf.so\n\
-module=spindle.so\n\
-\n\
-[sparql]\n\
-update=http://4store:8080/update/\n\
-data=http://4store:8080/data/\n\
-query=http://4store:8080/sparql/\n\
-\n\
-[spindle]\n\
-graph=http://bbcarchdev.net/\n\
-multigraph=yes\n\
-bucket=spindle\n\
-db=pgsql://postgres:postgres@postgres/postgres\n\
-\n\
-[s3]\n\
-endpoint=s3:4569\n\
-access=x\n\
-secret=x' >> /usr/etc/twine.conf
-
-CMD /bin/bash
+# Launch supervisord
+COPY supervisord.conf /etc/supervisor/supervisord.conf
+CMD ["/usr/bin/supervisord"]
