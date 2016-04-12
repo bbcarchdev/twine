@@ -22,7 +22,7 @@ RUN apt-get -y update && apt-get install -y --no-install-recommends \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Take care of Twine
-COPY src-twine /usr/local/src-twine
+COPY twine /usr/local/src-twine
 WORKDIR /usr/local/src-twine
 RUN autoreconf -i && \
 	./configure --prefix=/usr --enable-debug && \
@@ -30,7 +30,7 @@ RUN autoreconf -i && \
 	make install
 
 # Take care of Spindle
-COPY src-spindle /usr/local/src-spindle
+COPY spindle /usr/local/src-spindle
 WORKDIR /usr/local/src-spindle
 RUN autoreconf -i && \
 	./configure --prefix=/usr --enable-debug && \
@@ -38,18 +38,18 @@ RUN autoreconf -i && \
 	make install
 
 # Overwrite the default config
-COPY twine.conf /usr/etc/twine.conf
+COPY twine/docker/twine.conf /usr/etc/twine.conf
 
 #VOLUME /var/data/nquads
 #ENV DATA_DIR_NQUADS /var/data/nquads
 
-COPY run.sh /
+COPY twine/docker/run.sh /
 ENTRYPOINT ["/run.sh"]
 
 # Install the remote control
-COPY remote.py /usr/local/bin/remote.py
+COPY twine/docker/remote.py /usr/local/bin/remote.py
 EXPOSE 8000
 
 # Launch supervisord
-COPY supervisord.conf /etc/supervisor/supervisord.conf
+COPY twine/docker/supervisord.conf /etc/supervisor/supervisord.conf
 CMD ["/usr/bin/supervisord"]
