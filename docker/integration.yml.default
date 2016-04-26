@@ -1,0 +1,25 @@
+twine:
+  image: twine
+  environment:
+   - HOST_NAME=acropolis.localhost
+  links:
+   - postgres
+   - 4store:fourstore
+   - s3
+
+cucumber:
+  image: vm-10-100-0-25.ch.bbcarchdev.net/cucumber
+  links:
+   - twine
+   - postgres
+  volumes:
+   - ./cucumber:/data
+
+postgres:
+  image: vm-10-100-0-25.ch.bbcarchdev.net/postgres
+
+4store:
+  image: vm-10-100-0-25.ch.bbcarchdev.net/4store
+
+s3:
+  image: vm-10-100-0-25.ch.bbcarchdev.net/s3

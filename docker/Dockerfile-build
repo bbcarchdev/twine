@@ -44,5 +44,5 @@ COPY docker/remote.py /usr/local/bin/remote.py
 EXPOSE 8000
 
 # Launch supervisord
-RUN ln docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+RUN ln docker/supervisord.conf /etc/supervisor/conf.d/twine.conf
 CMD ["/usr/bin/supervisord"]

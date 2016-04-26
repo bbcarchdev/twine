@@ -15,25 +15,23 @@ fi
 
 if [ -f "${INTEGRATION}.default" ]
 then
-	if [ ! -f "${INTEGRATION}" ]
+	# Copy the YML script and adjust the paths
+	cp ${INTEGRATION}.default ${INTEGRATION}
+
+	if [ ! "${JENKINS_HOME}" = '' ]
 	then
-		cp ${INTEGRATION}.default ${INTEGRATION}
+		# Change "in-container" mount path to host mount path
+                sed -i -e "s|- \./|- ${HOST_DATADIR}jobs/${JOB_NAME}/workspace/docker/|" "${INTEGRATION}"
 	fi
 
 	# Tear down integration from previous run if it was still running
-	# FIXME
 	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} stop
 	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} rm -f
 
-	# Start project integration
-	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} up -d
-
 	# Build and run integration tester
-	# docker run --rm=true --link=${PROJECT_NAME//-}_${PROJECT_NAME}_1:${PROJECT_NAME} ${PROJECT_NAME}-test
 	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} run cucumber
 
 	# Tear down integration
-	# FIXME
 	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} stop
 	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} rm -f
 fi
