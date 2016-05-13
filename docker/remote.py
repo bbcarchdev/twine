@@ -47,7 +47,7 @@ class Handler(BaseHTTPRequestHandler):
         try:
             # Execute an ingest
             if self.path == '/ingest':
-                args = 'twine -c /usr/etc/twine.conf {}'.format(REMOTE_DATA)
+                args = 'twine -d -c /usr/etc/twine.conf {}'.format(REMOTE_DATA)
                 logs = subprocess.check_output(args, 
                                                stderr=subprocess.STDOUT, 
                                                universal_newlines=True, shell=True)
