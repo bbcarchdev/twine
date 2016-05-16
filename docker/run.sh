@@ -38,6 +38,9 @@ if [ ! -f /init-done ]; then
                 sed -i -e "s|PLUGINS||" /usr/etc/twine.conf
         fi
 
+        # Initialise the database, so that all depending containers can use Twine straight away
+        twine -d -c /usr/etc/twine.conf -S
+
 	touch /init-done
 fi
 
