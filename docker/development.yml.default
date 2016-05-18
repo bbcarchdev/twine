@@ -1,0 +1,7 @@
+# Extends integration.yml.default; run with `docker-compose -f integration.yml.default -f development.yml.default ...`
+
+twine:
+  build: ../
+  dockerfile: docker/Dockerfile-build
+  volumes:
+   - ../:/usr/local/src

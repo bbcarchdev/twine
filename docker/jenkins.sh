@@ -29,9 +29,9 @@ then
 	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} rm -f
 
 	# Build and run integration tester
-	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} run cucumber
+	#docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} run cucumber
 
 	# Tear down integration
-	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} stop
-	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} rm -f
+	#docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} stop
+	#docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} rm -f
 fi
