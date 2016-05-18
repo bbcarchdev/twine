@@ -18,6 +18,11 @@ import json
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
+import select
+import psycopg2
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+DSN = 'host=postgres dbname=spindle user=postgres password=postgres'
+
 REMOTE_DATA = '/tmp/remote-data.nq'
 
 class Handler(BaseHTTPRequestHandler):
@@ -28,7 +33,7 @@ class Handler(BaseHTTPRequestHandler):
         '''
         Handle a GET
         '''
-        self._reply_with({'message':'Twine remote control'})
+        self._reply_with(200, {'message':'Twine remote control'})
 
     def do_POST(self):
         '''
@@ -51,6 +56,8 @@ class Handler(BaseHTTPRequestHandler):
                 logs = subprocess.check_output(args, 
                                                stderr=subprocess.STDOUT, 
                                                universal_newlines=True, shell=True)
+                # Now wait for all updates to complete
+                self._wait_for_ingest()
                 response['logs'] = logs
                 response['command'] = args
                 response['message'] = 'Ingest completed'
@@ -71,9 +78,68 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(json.dumps(data, indent=True).encode("utf-8"))
         self.wfile.flush()
 
+    def _wait_for_ingest(self):
+        '''
+        Wait for ingest to complete
+        '''
+        curs = self.server.db.cursor()
+        curs.execute("LISTEN ingest")
+
+        logging.debug("Waiting for ingest done notification")
+        while 1:
+            if select.select([self.server.db],[],[])!=([],[],[]):
+                self.server.db.poll()
+                while self.server.db.notifies:
+                    notify = self.server.db.notifies.pop(0) # Not using the data
+                    logging.debug("Received notification")
+                break;
+
+class DbHTTPServer(HTTPServer):
+    def __init__(self, address, handler):
+        HTTPServer.__init__(self, address, handler)
+
+        # Initiate Postgres connection
+        self.db = psycopg2.connect(DSN)
+        self.db.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        logging.debug("Database connection established")
+        self._init_db_trigger()
+
+    def close(self):
+        self.db.close()
+
+    def _init_db_trigger(self):
+        '''
+        Initiate Postgres trigger
+        '''
+        curs = self.db.cursor()
+        curs.execute('''
+            CREATE OR REPLACE FUNCTION notify_ingest_done()
+              RETURNS trigger AS
+            $BODY$
+            BEGIN
+             IF NOT EXISTS(SELECT 1 FROM "state" WHERE "status" = 'DIRTY') THEN
+              NOTIFY ingest;
+             END IF;
+             RETURN NULL;
+            END;
+            $BODY$
+            LANGUAGE plpgsql;
+        ''')
+        curs.execute('''
+            DROP TRIGGER IF EXISTS state_changes ON state;
+        ''')
+        curs.execute('''
+            CREATE TRIGGER state_changes
+            AFTER UPDATE OF "status"
+            ON state
+            FOR EACH STATEMENT
+            EXECUTE PROCEDURE notify_ingest_done();
+        ''')
+        logging.debug("Trigger created")
+
 if __name__ == '__main__':
     # Start the server
-    httpd = HTTPServer(('', 8000), Handler)
+    httpd = DbHTTPServer(('', 8000), Handler)
     try:
         logging.info("Server Started")
         httpd.serve_forever()

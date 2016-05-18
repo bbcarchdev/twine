@@ -19,6 +19,7 @@ RUN apt-get -y update && apt-get install -y --no-install-recommends \
 	uuid-dev libncurses5-dev libedit-dev raptor2-utils gdb vim \
 	libqpid-proton-dev libawsclient-dev libsparqlclient-dev \
 	libmq-dev libquilt-dev libsql-dev python3 supervisor \
+	python3-psycopg2 \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Take care of Twine
