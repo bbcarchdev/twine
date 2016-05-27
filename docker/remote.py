@@ -33,7 +33,20 @@ class Handler(BaseHTTPRequestHandler):
         '''
         Handle a GET
         '''
-        self._reply_with(200, {'message':'Twine remote control'})
+        logging.debug('Received a GET on {}'.format(self.path))
+        response = {'message':''}
+
+        if self.path == '/update':
+            curs = self.server.db.cursor()
+            curs.execute("UPDATE \"state\" SET \"status\" = 'DIRTY';")
+
+            # Now wait for all updates to complete
+            self._wait_for_ingest()
+            response['message'] = 'Update completed'
+        else:
+            response['message'] = 'Twine remote control. Call /update to update the currently ingested data'
+
+        self._reply_with(200, response)
 
     def do_POST(self):
         '''
