@@ -3,8 +3,16 @@ set -e
 
 # Wait for postgres, if we're using spindle
 if [ "${ENGINE}" = "spindle" ]; then
-        until nc -z $POSTGRES_PORT_5432_TCP_ADDR $POSTGRES_PORT_5432_TCP_PORT; do
+        until nc -z postgres 5432; do
             echo "$(date) - waiting for postgres..."
+            sleep 2
+        done
+fi
+
+# Wait for etcd, if we're using a cluster
+if [ "${CLUSTER}" = "true" ]; then
+        until nc -z etcd 2379; do
+            echo "$(date) - waiting for etcd..."
             sleep 2
         done
 fi
@@ -36,6 +44,13 @@ if [ ! -f /init-done ]; then
                 sed -i -e "s|WORKFLOW_CLI|sparql-get,sparql-put|" /usr/etc/twine.conf
                 sed -i -e "s|WORKFLOW_WRITER|spindle-generate|" /usr/etc/twine.conf
                 sed -i -e "s|PLUGINS||" /usr/etc/twine.conf
+        fi
+
+        if [ "${CLUSTER}" = "true" ]; then
+                # activate a cluster
+                sed -i -e "s|CLUSTER|cluster-name=twine\ncluster-verbose=yes\nenvironment=testing\nregistry=http://etcd:2379/|" /usr/etc/twine.conf
+        else
+                sed -i -e "s|CLUSTER||" /usr/etc/twine.conf
         fi
 
         # Initialise the database, so that all depending containers can use Twine straight away
