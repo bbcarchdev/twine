@@ -18,7 +18,7 @@ RUN apt-get -y update && apt-get install -y --no-install-recommends \
 	gettext python-libxml2 libpq-dev libmysqlclient-dev valgrind \
 	uuid-dev libncurses5-dev libedit-dev raptor2-utils gdb vim \
 	libqpid-proton-dev libawsclient-dev libsparqlclient-dev \
-	libmq-dev libquilt-dev libsql-dev python3 supervisor \
+	libmq-dev libquilt-dev libsql-dev python3 supervisor mc \
 	python3-psycopg2 \
 	&& rm -rf /var/lib/apt/lists/*
 
@@ -36,6 +36,7 @@ RUN ln docker/twine.conf /usr/etc/twine.conf
 
 #VOLUME /var/data/nquads
 #ENV DATA_DIR_NQUADS /var/data/nquads
+ENV TERM xterm
 
 COPY docker/run.sh /
 ENTRYPOINT ["/run.sh"]
