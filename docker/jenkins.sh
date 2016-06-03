@@ -21,7 +21,7 @@ then
 	if [ ! "${JENKINS_HOME}" = '' ]
 	then
 		# Change "in-container" mount path to host mount path
-                sed -i -e "s|- \./|- ${HOST_DATADIR}jobs/${JOB_NAME}/workspace/docker/twine/|" "${INTEGRATION}"
+                sed -i -e "s|- \./|- ${HOST_DATADIR}jobs/${JOB_NAME}/workspace/twine/docker/|" "${INTEGRATION}"
 	fi
 
 	# Tear down integration from previous run if it was still running
