@@ -4,7 +4,7 @@ twine:
   build: ../../
   dockerfile: twine/docker/Dockerfile-build
   volumes:
-   - ../../twine:/usr/local/src/twine
+   - ../:/usr/local/src/twine
    - ../../spindle:/usr/local/src/spindle
 
 quilt:

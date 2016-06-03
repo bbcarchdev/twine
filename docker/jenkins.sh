@@ -18,6 +18,7 @@ then
 	# Copy the YML script and adjust the paths
 	cp ${INTEGRATION}.default ${INTEGRATION}
 
+	# Turn the local paths into absolute ones
 	if [ ! "${JENKINS_HOME}" = '' ]
 	then
 		# Change "in-container" mount path to host mount path

@@ -9,7 +9,7 @@ twine:
    - s3
 
 quilt:
-  image: vm-10-100-0-25.ch.bbcarchdev.net/quilt-spindle
+  image: vm-10-100-0-25.ch.bbcarchdev.net/quilt
   environment:
    - HOST_NAME=acropolis.localhost
    - ENGINE=spindle
