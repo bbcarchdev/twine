@@ -2,14 +2,26 @@ twine:
   image: twine
   environment:
    - HOST_NAME=acropolis.localhost
+   - ENGINE=spindle
   links:
    - postgres
    - 4store:fourstore
    - s3
 
+quilt:
+  image: vm-10-100-0-25.ch.bbcarchdev.net/quilt-spindle
+  environment:
+   - HOST_NAME=acropolis.localhost
+   - ENGINE=spindle
+  links:
+   - postgres
+   - 4store:fourstore
+   - s3:s3
+
 cucumber:
   image: vm-10-100-0-25.ch.bbcarchdev.net/cucumber
   links:
+   - quilt
    - twine
    - postgres
   volumes:

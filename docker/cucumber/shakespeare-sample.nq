@@ -1,0 +1,59 @@
+<http://shakespeare.acropolis.org.uk/images> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/ns/void#DatasetDescription> <http://shakespeare.acropolis.org.uk/images.ttl> .
+<http://shakespeare.acropolis.org.uk/images> <http://purl.org/dc/terms/license> <http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/> <http://shakespeare.acropolis.org.uk/images.ttl> .
+<http://shakespeare.acropolis.org.uk/images> <http://xmlns.com/foaf/0.1/primaryTopic> <http://shakespeare.acropolis.org.uk/images#id> <http://shakespeare.acropolis.org.uk/images.ttl> .
+<http://shakespeare.acropolis.org.uk/images#id> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/ns/void#Dataset> <http://shakespeare.acropolis.org.uk/images.ttl> .
+<http://shakespeare.acropolis.org.uk/images#id> <http://purl.org/dc/terms/license> <http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/> <http://shakespeare.acropolis.org.uk/images.ttl> .
+<http://shakespeare.acropolis.org.uk/images#id> <http://rdfs.org/ns/void#subset> <http://shakespeare.acropolis.org.uk/images/6731510> <http://shakespeare.acropolis.org.uk/images.ttl> .
+<http://shakespeare.acropolis.org.uk/> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/ns/void#DatasetDescription> <http://shakespeare.acropolis.org.uk/index.ttl> .
+<http://shakespeare.acropolis.org.uk/> <http://purl.org/dc/terms/license> <http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/> <http://shakespeare.acropolis.org.uk/index.ttl> .
+<http://shakespeare.acropolis.org.uk/> <http://xmlns.com/foaf/0.1/primaryTopic> <http://shakespeare.acropolis.org.uk/#id> <http://shakespeare.acropolis.org.uk/index.ttl> .
+<http://shakespeare.acropolis.org.uk/#id> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/ns/void#Dataset> <http://shakespeare.acropolis.org.uk/index.ttl> .
+<http://shakespeare.acropolis.org.uk/#id> <http://www.w3.org/2000/01/rdf-schema#label> "BBC Shakespeare Archive Resource"@en-gb <http://shakespeare.acropolis.org.uk/index.ttl> .
+<http://shakespeare.acropolis.org.uk/#id> <http://purl.org/dc/terms/description> "This site contains information about hundreds of TV and radio programmes from the BBC\u2019s Shakespeare collection, as well as more than a thousand photos from classic Shakespeare productions."@en-gb <http://shakespeare.acropolis.org.uk/index.ttl> .
+<http://shakespeare.acropolis.org.uk/#id> <http://purl.org/dc/terms/license> <http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/> <http://shakespeare.acropolis.org.uk/index.ttl> .
+<http://shakespeare.acropolis.org.uk/#id> <http://rdfs.org/ns/void#subset> <http://shakespeare.acropolis.org.uk/images#id> <http://shakespeare.acropolis.org.uk/index.ttl> .
+<http://shakespeare.acropolis.org.uk/#id> <http://rdfs.org/ns/void#subset> <http://shakespeare.acropolis.org.uk/programmes#id> <http://shakespeare.acropolis.org.uk/index.ttl> .
+<http://shakespeare.acropolis.org.uk/#id> <http://rdfs.org/ns/void#subset> <http://shakespeare.acropolis.org.uk/works#id> <http://shakespeare.acropolis.org.uk/index.ttl> .
+<http://shakespeare.acropolis.org.uk/#id> <http://www.w3.org/2000/01/rdf-schema#seeAlso> <http://shakespeare.acropolis.org.uk/terms#id> <http://shakespeare.acropolis.org.uk/index.ttl> .
+<http://shakespeare.acropolis.org.uk/#members> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/odrl/2/Group> <http://shakespeare.acropolis.org.uk/index.ttl> .
+<http://shakespeare.acropolis.org.uk/#members> <http://www.w3.org/2000/01/rdf-schema#label> "Authorised users of the BBC Shakespeare Archive Resource"@en-gb <http://shakespeare.acropolis.org.uk/index.ttl> .
+<http://shakespeare.acropolis.org.uk/terms> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Document> <http://shakespeare.acropolis.org.uk/terms.ttl> .
+<http://shakespeare.acropolis.org.uk/terms> <http://purl.org/dc/terms/license> <http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/> <http://shakespeare.acropolis.org.uk/terms.ttl> .
+<http://shakespeare.acropolis.org.uk/terms> <http://xmlns.com/foaf/0.1/primaryTopic> <http://shakespeare.acropolis.org.uk/terms#id> <http://shakespeare.acropolis.org.uk/terms.ttl> .
+<http://shakespeare.acropolis.org.uk/terms#id> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/odrl/2/Policy> <http://shakespeare.acropolis.org.uk/terms.ttl> .
+<http://shakespeare.acropolis.org.uk/terms#id> <http://www.w3.org/2000/01/rdf-schema#label> "Accessible only by authorised users in formal education in the UK"@en-gb <http://shakespeare.acropolis.org.uk/terms.ttl> .
+<http://shakespeare.acropolis.org.uk/terms#id> <http://www.w3.org/ns/odrl/2/permission> <http://shakespeare.acropolis.org.uk/terms#play> <http://shakespeare.acropolis.org.uk/terms.ttl> .
+<http://shakespeare.acropolis.org.uk/terms#play> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/odrl/2/Permission> <http://shakespeare.acropolis.org.uk/terms.ttl> .
+<http://shakespeare.acropolis.org.uk/terms#play> <http://www.w3.org/ns/odrl/2/action> <http://www.w3.org/ns/odrl/2/play> <http://shakespeare.acropolis.org.uk/terms.ttl> .
+<http://shakespeare.acropolis.org.uk/terms#play> <http://www.w3.org/ns/odrl/2/assignee> <http://shakespeare.acropolis.org.uk/#members> <http://shakespeare.acropolis.org.uk/terms.ttl> .
+<http://shakespeare.acropolis.org.uk/#members> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/odrl/2/Group> <http://shakespeare.acropolis.org.uk/terms.ttl> .
+<http://shakespeare.acropolis.org.uk/#members> <http://www.w3.org/2000/01/rdf-schema#label> "Authorised users of the BBC Shakespeare Archive Resource"@en-gb <http://shakespeare.acropolis.org.uk/terms.ttl> .
+<http://shakespeare.acropolis.org.uk/images/6731510/player> <http://purl.org/dc/terms/format> <http://purl.org/NET/mediatypes/text/html> <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://dbpedia.org/resource/Alan_Rowe> <http://www.w3.org/2002/07/owl#sameAs> <http://www.dbpedialite.org/things/25794052#id> <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://shakespeare.acropolis.org.uk/images/6731510> <http://xmlns.com/foaf/0.1/primaryTopic> <http://shakespeare.acropolis.org.uk/images/6731510#id> <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://shakespeare.acropolis.org.uk/images/6731510#id> <http://purl.org/dc/terms/description> "An Age of Kings: Henry V: Part II: The Band of Brothers. Judi Dench as Katherine, Alan Rowe as the King of France and Robert Hardy as King Henry V"@en-gb <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://shakespeare.acropolis.org.uk/images/6731510#id> <http://search.yahoo.com/mrss/player> <http://shakespeare.acropolis.org.uk/images/6731510/player> <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://shakespeare.acropolis.org.uk/images/6731510#id> <http://www.w3.org/2000/01/rdf-schema#label> "Image no. 6731510"@en-gb <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://dbpedia.org/resource/Henry_V_(play)> <http://www.w3.org/2002/07/owl#sameAs> <http://www.dbpedialite.org/things/45084#id> <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://shakespeare.acropolis.org.uk/images/6731510> <http://purl.org/dc/terms/license> <http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/> <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://www.wikidata.org/entity/Q495954> <http://www.w3.org/2002/07/owl#sameAs> <http://dbpedia.org/resource/Henry_V_(play)> <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://dbpedia.org/resource/Robert_Hardy> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Person> <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://shakespeare.acropolis.org.uk/images/6731510#id> <http://xmlns.com/foaf/0.1/depicts> <http://dbpedia.org/resource/Robert_Hardy> <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://shakespeare.acropolis.org.uk/images/6731510#id> <http://xmlns.com/foaf/0.1/depicts> <http://dbpedia.org/resource/Judi_Dench> <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://www.wikidata.org/entity/Q495954> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/vocab/frbr/core#Work> <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://dbpedia.org/resource/Judi_Dench> <http://www.w3.org/2000/01/rdf-schema#label> "Judi Dench"@en-gb <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://dbpedia.org/resource/Robert_Hardy> <http://www.w3.org/2000/01/rdf-schema#label> "Robert Hardy"@en-gb <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://shakespeare.acropolis.org.uk/images/6731510#id> <http://xmlns.com/foaf/0.1/depicts> <http://dbpedia.org/resource/Alan_Rowe> <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://www.wikidata.org/entity/Q495954> <http://www.w3.org/2000/01/rdf-schema#label> "Henry V"@en-gb <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://dbpedia.org/resource/Judi_Dench> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Person> <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://dbpedia.org/resource/Alan_Rowe> <http://www.w3.org/2000/01/rdf-schema#label> "Alan Rowe"@en-gb <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://dbpedia.org/resource/Robert_Hardy> <http://www.w3.org/2002/07/owl#sameAs> <http://www.dbpedialite.org/things/167247#id> <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://shakespeare.acropolis.org.uk/images/6731510#id> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/vocab/frbr/core#Work> <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://shakespeare.acropolis.org.uk/images/6731510#id> <http://purl.org/dc/terms/subject> <http://www.wikidata.org/entity/Q495954> <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://shakespeare.acropolis.org.uk/images/6731510/player> <http://purl.org/dc/terms/license> <http://shakespeare.acropolis.org.uk/terms#id> <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://dbpedia.org/resource/Judi_Dench> <http://www.w3.org/2002/07/owl#sameAs> <http://www.dbpedialite.org/things/85432#id> <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://shakespeare.acropolis.org.uk/images/6731510> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Document> <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://shakespeare.acropolis.org.uk/images/6731510#id> <http://purl.org/dc/terms/date> "1960"^^<http://www.w3.org/2001/XMLSchema#gYear> <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://shakespeare.acropolis.org.uk/images/6731510#id> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Image> <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://dbpedia.org/resource/Alan_Rowe> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Person> <http://shakespeare.acropolis.org.uk/images/6731510> .
+<http://shakespeare.acropolis.org.uk/images/6731510/player> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://purl.org/dc/dcmitype/StillImage> <http://shakespeare.acropolis.org.uk/images/6731510> .

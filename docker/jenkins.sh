@@ -4,7 +4,7 @@ PROJECT_NAME="twine"
 INTEGRATION="docker/integration.yml"
 
 # Build the project
-docker build -t ${PROJECT_NAME} -f docker/Dockerfile-build .
+docker build -t ${PROJECT_NAME} -f docker/Dockerfile-build ../
 
 # If successfully built, tag and push to registry
 if [ ! "${JENKINS_HOME}" = '' ]
@@ -25,13 +25,11 @@ then
 	fi
 
 	# Tear down integration from previous run if it was still running
-	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} stop
-	docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} rm -f
+	docker-compose -p ${PROJECT_NAME} -f ${INTEGRATION} down
 
 	# Build and run integration tester
-	#docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} run cucumber
+	docker-compose -p ${PROJECT_NAME} -f ${INTEGRATION} run cucumber
 
 	# Tear down integration
-	#docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} stop
-	#docker-compose -p ${PROJECT_NAME}-test -f ${INTEGRATION} rm -f
+	docker-compose -p ${PROJECT_NAME} -f ${INTEGRATION} down
 fi
