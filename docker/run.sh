@@ -9,14 +9,6 @@ if [ "${ENGINE}" = "spindle" ]; then
         done
 fi
 
-# Wait for etcd, if we're using a cluster
-if [ "${CLUSTER}" = "true" ]; then
-        until nc -z etcd 2379; do
-            echo "$(date) - waiting for etcd..."
-            sleep 2
-        done
-fi
-
 # Adjust the configuration on first run
 if [ ! -f /init-done ]; then
 	echo "Initialising Twine.."
@@ -25,8 +17,8 @@ if [ ! -f /init-done ]; then
 	sed -i -e "s|HOST_NAME|http://${HOST_NAME-acropolis.org.uk}/|" /usr/etc/twine.conf
 
 	# 4store settings
-	sed -i -e "s|FOURSTORE_PORT_9000_TCP_ADDR|$FOURSTORE_PORT_9000_TCP_ADDR|g" /usr/etc/twine.conf
-	sed -i -e "s|FOURSTORE_PORT_9000_TCP_PORT|$FOURSTORE_PORT_9000_TCP_PORT|g" /usr/etc/twine.conf
+	#sed -i -e "s|FOURSTORE_PORT_9000_TCP_ADDR|$FOURSTORE_PORT_9000_TCP_ADDR|g" /usr/etc/twine.conf
+	#sed -i -e "s|FOURSTORE_PORT_9000_TCP_PORT|$FOURSTORE_PORT_9000_TCP_PORT|g" /usr/etc/twine.conf
 
 	# s3 settings
 	sed -i -e "s|S3_PORT_4569_TCP_ADDR|$S3_PORT_4569_TCP_ADDR:$S3_PORT_4569_TCP_PORT|" /usr/etc/twine.conf
@@ -48,7 +40,7 @@ if [ ! -f /init-done ]; then
 
         if [ "${CLUSTER}" = "true" ]; then
                 # activate a cluster
-                sed -i -e "s|CLUSTER|cluster-name=twine\ncluster-verbose=yes\nenvironment=testing\nregistry=http://etcd:2379/|" /usr/etc/twine.conf
+                sed -i -e "s|CLUSTER|cluster-name=twine\ncluster-verbose=yes\nenvironment=testing\nregistry=pgsql://postgres:postgres@postgres/spindle|" /usr/etc/twine.conf
         else
                 sed -i -e "s|CLUSTER||" /usr/etc/twine.conf
         fi
