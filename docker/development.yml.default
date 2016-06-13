@@ -2,6 +2,9 @@
 
 twine:
   build: ../../
+  #command: gdb --args /usr/sbin/twine-writerd -d -c /usr/etc/twine.conf -f
+  # use this to make gdb work
+  privileged: true
   dockerfile: twine/docker/Dockerfile-build
   volumes:
    - ../:/usr/local/src/twine

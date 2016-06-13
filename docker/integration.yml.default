@@ -3,6 +3,7 @@ twine:
   environment:
    - HOST_NAME=acropolis.localhost
    - ENGINE=spindle
+#   - CLUSTER=true
   links:
    - postgres
    - 4store:fourstore

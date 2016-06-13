@@ -17,18 +17,6 @@ When(/^"([^"]*)" is ingested into Twine$/) do |file|
     expect(response).to be_a(Net::HTTPOK)
 end
 
-When(/^I update all the data currently ingested$/) do
-        # GET the remote control to update the ingested data
-        http = Net::HTTP.new('twine', 8000)
-        http.read_timeout = 300
-
-        request = Net::HTTP::Get.new("/update")
-        response = http.request(request)
-
-        # Assert if the response was OK
-        expect(response).to be_a(Net::HTTPOK)
-end
-
 When(/^I count the amount of relevant entities that are ingested$/) do
         @entities = count("http://quilt/everything.nt")
         puts "(#{@entities} entities found)"

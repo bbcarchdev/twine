@@ -79,8 +79,9 @@ class Handler(BaseHTTPRequestHandler):
             response['logs'] = e.output
             response['message'] = 'Error: {}'.format(e)
             self._reply_with(500, response)
-            
-        
+
+        logging.debug(response['logs'])
+
     def _reply_with(self, code, data):
         '''
         Send an UTF-8 encoded JSON reply
