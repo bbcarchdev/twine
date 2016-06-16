@@ -63,7 +63,8 @@ main(int argc, char **argv)
 	signal(SIGTTIN, SIG_IGN);
 	signal(SIGTTOU, SIG_IGN);
 	signal(SIGCHLD, SIG_IGN);
-	signal(SIGTERM, writerd_signal);	
+	signal(SIGTERM, writerd_signal);
+	signal(SIGABRT, writerd_signal);
 	if(detach)
 	{	   
 		child = twine_daemonize(twine, LOCALSTATEDIR "/run/twine-writerd.pid");
