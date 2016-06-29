@@ -1,8 +1,12 @@
 #encoding: utf-8
-Feature: Ingesting nquad files into Twine/Spindle
+Feature: Twine/Spindle collections and associated media
 
-Scenario: Ingesting Shakespeare collection sample
-	When "shakespeare-sample.nq" is ingested into Twine
-	And I count the amount of relevant entities that are ingested
-	And A collection exists for "http://shakespeare.acropolis.org.uk/#id"
+Scenario: Number of proxies in the collection
+	When I count the amount of relevant entities that are ingested
+	And A proxy exists for "http://shakespeare.acropolis.org.uk/#id"
 	Then The number of relevant entities in the collection should be the same
+
+Scenario: Number of proxies in the collection
+	When A proxy exists for "http://shakespeare.acropolis.org.uk/images/6731510#id"
+	And The proxy is associated with "http://dbpedia.org/resource/Judi_Dench"'s proxy
+	And The proxy is listed in the graph of "http://dbpedia.org/resource/Judi_Dench"'s proxy

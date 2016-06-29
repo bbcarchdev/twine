@@ -27,3 +27,13 @@ def count(uri, offset=0, limit=100)
 
         return n
 end
+
+def uri(c_uri)
+        uri = URI("http://quilt/")
+        params = { :uri => c_uri }
+        uri.query = URI.encode_www_form(params)
+        response = Net::HTTP.get_response(uri)
+        expect(response).to be_a(Net::HTTPSeeOther)
+
+        return response['location'].chomp('#id')[1..-1]
+end
