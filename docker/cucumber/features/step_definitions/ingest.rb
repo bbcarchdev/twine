@@ -68,3 +68,14 @@ When(/^The proxy is listed in the graph of "([^"]*)"'s proxy$/) do |uri|
 
         expect(found).to eq(true)
 end
+
+When(/^I search for media for "([^"]*)"$/) do |audience|
+        params = { "for" => audience }
+        @entities = results("http://quilt/", params)
+        puts "(#{@entities.count} results found)"
+end
+
+Then(/^The proxy is listed in the search results$/) do
+  proxyURI = subj = RDF::URI.new("http://acropolis.localhost/#{@proxy}#id")
+  expect(@entities).to include(proxyURI)
+end

@@ -12,6 +12,7 @@ def count(uri, offset=0, limit=100)
                 RDF::URI.new("http://shakespeare.acropolis.org.uk/ontologies/work#Sonnet"),
                 RDF::URI.new("http://shakespeare.acropolis.org.uk/ontologies/work#Poem"),
         ]
+
         # Count entities on this page
         n = 0
         objs.each do |obj|
@@ -36,4 +37,25 @@ def uri(c_uri)
         expect(response).to be_a(Net::HTTPSeeOther)
 
         return response['location'].chomp('#id')[1..-1]
+end
+
+def results(uri, params)
+        # Define the query
+        query = URI.encode_www_form(params)
+        graph = RDF::Graph.load("#{uri}?#{query}")
+        slots_query = RDF::Query.new(
+        :entry => {
+                RDF.type => RDF::URI.new("http://purl.org/ontology/olo/core#Slot"),
+                RDF::URI.new("http://purl.org/ontology/olo/core#index") => :index,
+                RDF::URI.new("http://purl.org/ontology/olo/core#item") => :item
+        })
+        
+        # Process the results of the query
+        results = Array.new
+        slots_query.execute(graph).each do |entry|
+                results.insert(entry.index, entry.item)
+        end
+        
+        # Remove any eventual nil value before and return the array
+        return results.compact
 end
