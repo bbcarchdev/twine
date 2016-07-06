@@ -2,7 +2,7 @@
 Before do
         $dunit ||= false
         if $dunit == false
-#                step "\"shakespeare-sample.nq\" is ingested into Twine"
+                step "\"shakespeare-sample.nq\" is ingested into Twine"
                 $dunit = true
         end
 end
