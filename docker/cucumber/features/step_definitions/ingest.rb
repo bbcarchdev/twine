@@ -20,7 +20,7 @@ When(/^"([^"]*)" is ingested into Twine$/) do |file|
 
         # Print the logs
         a = response.body()
-        puts "#{a}"
+        # puts "#{a}"
 
         # Assert if the response was OK
         expect(response).to be_a(Net::HTTPOK)
