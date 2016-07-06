@@ -40,18 +40,28 @@ def uri(c_uri)
 end
 
 def results(uri, params)
-        # Define the query
+        # Define the query and execute it
         query = URI.encode_www_form(params)
         graph = RDF::Graph.load("#{uri}?#{query}")
+        
+        # Look for the English translation of this query and print it
+        title_query = RDF::Query.new(
+        RDF::URI.new("http://acropolis.localhost/?#{query}") => {
+                RDF.type => RDF::URI.new("http://rdfs.org/ns/void#Dataset"),
+                RDF::URI.new("http://www.w3.org/2000/01/rdf-schema#label") => :label
+        })
+        title_query.execute(graph).each do |entry|
+                puts entry.label
+        end
+        
+        # Process the results of the query
+        results = Array.new
         slots_query = RDF::Query.new(
         :entry => {
                 RDF.type => RDF::URI.new("http://purl.org/ontology/olo/core#Slot"),
                 RDF::URI.new("http://purl.org/ontology/olo/core#index") => :index,
                 RDF::URI.new("http://purl.org/ontology/olo/core#item") => :item
         })
-        
-        # Process the results of the query
-        results = Array.new
         slots_query.execute(graph).each do |entry|
                 results.insert(entry.index, entry.item)
         end

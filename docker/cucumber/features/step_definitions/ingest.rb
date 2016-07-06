@@ -2,7 +2,7 @@
 Before do
         $dunit ||= false
         if $dunit == false
-                step "\"shakespeare-sample.nq\" is ingested into Twine"
+#                step "\"shakespeare-sample.nq\" is ingested into Twine"
                 $dunit = true
         end
 end
@@ -20,7 +20,7 @@ When(/^"([^"]*)" is ingested into Twine$/) do |file|
 
         # Print the logs
         a = response.body()
-        #puts "#{a}"
+        puts "#{a}"
 
         # Assert if the response was OK
         expect(response).to be_a(Net::HTTPOK)
