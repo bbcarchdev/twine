@@ -21,7 +21,7 @@ if [ ! -f /init-done ]; then
 	#sed -i -e "s|FOURSTORE_PORT_9000_TCP_PORT|$FOURSTORE_PORT_9000_TCP_PORT|g" /usr/etc/twine.conf
 
 	# s3 settings
-	sed -i -e "s|S3_PORT_4569_TCP_ADDR|$S3_PORT_4569_TCP_ADDR:$S3_PORT_4569_TCP_PORT|" /usr/etc/twine.conf
+	sed -i -e "s|S3_PORT_4569_TCP_ADDR|$S3_PORT_4569_TCP_ADDR|" /usr/etc/twine.conf
 	sed -i -e "s|S3_ENV_ANANSI_BUCKET|$S3_ENV_ANANSI_BUCKET|" /usr/etc/twine.conf
 	sed -i -e "s|S3_ENV_SPINDLE_BUCKET|$S3_ENV_SPINDLE_BUCKET|" /usr/etc/twine.conf
 	sed -i -e "s|S3_ENV_ACCESS_KEY|${S3_ENV_ACCESS_KEY-x}|" /usr/etc/twine.conf
