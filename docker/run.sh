@@ -40,7 +40,7 @@ if [ ! -f /init-done ]; then
 
         if [ "${CLUSTER}" = "true" ]; then
                 # activate a cluster
-                sed -i -e "s|CLUSTER|cluster-name=twine\ncluster-verbose=yes\nenvironment=testing\nregistry=pgsql://postgres:postgres@postgres/spindle|" /usr/etc/twine.conf
+                sed -i -e "s|CLUSTER|cluster-name=twine\ncluster-verbose=yes\nnode-id=${HOSTNAME}\nenvironment=testing\nregistry=pgsql://postgres:postgres@postgres/spindle|" /usr/etc/twine.conf
         else
                 sed -i -e "s|CLUSTER||" /usr/etc/twine.conf
         fi
