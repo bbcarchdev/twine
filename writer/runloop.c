@@ -50,6 +50,15 @@ writerd_runloop(TWINE *context)
 		twine_logf(LOG_CRIT, "failed to create message queue conenction\n");
 		return -1;
 	}
+	if (twine_cluster(context))
+	{
+		if (! mq_set_cluster(messenger, context))
+		{
+			twine_logf(LOG_CRIT, "failed to set the cluster up\n");
+			return -1;
+		}
+	}
+	
 	twine_logf(LOG_NOTICE, TWINE_APP_NAME " ready and waiting for messages\n");
 	while(!writerd_should_exit)
 	{
