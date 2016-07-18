@@ -52,7 +52,7 @@ writerd_runloop(TWINE *context)
 	}
 	if (twine_cluster(context))
 	{
-		if (! mq_set_cluster(messenger, context))
+		if (! mq_set_cluster(messenger, twine_cluster(context)))
 		{
 			twine_logf(LOG_CRIT, "failed to set the cluster up\n");
 			return -1;
