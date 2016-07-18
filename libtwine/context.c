@@ -55,7 +55,6 @@ twine_create(void)
 	log_set_level(LOG_NOTICE);
 	twine_rdf_init_(p);
 	twine_config_setup_(p);
-	twine_cluster_init_(p);
 	return p;
 }
 
