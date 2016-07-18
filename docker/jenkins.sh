@@ -4,7 +4,7 @@ PROJECT_NAME="twine"
 INTEGRATION="docker/integration.yml"
 
 # Build the project
-docker build -t ${PROJECT_NAME} -f docker/Dockerfile-build ../
+docker build -t ${PROJECT_NAME} -f docker/Dockerfile-build --no-cache ../
 
 # If successfully built, tag and push to registry
 if [ ! "${JENKINS_HOME}" = '' ]
