@@ -76,6 +76,23 @@ When(/^I search for media for "([^"]*)"$/) do |audience|
 end
 
 Then(/^The proxy is listed in the search results$/) do
-  proxyURI = subj = RDF::URI.new("http://acropolis.localhost/#{@proxy}#id")
-  expect(@entities).to include(proxyURI)
+        proxyURI = subj = RDF::URI.new("http://acropolis.localhost/#{@proxy}#id")
+        expect(@entities).to include(proxyURI)
+end
+
+When(/^I ingest an updated version of the data$/) do
+        step "\"shakespeare-sample-update.nq\" is ingested into Twine"
+end
+
+Then(/^There should be one label and it should be "([^"]*)"$/) do |label|
+        graph = RDF::Graph.load("http://quilt/#{@proxy}")
+        subj = RDF::URI.new("http://acropolis.localhost/#{@proxy}#id")
+        pred = RDF::URI.new("http://www.w3.org/2000/01/rdf-schema#label")
+
+        n = 0
+        graph.query([subj, pred, nil]) do |st|
+                n += 1
+                expect(st.object.to_s).to eq(label)
+        end
+        expect(n).to eq(1)
 end
