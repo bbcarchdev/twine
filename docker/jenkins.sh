@@ -3,6 +3,9 @@ DOCKER_REGISTRY="vm-10-100-0-25.ch.bbcarchdev.net"
 PROJECT_NAME="twine"
 INTEGRATION="docker/integration.yml"
 
+# Remove previous test results (they're in gitignore so checkout doesn't remove them)
+rm -f docker/cucumber/testresults.json
+
 # Build the project
 docker build --no-cache -t ${PROJECT_NAME} -f docker/Dockerfile-build ../
 
