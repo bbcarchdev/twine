@@ -3,13 +3,16 @@ DOCKER_REGISTRY="vm-10-100-0-25.ch.bbcarchdev.net"
 PROJECT_NAME="twine"
 INTEGRATION="docker/integration.yml"
 
+# Remove previous test results (they're in gitignore so checkout doesn't remove them)
+rm -f docker/cucumber/testresults.json
+
 # Build the project
-docker build -t ${PROJECT_NAME} -f docker/Dockerfile-build ../
+docker build --no-cache -t ${PROJECT_NAME} -f docker/Dockerfile-build ../
 
 # If successfully built, tag and push to registry
 if [ ! "${JENKINS_HOME}" = '' ]
 then
-	docker tag -f ${PROJECT_NAME} ${DOCKER_REGISTRY}/${PROJECT_NAME}
+	docker tag ${PROJECT_NAME} ${DOCKER_REGISTRY}/${PROJECT_NAME}
 	docker push ${DOCKER_REGISTRY}/${PROJECT_NAME}
 fi
 

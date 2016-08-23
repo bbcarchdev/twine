@@ -15,3 +15,8 @@ Scenario: Media correctly licensed
 	When I search for media for "http://shakespeare.acropolis.org.uk/#members"
 	And A proxy exists for "http://shakespeare.acropolis.org.uk/images/6731510#id"
 	Then The proxy is listed in the search results
+	
+Scenario: Updating the data
+	When I ingest an updated version of the data
+	And A proxy exists for "http://shakespeare.acropolis.org.uk/images/6731510#id"
+	Then There should be one label and it should be "Image no. 6731510 (updated)"
