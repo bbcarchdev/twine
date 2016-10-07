@@ -27,8 +27,8 @@ REMOTE_DATA = '/tmp/remote-data.nq'
 
 class Handler(BaseHTTPRequestHandler):
     def __init__(self, req, client_addr, server):
-        BaseHTTPRequestHandler.__init__(self, req, client_addr, server)      
-        
+        BaseHTTPRequestHandler.__init__(self, req, client_addr, server)
+
     def do_GET(self):
         '''
         Handle a GET
@@ -54,33 +54,32 @@ class Handler(BaseHTTPRequestHandler):
         '''
         logging.debug('Received a POST on {}'.format(self.path))
         response = {'message':''}
-        
+
         # Save the data in a temporary file
         length = int(self.headers['Content-Length'])
         data = self.rfile.read(length)
         with open(REMOTE_DATA, 'wb') as output:
             output.write(data)
         logging.debug('Wrote {} bytes to {}'.format(length, REMOTE_DATA))
-        
+
         try:
             # Execute an ingest
             if self.path == '/ingest':
-                args = 'twine -d -c /usr/etc/twine.conf {}'.format(REMOTE_DATA)
-                logs = subprocess.check_output(args, 
-                                               stderr=subprocess.STDOUT, 
-                                               universal_newlines=True, shell=True)
-                # Now wait for all updates to complete
+                args = 'twine -c /usr/etc/twine.conf {}'.format(REMOTE_DATA)
+                status = subprocess.call(args.split(' '))
+                # Now wait for all updates to complete                # Now wait for all updates to complete
                 self._wait_for_ingest()
-                response['logs'] = logs
+                response['status'] = status
                 response['command'] = args
                 response['message'] = 'Ingest completed'
                 self._reply_with(200, response)
         except CalledProcessError as e:
-            response['logs'] = e.output
+            response['status'] = e.output
+            response['command'] = args
             response['message'] = 'Error: {}'.format(e)
             self._reply_with(500, response)
 
-        logging.debug(response['logs'])
+        logging.debug(response['status'])
 
     def _reply_with(self, code, data):
         '''
@@ -161,4 +160,3 @@ if __name__ == '__main__':
         logging.info('Shutting down server')
         if httpd:
             httpd.close()
-        
