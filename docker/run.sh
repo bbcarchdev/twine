@@ -27,27 +27,16 @@ if [ ! -f /init-done ]; then
 	sed -i -e "s|S3_ENV_ACCESS_KEY|${S3_ENV_ACCESS_KEY-x}|" /usr/etc/twine.conf
 	sed -i -e "s|S3_ENV_SECRET_KEY|${S3_ENV_SECRET_KEY-x}|" /usr/etc/twine.conf
 
-        if [ "${ENGINE}" = "spindle" ]; then
-                # spindle workflow?
-                sed -i -e "s|WORKFLOW_CLI|spindle-strip,sparql-get,spindle-correlate,sparql-put|" /usr/etc/twine.conf
-                sed -i -e "s|WORKFLOW_WRITER|spindle-generate|" /usr/etc/twine.conf
-                sed -i -e "s|PLUGINS|plugin=spindle-strip.so\nplugin=spindle-correlate.so\nplugin=spindle-generate.so\n|" /usr/etc/twine.conf
-        else
-                sed -i -e "s|WORKFLOW_CLI|sparql-get,sparql-put|" /usr/etc/twine.conf
-                sed -i -e "s|WORKFLOW_WRITER|spindle-generate|" /usr/etc/twine.conf
-                sed -i -e "s|PLUGINS||" /usr/etc/twine.conf
-        fi
-
-        if [ "${CLUSTER}" = "true" ]; then
-                # activate a cluster
-                sed -i -e "s|CLUSTER|cluster-name=twine\ncluster-verbose=yes\nnode-id=${HOSTNAME}\nenvironment=testing\nregistry=pgsql://postgres:postgres@postgres/spindle|" /usr/etc/twine.conf
-        else
-                sed -i -e "s|CLUSTER||" /usr/etc/twine.conf
-        fi
+    if [ "${CLUSTER}" = "true" ]; then
+            # activate a cluster
+            sed -i -e "s|CLUSTER|cluster-name=twine\ncluster-verbose=yes\nnode-id=${HOSTNAME}\nenvironment=testing\nregistry=pgsql://postgres:postgres@postgres/spindle|" /usr/etc/twine.conf
+    else
+            sed -i -e "s|CLUSTER||" /usr/etc/twine.conf
+    fi
 
         # Initialise the database, so that all depending containers can use Twine straight away
-        # twine -d -c /usr/etc/twine.conf -S
-
+        twine -d -c /usr/etc/twine.conf -S
+		
 	touch /init-done
 fi
 
