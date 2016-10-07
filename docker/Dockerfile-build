@@ -19,16 +19,9 @@ RUN apt-get -y update && apt-get install -y --no-install-recommends \
 	uuid-dev libncurses5-dev libedit-dev raptor2-utils gdb vim \
 	libqpid-proton-dev libawsclient-dev libsparqlclient-dev \
 	libquilt-dev libcluster-dev libsql-dev python3 supervisor mc \
-	python3-psycopg2 \
+	python3-psycopg2 libmq-dev \
 	&& rm -rf /var/lib/apt/lists/*
 
-# Take care of Libmq
-COPY libmq /usr/local/src/libmq
-WORKDIR /usr/local/src/libmq
-RUN autoreconf -i && \
-	./configure --prefix=/usr --enable-debug && \
-	make && \
-	make install
 	
 # Take care of Twine
 COPY twine /usr/local/src/twine
