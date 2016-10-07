@@ -46,7 +46,7 @@ if [ ! -f /init-done ]; then
         fi
 
         # Initialise the database, so that all depending containers can use Twine straight away
-        twine -d -c /usr/etc/twine.conf -S
+        # twine -d -c /usr/etc/twine.conf -S
 
 	touch /init-done
 fi
