@@ -35,6 +35,8 @@ static void writerd_signal(int sig);
 
 static TWINE *twine;
 
+static volatile int running;
+
 int
 main(int argc, char **argv)
 {
@@ -77,6 +79,7 @@ main(int argc, char **argv)
 			return 0;
 		}
 	}
+	running = 1;
 	/* Execute the runloop */
 	if(writerd_runloop(twine))
 	{
@@ -213,6 +216,10 @@ static void
 writerd_signal(int signo)
 {
 	(void) signo;
-	
-	writerd_exit();
+
+	twine_logf(LOG_DEBUG, "received signal %d\n", signo);
+	if(running)
+	{
+		writerd_exit();
+	}
 }

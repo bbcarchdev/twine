@@ -52,7 +52,7 @@ twine_cluster_init_(TWINE *context)
 	
 	if(context->cluster_enabled)
 	{
-		t = config_geta("*:cluster-name", "twine");
+		t = twine_config_geta("*:cluster-name", "twine");
 		if(!t)
 		{
 			twine_logf(LOG_CRIT, "failed to determine cluster name from configuration\n");
@@ -78,7 +78,7 @@ twine_cluster_init_(TWINE *context)
 			cluster_set_env(context->cluster, t);
 			free(t);
 		}
-		if((t = config_geta("*:node-id", NULL)))
+		if((t = twine_config_geta("*:node-id", NULL)))
 		{
 			cluster_set_instance(context->cluster, t);
 			free(t);
