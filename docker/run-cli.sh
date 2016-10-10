@@ -1,13 +1,11 @@
 #!/bin/bash
 set -e
 
-# Wait for postgres, if we're using spindle
-if [ "${ENGINE}" = "spindle" ]; then
-        until nc -z postgres 5432; do
-            echo "$(date) - waiting for postgres..."
-            sleep 2
-        done
-fi
+# Wait for postgres
+until nc -z postgres 5432; do
+    echo "$(date) - waiting for postgres..."
+    sleep 2
+done
 
 # Adjust the configuration on first run
 if [ ! -f /init-done ]; then
@@ -27,15 +25,16 @@ if [ ! -f /init-done ]; then
 	sed -i -e "s|S3_ENV_ACCESS_KEY|${S3_ENV_ACCESS_KEY-x}|" /usr/etc/twine.conf
 	sed -i -e "s|S3_ENV_SECRET_KEY|${S3_ENV_SECRET_KEY-x}|" /usr/etc/twine.conf
 
+	# Settings for the cluster
     if [ "${CLUSTER}" = "true" ]; then
-            # activate a cluster
-            sed -i -e "s|CLUSTER|cluster-name=twine\ncluster-verbose=yes\nnode-id=${HOSTNAME}\nenvironment=testing\nregistry=pgsql://postgres:postgres@postgres/spindle|" /usr/etc/twine.conf
+        # Set the parameters for a cluster
+        sed -i -e "s|CLUSTER|cluster-name=twine\ncluster-verbose=yes\nnode-id=${HOSTNAME}\nenvironment=testing\nregistry=pgsql://postgres:postgres@postgres/spindle|" /usr/etc/twine.conf
     else
-            sed -i -e "s|CLUSTER||" /usr/etc/twine.conf
+        sed -i -e "s|CLUSTER||" /usr/etc/twine.conf
     fi
 
-        # Initialise the database, so that all depending containers can use Twine straight away
-        twine -d -c /usr/etc/twine.conf -S
+    # Initialise the database, so that all depending containers can use Twine straight away
+    twine -d -c /usr/etc/twine.conf -S
 		
 	touch /init-done
 fi

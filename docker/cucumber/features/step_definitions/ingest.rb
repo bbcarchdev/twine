@@ -10,7 +10,7 @@ end
 # Internal step
 When(/^"([^"]*)" is ingested into Twine$/) do |file|
         # POST the to the remote control the file to be ingested
-        http = Net::HTTP.new('twine', 8000)
+        http = Net::HTTP.new('twine-cli', 8000)
         http.read_timeout = 300
 
         request = Net::HTTP::Post.new("/ingest")

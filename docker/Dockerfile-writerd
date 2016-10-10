@@ -8,8 +8,8 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 9E16A4D302DA096A &&
 	>> /etc/apt/sources.list.d/bbcarchdev-wheezy.list
 
 # Install everything needed
-RUN apt-get -y update && apt-get install -y --no-install-recommends \
-	vim ngrep procps tcpdump inotify-tools netcat netcat-traditional \
+RUN apt-get -y update && apt-get install -y --no-install-recommends --fix-missing \
+	ngrep procps tcpdump inotify-tools netcat netcat-traditional \
 	build-essential libtool libltdl-dev automake \
 	autoconf pkg-config libcurl4-gnutls-dev autotools-dev \
 	libraptor2-dev librasqal3-dev librdf0-dev libfcgi-dev \
@@ -18,8 +18,8 @@ RUN apt-get -y update && apt-get install -y --no-install-recommends \
 	gettext python-libxml2 libpq-dev libmysqlclient-dev valgrind \
 	uuid-dev libncurses5-dev libedit-dev raptor2-utils gdb vim \
 	libqpid-proton-dev libawsclient-dev libsparqlclient-dev \
-	libquilt-dev libcluster-dev libsql-dev python3 supervisor mc \
-	python3-psycopg2 libmq-dev \
+	libquilt-dev libcluster-dev libsql-dev mc \
+	libmq-dev \
 	&& rm -rf /var/lib/apt/lists/*
 	
 # Take care of Twine
@@ -44,17 +44,10 @@ WORKDIR /usr/local/src/twine
 RUN rm -f /usr/etc/twine.conf
 RUN ln docker/twine.conf /usr/etc/twine.conf
 
-#VOLUME /var/data/nquads
-#ENV DATA_DIR_NQUADS /var/data/nquads
 ENV TERM xterm
 
-RUN cp docker/run.sh /
+RUN cp docker/run-writerd.sh /run.sh
 ENTRYPOINT ["/run.sh"]
 
-# Install the remote control
-RUN cp docker/remote.py /usr/local/bin/remote.py
-EXPOSE 8000
-
-# Launch supervisord
-RUN ln docker/supervisord.conf /etc/supervisor/conf.d/twine.conf
-CMD ["/usr/bin/supervisord"]
+# Launch writerd
+CMD ["/usr/sbin/twine-writerd", "-d", "-c", "/usr/etc/twine.conf", "-f"]

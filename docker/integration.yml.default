@@ -1,10 +1,21 @@
-twine:
-  image: twine
+twine-cli:
+  image: twine-cli
   environment:
    - HOST_NAME=acropolis.localhost
    - CLUSTER=true
   links:
    - postgres
+   - 4store:fourstore
+   - s3
+   
+twine-writerd:
+  image: twine-writerd
+  environment:
+   - HOST_NAME=acropolis.localhost
+   - CLUSTER=true
+  links:
+   - postgres
+   - twine-cli
    - 4store:fourstore
    - s3
 
@@ -22,7 +33,8 @@ cucumber:
   image: vm-10-100-0-25.ch.bbcarchdev.net/cucumber
   links:
    - quilt
-   - twine
+   - twine-cli
+   - twine-writerd
    - postgres
   volumes:
    - ./cucumber:/data
