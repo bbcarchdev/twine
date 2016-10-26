@@ -7,16 +7,17 @@ INTEGRATION="docker/integration.yml"
 rm -f docker/cucumber/testresults.json
 
 # Build the project
-docker build -t ${PROJECT_NAME}-cli -f docker/Dockerfile-cli ../
-docker build -t ${PROJECT_NAME}-writerd -f docker/Dockerfile-writerd ../
+docker build --no-cache -t ${PROJECT_NAME}-cli -f docker/Dockerfile-cli ../
+docker build --no-cache -t ${PROJECT_NAME}-writerd -f docker/Dockerfile-writerd ../
 
 # If successfully built, tag and push to registry
 if [ ! "${JENKINS_HOME}" = '' ]
 then
-	docker tag ${PROJECT_NAME}-cli ${DOCKER_REGISTRY}/${PROJECT_NAME}-cli
-	docker push ${DOCKER_REGISTRY}/${PROJECT_NAME}-cli
-	docker tag ${PROJECT_NAME}-writerd ${DOCKER_REGISTRY}/${PROJECT_NAME}-writerd
-	docker push ${DOCKER_REGISTRY}/${PROJECT_NAME}-writerd
+	echo "Push"
+	#docker tag ${PROJECT_NAME}-cli ${DOCKER_REGISTRY}/${PROJECT_NAME}-cli
+	#docker push ${DOCKER_REGISTRY}/${PROJECT_NAME}-cli
+	#docker tag ${PROJECT_NAME}-writerd ${DOCKER_REGISTRY}/${PROJECT_NAME}-writerd
+	#docker push ${DOCKER_REGISTRY}/${PROJECT_NAME}-writerd
 fi
 
 if [ -f "${INTEGRATION}.default" ]

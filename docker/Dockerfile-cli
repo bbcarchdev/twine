@@ -13,28 +13,35 @@ RUN apt-get -y update && apt-get install -y --no-install-recommends --fix-missin
 	build-essential libtool libltdl-dev automake \
 	autoconf pkg-config libcurl4-gnutls-dev autotools-dev \
 	libraptor2-dev librasqal3-dev librdf0-dev libfcgi-dev \
-	libjansson-dev gtk-doc-tools xsltproc libxml2-dev libssl-dev \
-	cmake flex itstool docbook-xml docbook-xsl docbook-xsl-ns \
+	libjansson-dev libssl-dev cmake itstool \
 	gettext python-libxml2 libpq-dev libmysqlclient-dev valgrind \
 	uuid-dev libncurses5-dev libedit-dev raptor2-utils gdb vim \
 	libqpid-proton-dev libawsclient-dev libsparqlclient-dev \
-	libquilt-dev libcluster-dev libsql-dev python3 mc \
-	python3-psycopg2 python-flask libmq-dev \
+	libquilt-dev libcluster-dev libsql-dev libmq-dev python3 mc \
+	python3-psycopg2 supervisor \
 	&& rm -rf /var/lib/apt/lists/*
 	
-# Take care of Twine
+# Copy and compile Twine
 COPY twine /usr/local/src/twine
 WORKDIR /usr/local/src/twine
 RUN autoreconf -i && \
-	./configure --prefix=/usr --enable-debug && \
+	./configure --prefix=/usr --enable-debug --disable-docs && \
 	make && \
 	make install
 
-# Take care of Spindle
+# Copy and compile Spindle
 COPY spindle /usr/local/src/spindle
 WORKDIR /usr/local/src/spindle
 RUN autoreconf -i && \
-	./configure --prefix=/usr --enable-debug && \
+	./configure --prefix=/usr --enable-debug --disable-docs && \
+	make && \
+	make install
+
+# Copy and compile Twine-Anansi bridge (for the Twine plugin)
+COPY twine-anansi-bridge /usr/local/src/twine-anansi-bridge
+WORKDIR /usr/local/src/twine-anansi-bridge
+RUN autoreconf -i && \
+	./configure --prefix=/usr --enable-debug --disable-docs && \
 	make && \
 	make install
 
@@ -42,7 +49,7 @@ WORKDIR /usr/local/src/twine
 
 # Link the config file to its actual usage location
 RUN rm -f /usr/etc/twine.conf
-RUN ln docker/twine.conf /usr/etc/twine.conf
+RUN ln docker/twine-cli.conf /usr/etc/twine.conf
 
 ENV TERM xterm
 
@@ -53,5 +60,6 @@ ENTRYPOINT ["/run.sh"]
 RUN cp docker/remote.py /usr/local/bin/remote.py
 EXPOSE 8000
 
-# Launch the remote control
-CMD ["/usr/bin/python3", "/usr/local/bin/remote.py"]
+# Launch supervisord
+RUN ln docker/supervisord.conf /etc/supervisor/conf.d/twine.conf
+CMD ["/usr/bin/supervisord"]

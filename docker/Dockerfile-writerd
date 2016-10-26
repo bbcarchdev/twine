@@ -13,20 +13,18 @@ RUN apt-get -y update && apt-get install -y --no-install-recommends --fix-missin
 	build-essential libtool libltdl-dev automake \
 	autoconf pkg-config libcurl4-gnutls-dev autotools-dev \
 	libraptor2-dev librasqal3-dev librdf0-dev libfcgi-dev \
-	libjansson-dev gtk-doc-tools xsltproc libxml2-dev libssl-dev \
-	cmake flex itstool docbook-xml docbook-xsl docbook-xsl-ns \
+	libjansson-dev libssl-dev cmake itstool \
 	gettext python-libxml2 libpq-dev libmysqlclient-dev valgrind \
 	uuid-dev libncurses5-dev libedit-dev raptor2-utils gdb vim \
-	libqpid-proton-dev libawsclient-dev libsparqlclient-dev \
-	libquilt-dev libcluster-dev libsql-dev mc \
-	libmq-dev \
+	libawsclient-dev libsparqlclient-dev \
+	libquilt-dev libcluster-dev libsql-dev libmq-dev mc \
 	&& rm -rf /var/lib/apt/lists/*
 	
 # Take care of Twine
 COPY twine /usr/local/src/twine
 WORKDIR /usr/local/src/twine
 RUN autoreconf -i && \
-	./configure --prefix=/usr --enable-debug && \
+	./configure --prefix=/usr --enable-debug --disable-docs && \
 	make && \
 	make install
 
@@ -34,7 +32,7 @@ RUN autoreconf -i && \
 COPY spindle /usr/local/src/spindle
 WORKDIR /usr/local/src/spindle
 RUN autoreconf -i && \
-	./configure --prefix=/usr --enable-debug && \
+	./configure --prefix=/usr --enable-debug --disable-docs && \
 	make && \
 	make install
 
@@ -42,7 +40,7 @@ WORKDIR /usr/local/src/twine
 
 # Link the config file to its actual usage location
 RUN rm -f /usr/etc/twine.conf
-RUN ln docker/twine.conf /usr/etc/twine.conf
+RUN ln docker/twine-writerd.conf /usr/etc/twine.conf
 
 ENV TERM xterm
 
