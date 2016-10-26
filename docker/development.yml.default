@@ -1,11 +1,21 @@
 # Extends integration.yml.default; run with `docker-compose -f integration.yml.default -f development.yml.default ...`
 
-twine:
+twine-cli:
   build: ../../
   #command: gdb --args /usr/sbin/twine-writerd -d -c /usr/etc/twine.conf -f
   # use this to make gdb work
   privileged: true
-  dockerfile: twine/docker/Dockerfile-build
+  dockerfile: twine/docker/Dockerfile-cli
+  volumes:
+   - ../:/usr/local/src/twine
+   - ../../spindle:/usr/local/src/spindle
+
+twine-writerd:
+  build: ../../
+  #command: gdb --args /usr/sbin/twine-writerd -d -c /usr/etc/twine.conf -f
+  # use this to make gdb work
+  privileged: true
+  dockerfile: twine/docker/Dockerfile-writerd
   volumes:
    - ../:/usr/local/src/twine
    - ../../spindle:/usr/local/src/spindle
