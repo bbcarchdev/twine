@@ -7,18 +7,35 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 9E16A4D302DA096A &&
 	echo "deb [arch=amd64] http://apt.bbcarchdev.net/debian/ wheezy main ports live stage dev" \
 	>> /etc/apt/sources.list.d/bbcarchdev-wheezy.list
 
-# Install everything needed
+# Build tools
 RUN apt-get -y update && apt-get install -y --no-install-recommends --fix-missing \
-	ngrep procps tcpdump inotify-tools netcat netcat-traditional \
-	build-essential libtool libltdl-dev automake \
-	autoconf pkg-config libcurl4-gnutls-dev autotools-dev \
-	libraptor2-dev librasqal3-dev librdf0-dev libfcgi-dev \
-	libjansson-dev libssl-dev cmake itstool \
-	gettext python-libxml2 libpq-dev libmysqlclient-dev valgrind \
-	uuid-dev libncurses5-dev libedit-dev raptor2-utils gdb vim \
-	libawsclient-dev libsparqlclient-dev \
-	libquilt-dev libcluster-dev libsql-dev libmq-dev mc \
+	build-essential automake autoconf autotools-dev pkg-config libtool \
+	cmake gettext \
 	&& rm -rf /var/lib/apt/lists/*
+
+# Debugging tools
+RUN apt-get -y update && apt-get install -y --no-install-recommends --fix-missing \
+	tcpdump ngrep procps mc vim gdb raptor2-utils valgrind \
+	&& rm -rf /var/lib/apt/lists/*
+
+# Acropolis external dependencies
+RUN apt-get -y update && apt-get install -y --no-install-recommends --fix-missing \
+	libraptor2-dev librasqal3-dev librdf0-dev libfcgi-dev libltdl-dev \
+	libcurl4-gnutls-dev libqpid-proton-dev libjansson-dev libssl-dev \
+	python-libxml2 uuid-dev libncurses5-dev libedit-dev \
+	&& rm -rf /var/lib/apt/lists/*
+	
+# Acropolis own dependencies
+RUN apt-get -y update && apt-get install -y --no-install-recommends --fix-missing \
+	libawsclient-dev libsparqlclient-dev libquilt-dev libcluster-dev \
+	libsql-dev libmq-dev libpq-dev libmysqlclient-dev \
+	&& rm -rf /var/lib/apt/lists/*
+
+# Additional stuff for this Docker Image
+RUN apt-get -y update && apt-get install -y --no-install-recommends --fix-missing \
+	netcat netcat-traditional \
+	&& rm -rf /var/lib/apt/lists/*
+
 	
 # Take care of Twine
 COPY twine /usr/local/src/twine

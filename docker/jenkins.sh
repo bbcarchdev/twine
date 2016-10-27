@@ -7,8 +7,8 @@ INTEGRATION="docker/integration.yml"
 rm -f docker/cucumber/testresults.json
 
 # Build the project
-docker build --no-cache -t ${PROJECT_NAME}-cli -f docker/Dockerfile-cli ../
-docker build --no-cache -t ${PROJECT_NAME}-writerd -f docker/Dockerfile-writerd ../
+docker build -t ${PROJECT_NAME}-cli -f docker/Dockerfile-cli ../
+docker build -t ${PROJECT_NAME}-writerd -f docker/Dockerfile-writerd ../
 
 # If successfully built, tag and push to registry
 if [ ! "${JENKINS_HOME}" = '' ]
