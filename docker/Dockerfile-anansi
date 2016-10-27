@@ -33,7 +33,7 @@ RUN apt-get -y update && apt-get install -y --no-install-recommends --fix-missin
 
 # Additional stuff for this Docker Image
 RUN apt-get -y update && apt-get install -y --no-install-recommends --fix-missing \
-	netcat netcat-traditional python3-psycopg2 python3 \
+	netcat netcat-traditional \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Copy and compile Twine
@@ -52,20 +52,24 @@ RUN autoreconf -i && \
 	make && \
 	make install
 
+# Copy and compile Twine-Anansi bridge (for the Twine plugin)
+COPY twine-anansi-bridge /usr/local/src/twine-anansi-bridge
+WORKDIR /usr/local/src/twine-anansi-bridge
+RUN autoreconf -i && \
+	./configure --prefix=/usr --enable-debug --disable-docs && \
+	make && \
+	make install
+
 WORKDIR /usr/local/src/twine
 
 # Link the config file to its actual usage location
 RUN rm -f /usr/etc/twine.conf
-RUN ln docker/twine-cli.conf /usr/etc/twine.conf
+RUN ln docker/twine-anansi.conf /usr/etc/twine.conf
 
 ENV TERM xterm
 
-RUN cp docker/run-cli.sh /run.sh
+RUN cp docker/run-anansi.sh /run.sh
 ENTRYPOINT ["/run.sh"]
 
-# Install the remote control
-RUN cp docker/remote.py /usr/local/bin/remote.py
-EXPOSE 8000
-
-# Launch the remote control
-CMD ["/usr/bin/python3", "/usr/local/bin/remote.py"]
+# Launch the writerd
+CMD ["/usr/sbin/twine-writerd", "-d", "-c", "/usr/etc/twine.conf", "-f"]

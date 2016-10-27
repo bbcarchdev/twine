@@ -36,7 +36,6 @@ RUN apt-get -y update && apt-get install -y --no-install-recommends --fix-missin
 	netcat netcat-traditional \
 	&& rm -rf /var/lib/apt/lists/*
 
-	
 # Take care of Twine
 COPY twine /usr/local/src/twine
 WORKDIR /usr/local/src/twine

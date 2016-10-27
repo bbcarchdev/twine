@@ -9,15 +9,18 @@ rm -f docker/cucumber/testresults.json
 # Build the project
 docker build -t ${PROJECT_NAME}-cli -f docker/Dockerfile-cli ../
 docker build -t ${PROJECT_NAME}-writerd -f docker/Dockerfile-writerd ../
+docker build -t ${PROJECT_NAME}-anansi -f docker/Dockerfile-anansi ../
 
 # If successfully built, tag and push to registry
 if [ ! "${JENKINS_HOME}" = '' ]
 then
 	echo "Push"
-	#docker tag ${PROJECT_NAME}-cli ${DOCKER_REGISTRY}/${PROJECT_NAME}-cli
-	#docker push ${DOCKER_REGISTRY}/${PROJECT_NAME}-cli
-	#docker tag ${PROJECT_NAME}-writerd ${DOCKER_REGISTRY}/${PROJECT_NAME}-writerd
-	#docker push ${DOCKER_REGISTRY}/${PROJECT_NAME}-writerd
+	docker tag ${PROJECT_NAME}-cli ${DOCKER_REGISTRY}/${PROJECT_NAME}-cli
+	docker push ${DOCKER_REGISTRY}/${PROJECT_NAME}-cli
+	docker tag ${PROJECT_NAME}-writerd ${DOCKER_REGISTRY}/${PROJECT_NAME}-writerd
+	docker push ${DOCKER_REGISTRY}/${PROJECT_NAME}-writerd
+	docker tag ${PROJECT_NAME}-anansi ${DOCKER_REGISTRY}/${PROJECT_NAME}-anansi
+	docker push ${DOCKER_REGISTRY}/${PROJECT_NAME}-anansi
 fi
 
 if [ -f "${INTEGRATION}.default" ]
