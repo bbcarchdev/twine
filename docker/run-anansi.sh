@@ -7,6 +7,12 @@ until nc -z postgres 5432; do
     sleep 2
 done
 
+# Wait for the twine cli
+until nc -z twine-cli 8000; do
+    echo "$(date) - waiting for twine-cli..."
+    sleep 2
+done
+
 # Adjust the configuration on first run
 if [ ! -f /init-done ]; then
 	echo "Initialising Twine.."
