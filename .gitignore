@@ -37,3 +37,7 @@ autom4te.cache
 /stamp-h1
 /twine.conf
 /compile
+.cproject
+.project
+.pydevproject
+.settings
