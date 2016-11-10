@@ -44,8 +44,14 @@ twine_plugin_add_input(TWINE *context, const char *mimetype, const char *descrip
 	p->m.input.desc = strdup(description);
 	if(!p->m.input.type || !p->m.input.desc)
 	{
-		free(p->m.input.type);
-		free(p->m.input.desc);
+		if (p->m.input.type)
+		{
+			free(p->m.input.type);
+		}
+		if (p->m.input.desc)
+		{
+			free(p->m.input.desc);
+		}
 		twine_logf(LOG_CRIT, "failed to allocate memory to register input handler for type '%s'\n", mimetype);
 		return -1;
 	}
