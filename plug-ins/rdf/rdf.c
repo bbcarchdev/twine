@@ -171,6 +171,17 @@ dump_nquads(TWINE *restrict context, TWINEGRAPH *restrict graph, void *data)
 	return 0;
 }
 
+/*
+ * This function looks into the different contexts available in the Quads and
+ * describe their corresponding root. For example when a context is found for
+ * 'http://dbpedia.org/data/Cardiff.xml' the following triples will be added:
+ * <http://dbpedia.org/> a void:Dataset.
+ * <http://dbpedia.org/> rdfs:label "Data from 'dbpedia.org'"@en.
+ *
+ * This will later be useful by Spindle that will add the resources as being
+ * members of that root URI. In Quilt that will ultimately show up as part of
+ * the collections.
+ */
 static int
 describe_sources(librdf_model *model)
 {
@@ -194,11 +205,8 @@ describe_sources(librdf_model *model)
 		nodeuristr = (const char *)librdf_uri_as_string(nodeuri);
 		twine_logf(LOG_DEBUG, TWINE_PLUGIN_NAME ": uristr {%s} \n", nodeuristr);
 		hostname = strtok(nodeuristr, "/");
-		i = 2;
-		while (--i != 0)
-		{
-			hostname = strtok(NULL, "/");
-		}
+		hostname = strtok(NULL, "/");
+		hostname = strtok(NULL, "/");
 		twine_logf(LOG_DEBUG, TWINE_PLUGIN_NAME ": hostname {%s} \n", hostname);
 		baseuri =  (char *) calloc(1, strlen(hostname) + strlen(base_template) + 1);
 		sprintf(baseuri, base_template, hostname);
