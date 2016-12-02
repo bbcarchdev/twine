@@ -206,7 +206,6 @@ describe_sources(librdf_model *model)
 		twine_logf(LOG_DEBUG, TWINE_PLUGIN_NAME ": uristr {%s} \n", nodeuristr);
 		hostname = strtok(nodeuristr, "/");
 		hostname = strtok(NULL, "/");
-		hostname = strtok(NULL, "/");
 		twine_logf(LOG_DEBUG, TWINE_PLUGIN_NAME ": hostname {%s} \n", hostname);
 		baseuri =  (char *) calloc(1, strlen(hostname) + strlen(base_template) + 1);
 		sprintf(baseuri, base_template, hostname);
