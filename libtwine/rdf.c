@@ -406,6 +406,21 @@ twine_rdf_node_createuri(const char *uri)
 	return p;
 }
 
+/* Create a new URI node */
+librdf_node *
+twine_rdf_node_createliteral(const char *literal)
+{
+	librdf_node *p;
+
+	p = librdf_new_node_from_literal(twine_->world, (const unsigned char *) literal, "en", 0);
+	if(!p)
+	{
+		twine_logf(LOG_ERR, "failed to create new node from <%s>\n", literal);
+		return NULL;
+	}
+	return p;
+}
+
 /* Destroy a node */
 int
 twine_rdf_node_destroy(librdf_node *node)

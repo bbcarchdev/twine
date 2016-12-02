@@ -190,6 +190,9 @@ librdf_node *twine_rdf_node_clone(librdf_node *node);
 /* Create a new URI node */
 librdf_node *twine_rdf_node_createuri(const char *uri);
 
+/* Create a new literal */
+librdf_node *twine_rdf_node_createliteral(const char *literal);
+
 /* Destroy a node */
 int twine_rdf_node_destroy(librdf_node *node);
 
