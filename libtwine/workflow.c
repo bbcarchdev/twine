@@ -542,7 +542,7 @@ twine_workflow_sparql_put_(TWINE *restrict context, TWINEGRAPH *restrict graph, 
 		r = -1;
 	}
 	sparql_destroy(conn);
-	return 0;
+	return r;
 }
 
 static int
