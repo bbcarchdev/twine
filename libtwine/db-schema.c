@@ -54,7 +54,7 @@ twine_db_migrate_(SQL *restrict sql, const char *identifier, int newversion, voi
 	{
 		if(sql_execute(sql, "CREATE TABLE \"subject_objects\" ("
 					   "\"graph\" text NOT NULL,"
-					   "\"uris\" text[]"
+					   "\"uris\" text[],"
 					   "PRIMARY KEY (\"graph\")"
 					   ")"))
 		{
