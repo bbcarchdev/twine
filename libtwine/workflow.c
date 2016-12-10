@@ -715,7 +715,6 @@ twine_workflow_s3_put_(TWINE *restrict context, TWINEGRAPH *restrict graph, void
 			{
 				continue;
 			}
-			twine_logf(LOG_DEBUG, "URI: %s\n", node_uri_str);
 
 			// See if that string is already in the set
 			match = 0;
@@ -750,10 +749,6 @@ twine_workflow_s3_put_(TWINE *restrict context, TWINEGRAPH *restrict graph, void
 	}
 	librdf_free_stream(st);
 	twine_logf(LOG_DEBUG, "found %d subject/objects\n", nb_subject_objects);
-	for (size_t i=0; i < nb_subject_objects; i++)
-	{
-		twine_logf(LOG_DEBUG, "-> %s\n", subject_objects[i]);
-	}
 
 	// We now remove the previous entry for this graph, add a new empty entry
 	// and append all the subjects and objects found
