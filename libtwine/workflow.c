@@ -623,19 +623,36 @@ twine_workflow_s3_get_(TWINE *restrict context, TWINEGRAPH *restrict graph, void
 	return 0;
 }
 
+/**
+ * Store the content of graph->store as an Ntriples dump in S3 and put
+ * some entries in the DB 'twine' to make it possible to find it for Spindle.
+ * Two indexes are maintained to care for two usage by Spindle
+ */
 static int
 twine_workflow_s3_put_(TWINE *restrict context, TWINEGRAPH *restrict graph, void *dummy)
 {
 	size_t l;
 	char *tbuf;
 	int r;
+	char **subject_objects;
+	size_t nb_subject_objects;
+	librdf_stream *st;
+	librdf_statement *statement;
+	librdf_node *node;
+	librdf_node *nodes[2];
+	librdf_uri *node_uri;
+	const char *node_uri_str;
+	char *node_uri_str_dup;
+	int match;
 
 	(void) context;
 	(void) dummy;
 
-	twine_logf(LOG_DEBUG, "S3\n");
+	twine_logf(LOG_DEBUG, "S3 PUT\n");
 
-	// TODO Store the content of the ntriples as an object
+	/**
+	 * Store the content of the ntriples as an object
+	 */
 	tbuf = twine_rdf_model_ntriples(graph->store, &l);
 	if(tbuf)
 	{
@@ -644,11 +661,9 @@ twine_workflow_s3_put_(TWINE *restrict context, TWINEGRAPH *restrict graph, void
 	}
 	else
 	{
-		r = -1;
+		twine_logf(LOG_CRIT, "could not serialize the graph\n");
+		return -1;
 	}
-	return r;
-
-	// TODO Update the index in the DB to be able to find the object back
 
 	/** Index 1 : Find all the triples having <X> as a subject or object
 	 * return all the triples and the name of the source they came from
@@ -661,9 +676,119 @@ twine_workflow_s3_put_(TWINE *restrict context, TWINEGRAPH *restrict graph, void
 	 *  BIND(<X> as ?o)  }
 	 * }
 	 * }
+	 *
+	 * Table => Graph | {subject/object}
+	 *
+	 * Query => Get the list of graphs, fetch them from S3, filter relevant triples
 	**/
-	// Table => Graph | {subject/object}
-	// Query => Get the list of graphs, fetch them from S3, filter relevant triples
+	// We extract a list of all the URI which are a subject or an object in
+	// this graph. This will go in the table "subject_objects" and be used
+	// to search for related data
+	subject_objects = NULL;
+	nb_subject_objects = 0;
+	st = librdf_model_as_stream(graph->store);
+	while(!librdf_stream_end(st))
+	{
+		// Get the current statement from the stream
+		statement = librdf_stream_get_object(st);
+
+		// Look at the subject and objects
+		nodes[0] = librdf_statement_get_subject(statement);
+		nodes[1] = librdf_statement_get_object(statement);
+
+		// See if the subjects and objects could be added to the list
+		for (size_t i=0; i < 2; i++)
+		{
+			// Extract the string of the URI
+			node = nodes[i];
+			if(!librdf_node_is_resource(node))
+			{
+				continue;
+			}
+			node_uri = librdf_node_get_uri(node);
+			if (!node_uri)
+			{
+				continue;
+			}
+			node_uri_str = (const char *) librdf_uri_as_string(node_uri);
+			if (!node_uri_str)
+			{
+				continue;
+			}
+			twine_logf(LOG_DEBUG, "URI: %s\n", node_uri_str);
+
+			// See if that string is already in the set
+			match = 0;
+			for(size_t c = 0; c < nb_subject_objects; c++)
+			{
+				if(!strcmp(subject_objects[c], node_uri_str))
+				{
+					match = 1;
+					break;
+				}
+			}
+
+			// If it was not append it to the set
+			if(!match)
+			{
+				subject_objects = realloc(subject_objects, sizeof(char *)*(nb_subject_objects+1));
+				if (!subject_objects)
+				{
+					twine_logf(LOG_CRIT, "could not allocate memory\n");
+					librdf_free_stream(st);
+					return -1;
+				}
+				node_uri_str_dup = malloc(sizeof(char *) * (strlen(node_uri_str) + 1));
+				strcpy(node_uri_str_dup, node_uri_str);
+				subject_objects[nb_subject_objects] = node_uri_str_dup;
+				nb_subject_objects = nb_subject_objects + 1;
+			}
+		}
+
+		// Move to the next statement
+		librdf_stream_next(st);
+	}
+	librdf_free_stream(st);
+	twine_logf(LOG_DEBUG, "found %d subject/objects\n", nb_subject_objects);
+	for (size_t i=0; i < nb_subject_objects; i++)
+	{
+		twine_logf(LOG_DEBUG, "-> %s\n", subject_objects[i]);
+	}
+
+	// We now remove the previous entry for this graph, add a new empty entry
+	// and append all the subjects and objects found
+	if(sql_executef(context->db, "DELETE FROM subject_objects WHERE \"graph\" = %Q", graph->uri))
+	{
+		twine_logf(LOG_CRIT, "could not remove the entry from the graph\n");
+		return -2;
+	}
+	if(sql_executef(context->db, "INSERT INTO \"subject_objects\" (\"graph\", \"uris\") VALUES (%Q, ARRAY[]::text[])", graph->uri))
+	{
+		twine_logf(LOG_CRIT, "could not remove add an entry for the graph\n");
+		return -2;
+	}
+	for (size_t i=0; i < nb_subject_objects; i++)
+	{
+		if(sql_executef(context->db, "UPDATE \"subject_objects\" SET \"uris\" = array_append(\"uris\", %Q) WHERE \"graph\" = %Q", subject_objects[i], graph->uri))
+		{
+			twine_logf(LOG_CRIT, "could not save the subject/object\n");
+			return -2;
+		}
+	}
+
+	// We won't need the string anymore so best to free them
+	for (size_t i=0; i < nb_subject_objects; i++)
+	{
+		free(subject_objects[i]);
+	}
+	free(subject_objects);
+	nb_subject_objects = 0;
+
+
+	return 0;
+
+
+
 
 	/** Index 2 : For a given graph find all the media pointed at. Then
 	 * fetch their descriptions too. The index actually concerns the first
