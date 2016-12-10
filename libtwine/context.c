@@ -164,6 +164,10 @@ twine_ready(TWINE *context)
 	{
 		return -1;
 	}
+	if(twine_db_init_(context))
+	{
+		return -1;
+	}
 	if(twine_cluster_init_(context))
 	{
 		return -1;

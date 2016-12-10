@@ -48,6 +48,7 @@ BT_REQUIRE_LIBRDF
 BT_REQUIRE_LIBXML2
 BT_REQUIRE_LIBXSLT
 BT_REQUIRE_LIBCLUSTER
+BT_REQUIRE_LIBSQL
 
 dnl Check for these last in the event that they are not yet-built
 

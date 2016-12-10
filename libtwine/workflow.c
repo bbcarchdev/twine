@@ -568,6 +568,9 @@ twine_workflow_s3_get_(TWINE *restrict context, TWINEGRAPH *restrict graph, void
 {
 	size_t l;
 	char *tbuf;
+	librdf_parser *parser;
+	librdf_uri *base;
+	int r;
 
 	(void) context;
 	(void) dummy;
@@ -578,11 +581,11 @@ twine_workflow_s3_get_(TWINE *restrict context, TWINEGRAPH *restrict graph, void
 	twine_cache_fetch_s3_(graph->uri, &tbuf, &l);
 	if (!tbuf)
 	{
-		twine_logf(LOG_CRIT, "failed to load the triples\n");
+		twine_logf(LOG_CRIT, "failed to load the triples from the cache\n");
 		return -1;
 	}
 
-	// Populate the model
+	// Create the model to load the triples in
 	graph->old = twine_rdf_model_create();
 	if(!graph->old)
 	{
@@ -591,46 +594,33 @@ twine_workflow_s3_get_(TWINE *restrict context, TWINEGRAPH *restrict graph, void
 		return -1;
 	}
 
+	// Populate that model
+	parser = librdf_new_parser(twine_->world, "ntriples", "application/n-triples", NULL);
+	if(!parser)
+	{
+		twine_logf(LOG_ERR, "failed to create a new parser\n");
+		return -1;
+	}
+	base = librdf_new_uri(twine_->world, (const unsigned char *) "/");
+	if(!base)
+	{
+		librdf_free_parser(parser);
+		twine_logf(LOG_CRIT, "failed to parse URI </>\n");
+		return -1;
+	}
+	r = librdf_parser_parse_counted_string_into_model(parser, (const unsigned char *) tbuf, l, base, graph->old);
+	if(r)
+	{
+		librdf_free_parser(parser);
+		twine_logf(LOG_DEBUG, "failed to parse buffer\n");
+		return -1;
+	}
+
+	librdf_free_parser(parser);
+
+	twine_logf(LOG_DEBUG, "Ok!\n");
+
 	return 0;
-
-	// TODO Update the index in the DB to be able to find the object back
-
-	/** Index 1 : Find all the triples having <X> as a subject or object
-	 * return all the triples and the name of the source they came from
-	 * SELECT DISTINCT ?s ?p ?o ?g WHERE {
-	 * GRAPH ?g {
-	 *  { <X> ?p ?o .
-	 *  BIND(<X> as ?s)  }
-	 *  UNION
-	 *  { ?s ?p <X> .
-	 *  BIND(<X> as ?o)  }
-	 * }
-	 * }
-	**/
-	// Table => Graph | {subject/object}
-	// Query => Get the list of graphs, fetch them from S3, filter relevant triples
-
-	/** Index 2 : For a given graph find all the media pointed at. Then
-	 * fetch their descriptions too. The index actually concerns the first
-	 * part of the query only
-	 * SELECT DISTINCT ?s ?p ?o ?g WHERE {
-	 *  GRAPH <http://localhost/a9d3d9dac7804f4689789e455365b6c4> {
-	 *   <http://localhost/a9d3d9dac7804f4689789e455365b6c4#id> ?p1 ?s .
-	 *   FILTER(?p1 = <http://xmlns.com/foaf/0.1/page> ||
-	 *   ?p1 = <http://search.yahoo.com/mrss/player> ||
-	 *   ?p1 = <http://search.yahoo.com/mrss/content>)
-	 *  }
-	 *  GRAPH ?g {
-	 *   ?s ?p ?o .
-	 *  }
-	 *  FILTER(?g != <http://localhost/a9d3d9dac7804f4689789e455365b6c4> &&
-	 *  ?g != <http://localhost/>)
-	 * }
-	 */
-	// Table => Graph | Subject | link_type | target_media
-	// Query => Get the list of link_type+target_media, create triples,
-	// fetch target descriptions and add them to the model
-
 }
 
 static int

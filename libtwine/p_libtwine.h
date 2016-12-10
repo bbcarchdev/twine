@@ -35,6 +35,7 @@
 # include <curl/curl.h>
 # include <libcluster.h>
 # include <libawsclient.h>
+# include <libsql.h>
 
 # include "libsupport.h"
 
@@ -165,6 +166,8 @@ struct twine_context_struct
 	struct twine_callback_struct *callbacks;
 	size_t cbcount;
 	size_t cbsize;
+	/* The RDBMS connection */
+	SQL *db;
 };
 
 extern TWINE *twine_;
@@ -188,6 +191,9 @@ int twine_postproc_process_(twine_graph *graph);
 
 int twine_sparql_init_(TWINE *context);
 
+int twine_db_init_(TWINE *context);
+int twine_db_schema_update_(TWINE *twine);
+
 int twine_cluster_init_(TWINE *context);
 int twine_cluster_ready_(TWINE *context);
 int twine_cluster_done_(TWINE *context);
@@ -195,6 +201,5 @@ int twine_cluster_done_(TWINE *context);
 /* This can't be called twine_config_init_() because that's a legacy API */
 int twine_config_setup_(TWINE *context);
 int twine_config_ready_(TWINE *context);
-
 
 #endif /*!P_LIBTWINE_H_*/
