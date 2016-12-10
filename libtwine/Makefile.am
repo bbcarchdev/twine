@@ -39,7 +39,8 @@ libtwine_la_LDFLAGS = -avoid-version \
 	-no-undefined \
 	-export-symbols-regex '^twine_'
 
-libtwine_la_LIBADD = $(top_builddir)/libsupport/libsupport.la
+libtwine_la_LIBADD = $(top_builddir)/libsupport/libsupport.la \
+	@LIBAWSCLIENT_LOCAL_LIBS@ @LIBAWSCLIENT_LIBS@
 
 dist_man3_MANS = libtwine.3
 

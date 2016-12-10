@@ -32,9 +32,24 @@ static int twine_workflow_preprocess_(TWINE *restrict context, TWINEGRAPH *restr
 static int twine_workflow_postprocess_(TWINE *restrict context, TWINEGRAPH *restrict graph, void *dummy);
 static int twine_workflow_sparql_get_(TWINE *restrict context, TWINEGRAPH *restrict graph, void *dummy);
 static int twine_workflow_sparql_put_(TWINE *restrict context, TWINEGRAPH *restrict graph, void *dummy);
+static int twine_workflow_s3_get_(TWINE *restrict context, TWINEGRAPH *restrict graph, void *dummy);
+static int twine_workflow_s3_put_(TWINE *restrict context, TWINEGRAPH *restrict graph, void *dummy);
+
+/* Utility function for interfacing with S3 and the DB */
+static int twine_cache_store_s3_(const char *g, char *ntbuf, size_t bufsize);
+static int twine_cache_fetch_s3_(const char *g, char **ntbuf, size_t *buflen);
+static size_t twine_cache_store_s3_upload_(char *buffer, size_t size, size_t nitems, void *userdata);
+static size_t twine_cache_store_s3_download_(char *buffer, size_t size, size_t nitems, void *userdata);
 
 static char **workflow;
 static size_t nworkflow;
+
+struct s3_upload_struct
+{
+	char *buf;
+	size_t bufsize;
+	size_t pos;
+};
 
 /* Public: process a single message, passing it to whatever input handler
  * supports messages of the specified MIME type */
@@ -350,6 +365,8 @@ twine_workflow_init_(TWINE *context)
 	twine_plugin_add_processor(context, "deprecated:postprocess", twine_workflow_postprocess_, context);
 	twine_plugin_add_processor(context, "sparql-get", twine_workflow_sparql_get_, context);
 	twine_plugin_add_processor(context, "sparql-put", twine_workflow_sparql_put_, context);
+	twine_plugin_add_processor(context, "s3-get", twine_workflow_s3_get_, context);
+	twine_plugin_add_processor(context, "s3-put", twine_workflow_s3_put_, context);
 	twine_plugin_allow_internal_(context, 0);
 	r = twine_config_get_all("workflow", "invoke", twine_workflow_config_cb_, context);
 	if(r < 0)
@@ -542,9 +559,146 @@ twine_workflow_sparql_put_(TWINE *restrict context, TWINEGRAPH *restrict graph, 
 		r = -1;
 	}
 	sparql_destroy(conn);
-	return 0;
+	return r;
 }
 
+/* 's3-get' processor: save an RDF graph to the cache of twine and index it */
+static int
+twine_workflow_s3_get_(TWINE *restrict context, TWINEGRAPH *restrict graph, void *dummy)
+{
+	size_t l;
+	char *tbuf;
+
+	(void) context;
+	(void) dummy;
+
+	twine_logf(LOG_DEBUG, "S3 Get\n");
+
+	// Get the triples as a buffer
+	twine_cache_fetch_s3_(graph->uri, &tbuf, &l);
+	if (!tbuf)
+	{
+		twine_logf(LOG_CRIT, "failed to load the triples\n");
+		return -1;
+	}
+
+	// Populate the model
+	graph->old = twine_rdf_model_create();
+	if(!graph->old)
+	{
+		free(tbuf);
+		twine_logf(LOG_CRIT, "failed to allocate an RDF model\n");
+		return -1;
+	}
+
+	return 0;
+
+	// TODO Update the index in the DB to be able to find the object back
+
+	/** Index 1 : Find all the triples having <X> as a subject or object
+	 * return all the triples and the name of the source they came from
+	 * SELECT DISTINCT ?s ?p ?o ?g WHERE {
+	 * GRAPH ?g {
+	 *  { <X> ?p ?o .
+	 *  BIND(<X> as ?s)  }
+	 *  UNION
+	 *  { ?s ?p <X> .
+	 *  BIND(<X> as ?o)  }
+	 * }
+	 * }
+	**/
+	// Table => Graph | {subject/object}
+	// Query => Get the list of graphs, fetch them from S3, filter relevant triples
+
+	/** Index 2 : For a given graph find all the media pointed at. Then
+	 * fetch their descriptions too. The index actually concerns the first
+	 * part of the query only
+	 * SELECT DISTINCT ?s ?p ?o ?g WHERE {
+	 *  GRAPH <http://localhost/a9d3d9dac7804f4689789e455365b6c4> {
+	 *   <http://localhost/a9d3d9dac7804f4689789e455365b6c4#id> ?p1 ?s .
+	 *   FILTER(?p1 = <http://xmlns.com/foaf/0.1/page> ||
+	 *   ?p1 = <http://search.yahoo.com/mrss/player> ||
+	 *   ?p1 = <http://search.yahoo.com/mrss/content>)
+	 *  }
+	 *  GRAPH ?g {
+	 *   ?s ?p ?o .
+	 *  }
+	 *  FILTER(?g != <http://localhost/a9d3d9dac7804f4689789e455365b6c4> &&
+	 *  ?g != <http://localhost/>)
+	 * }
+	 */
+	// Table => Graph | Subject | link_type | target_media
+	// Query => Get the list of link_type+target_media, create triples,
+	// fetch target descriptions and add them to the model
+
+}
+
+static int
+twine_workflow_s3_put_(TWINE *restrict context, TWINEGRAPH *restrict graph, void *dummy)
+{
+	size_t l;
+	char *tbuf;
+	int r;
+
+	(void) context;
+	(void) dummy;
+
+	twine_logf(LOG_DEBUG, "S3\n");
+
+	// TODO Store the content of the ntriples as an object
+	tbuf = twine_rdf_model_ntriples(graph->store, &l);
+	if(tbuf)
+	{
+		r = twine_cache_store_s3_(graph->uri, tbuf, l);
+		librdf_free_memory(tbuf);
+	}
+	else
+	{
+		r = -1;
+	}
+	return r;
+
+	// TODO Update the index in the DB to be able to find the object back
+
+	/** Index 1 : Find all the triples having <X> as a subject or object
+	 * return all the triples and the name of the source they came from
+	 * SELECT DISTINCT ?s ?p ?o ?g WHERE {
+	 * GRAPH ?g {
+	 *  { <X> ?p ?o .
+	 *  BIND(<X> as ?s)  }
+	 *  UNION
+	 *  { ?s ?p <X> .
+	 *  BIND(<X> as ?o)  }
+	 * }
+	 * }
+	**/
+	// Table => Graph | {subject/object}
+	// Query => Get the list of graphs, fetch them from S3, filter relevant triples
+
+	/** Index 2 : For a given graph find all the media pointed at. Then
+	 * fetch their descriptions too. The index actually concerns the first
+	 * part of the query only
+	 * SELECT DISTINCT ?s ?p ?o ?g WHERE {
+	 *  GRAPH <http://localhost/a9d3d9dac7804f4689789e455365b6c4> {
+	 *   <http://localhost/a9d3d9dac7804f4689789e455365b6c4#id> ?p1 ?s .
+	 *   FILTER(?p1 = <http://xmlns.com/foaf/0.1/page> ||
+	 *   ?p1 = <http://search.yahoo.com/mrss/player> ||
+	 *   ?p1 = <http://search.yahoo.com/mrss/content>)
+	 *  }
+	 *  GRAPH ?g {
+	 *   ?s ?p ?o .
+	 *  }
+	 *  FILTER(?g != <http://localhost/a9d3d9dac7804f4689789e455365b6c4> &&
+	 *  ?g != <http://localhost/>)
+	 * }
+	 */
+	// Table => Graph | Subject | link_type | target_media
+	// Query => Get the list of link_type+target_media, create triples,
+	// fetch target descriptions and add them to the model
+
+}
+
+/* 's3-get' processor: get an RDF graph from the cache */
 static int
 twine_workflow_process_single_(TWINE *context, TWINEGRAPH *graph, const char *name)
 {
@@ -655,3 +809,202 @@ twine_workflow_config_cb_(const char *key, const char *value, void *data)
 	p[nworkflow] = NULL;
 	return 0;
 }
+
+static int
+twine_cache_store_s3_(const char *g, char *ntbuf, size_t bufsize)
+{
+	char *urlbuf;
+	char nqlenstr[256];
+	AWSREQUEST *req;
+	CURL *ch;
+	struct curl_slist *headers;
+	struct s3_upload_struct s3data;
+	int r, e;
+	long status;
+	char *t;
+	AWSS3BUCKET *bucket;
+
+	// Set the data to send
+	s3data.buf = ntbuf;
+	s3data.bufsize = bufsize;
+	s3data.pos = 0;
+
+	// Create a bucket "twine"
+	bucket = aws_s3_create("twine");
+	aws_s3_set_logger(bucket, twine_vlogf);
+	if((t = twine_config_geta("s3:endpoint", NULL)))
+	{
+		aws_s3_set_endpoint(bucket, t);
+		free(t);
+	}
+	if((t = twine_config_geta("s3:access", NULL)))
+	{
+		aws_s3_set_access(bucket, t);
+		free(t);
+	}
+	if((t = twine_config_geta("s3:secret", NULL)))
+	{
+		aws_s3_set_secret(bucket, t);
+		free(t);
+	}
+
+	// Prepare the request
+	req = aws_s3_request_create(bucket, g, "PUT");
+	ch = aws_request_curl(req);
+	curl_easy_setopt(ch, CURLOPT_NOSIGNAL, 1);
+	curl_easy_setopt(ch, CURLOPT_VERBOSE, 0);
+	curl_easy_setopt(ch, CURLOPT_READFUNCTION, twine_cache_store_s3_upload_);
+	curl_easy_setopt(ch, CURLOPT_READDATA, &s3data);
+	curl_easy_setopt(ch, CURLOPT_INFILESIZE, (long) s3data.bufsize);
+	curl_easy_setopt(ch, CURLOPT_UPLOAD, 1);
+	headers = curl_slist_append(aws_request_headers(req), "Expect: 100-continue");
+	headers = curl_slist_append(headers, "Content-Type: " MIME_NQUADS);
+	headers = curl_slist_append(headers, "x-amz-acl: public-read");
+	sprintf(nqlenstr, "Content-Length: %u", (unsigned) s3data.bufsize);
+	headers = curl_slist_append(headers, nqlenstr);
+	aws_request_set_headers(req, headers);
+	r = 0;
+	twine_logf(LOG_DEBUG,"Request ok\n");
+	if((e = aws_request_perform(req)))
+	{
+		twine_logf(LOG_ERR,": failed to upload N-Quads: %s\n", curl_easy_strerror(e));
+		r = -1;
+	}
+	else
+	{
+		curl_easy_getinfo(ch, CURLINFO_RESPONSE_CODE, &status);
+		if(status != 200)
+		{
+			twine_logf(LOG_ERR, ": failed to upload N-Quads to bucket at <%s> (HTTP status %ld)\n", urlbuf, status);
+			r = -1;
+		}
+	}
+	aws_request_destroy(req);
+	aws_s3_destroy(bucket);
+	free(urlbuf);
+	return r;
+}
+
+static int
+twine_cache_fetch_s3_(const char *g, char **ntbuf, size_t *buflen)
+{
+	AWSREQUEST *req;
+	CURL *ch;
+	struct curl_slist *headers;
+	struct s3_upload_struct s3data;
+	int r, e;
+	long status;
+	char *t;
+	AWSS3BUCKET *bucket;
+
+	// Init the structures that will be returned
+	*ntbuf = NULL;
+	*buflen = 0;
+	memset(&s3data, 0, sizeof(struct s3_upload_struct));
+
+	// Create a bucket "twine"
+	bucket = aws_s3_create("twine");
+	aws_s3_set_logger(bucket, twine_vlogf);
+	if((t = twine_config_geta("s3:endpoint", NULL)))
+	{
+		aws_s3_set_endpoint(bucket, t);
+		free(t);
+	}
+	if((t = twine_config_geta("s3:access", NULL)))
+	{
+		aws_s3_set_access(bucket, t);
+		free(t);
+	}
+	if((t = twine_config_geta("s3:secret", NULL)))
+	{
+		aws_s3_set_secret(bucket, t);
+		free(t);
+	}
+
+	// Prepare the request
+	req = aws_s3_request_create(bucket, g, "GET");
+	ch = aws_request_curl(req);
+	curl_easy_setopt(ch, CURLOPT_NOSIGNAL, 1);
+	curl_easy_setopt(ch, CURLOPT_VERBOSE, 0);
+	curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, twine_cache_store_s3_download_);
+	curl_easy_setopt(ch, CURLOPT_WRITEDATA, &s3data);
+	headers = curl_slist_append(aws_request_headers(req), "Expect: 100-continue");
+	headers = curl_slist_append(headers, "Accept: " MIME_NQUADS);
+	aws_request_set_headers(req, headers);
+	r = 1;
+	if((e = aws_request_perform(req)))
+	{
+		twine_logf(LOG_ERR, "failed to download buffer from bucket : %s\n", curl_easy_strerror(e));
+		r = -1;
+	}
+	else
+	{
+		curl_easy_getinfo(ch, CURLINFO_RESPONSE_CODE, &status);
+		if(status == 404 || status == 403)
+		{
+			r = 0;
+		}
+		else if(status != 200)
+		{
+			twine_logf(LOG_ERR, "failed to download buffer from bucket : HTTP status %ld\n", status);
+			r = -1;
+		}
+	}
+	aws_request_destroy(req);
+	if(r > 0)
+	{
+		twine_logf(LOG_DEBUG, "all fine!\n");
+		*ntbuf = s3data.buf;
+		*buflen = s3data.pos;
+	}
+	else
+	{
+		free(s3data.buf);
+	}
+	aws_s3_destroy(bucket);
+
+	return r;
+}
+
+static size_t
+twine_cache_store_s3_upload_(char *buffer, size_t size, size_t nitems, void *userdata)
+{
+	struct s3_upload_struct *data;
+
+	data = (struct s3_upload_struct *) userdata;
+	size *= nitems;
+	if(size > data->bufsize - data->pos)
+	{
+		size = data->bufsize - data->pos;
+	}
+	memcpy(buffer, &(data->buf[data->pos]), size);
+	data->pos += size;
+	return size;
+}
+
+static size_t
+twine_cache_store_s3_download_(char *buffer, size_t size, size_t nitems, void *userdata)
+{
+	struct s3_upload_struct *data;
+	char *p;
+
+	data = (struct s3_upload_struct *) userdata;
+	size *= nitems;
+	if(data->pos + size >= data->bufsize)
+	{
+		p = (char *) realloc(data->buf, data->bufsize + size + 1);
+		if(!p)
+		{
+			twine_logf(LOG_CRIT, "failed to expand receive buffer\n");
+			return 0;
+		}
+		data->buf = p;
+		data->bufsize += size;
+	}
+	memcpy(&(data->buf[data->pos]), buffer, size);
+	data->pos += size;
+	data->buf[data->pos] = 0;
+	twine_logf(LOG_DEBUG, "read %lu bytes\n", (unsigned long) size);
+	return size;
+}
+

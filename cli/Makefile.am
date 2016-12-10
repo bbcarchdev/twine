@@ -29,4 +29,6 @@ twine_SOURCES = p_twinecli.h \
 twine_LDADD = \
 	$(top_builddir)/libutils/libutils.la \
 	$(top_builddir)/libtwine/libtwine.la \
-	@LIBMQ_LOCAL_LIBS@ @LIBMQ_LIBS@
+	@LIBMQ_LOCAL_LIBS@ @LIBMQ_LIBS@ \
+	@LIBAWSCLIENT_LOCAL_LIBS@ @LIBAWSCLIENT_LIBS@
+	

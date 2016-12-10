@@ -34,6 +34,7 @@
 # include <fcntl.h>
 # include <curl/curl.h>
 # include <libcluster.h>
+# include <libawsclient.h>
 
 # include "libsupport.h"
 

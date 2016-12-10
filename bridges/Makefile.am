@@ -28,8 +28,9 @@ twine_inject_SOURCES = inject.c
 twine_inject_LDADD = \
 	$(top_builddir)/libutils/libutils.la \
 	$(top_builddir)/libtwine/libtwine.la \
-	@LIBMQ_LOCAL_LIBS@ @LIBMQ_LIBS@
-
+	@LIBMQ_LOCAL_LIBS@ @LIBMQ_LIBS@ \
+	@LIBAWSCLIENT_LOCAL_LIBS@ @LIBAWSCLIENT_LIBS@
+	
 dist_man1_MANS = twine-inject.1
 
 twine-inject.1: $(top_srcdir)/docs/twine-inject.xml

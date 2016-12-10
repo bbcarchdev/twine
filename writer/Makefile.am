@@ -29,7 +29,8 @@ twine_writerd_SOURCES = p_writerd.h \
 twine_writerd_LDADD = \
 	$(top_builddir)/libutils/libutils.la \
 	$(top_builddir)/libtwine/libtwine.la \
-	@LIBMQ_LOCAL_LIBS@ @LIBMQ_LIBS@
+	@LIBMQ_LOCAL_LIBS@ @LIBMQ_LIBS@ \
+	@LIBAWSCLIENT_LOCAL_LIBS@ @LIBAWSCLIENT_LIBS@
 
 dist_man8_MANS = twine-writerd.8
 
