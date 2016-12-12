@@ -54,13 +54,18 @@ twine_db_migrate_(SQL *restrict sql, const char *identifier, int newversion, voi
 	{
 		if(sql_execute(sql, "CREATE TABLE \"subject_objects\" ("
 					   "\"graph\" text NOT NULL,"
-					   "\"uris\" text[],"
+					   "\"subjects\" text[],"
+  				       "\"objects\" text[],"
 					   "PRIMARY KEY (\"graph\")"
 					   ")"))
 		{
 			return -1;
 		}
-		if(sql_execute(sql, "CREATE INDEX \"subject_objects_uris\" ON \"subject_objects\" USING hash (\"uris\")"))
+		if(sql_execute(sql, "CREATE INDEX \"subject_uris\" ON \"subject_objects\" USING hash (\"subjects\")"))
+		{
+			return -1;
+		}
+		if(sql_execute(sql, "CREATE INDEX \"object_uris\" ON \"subject_objects\" USING hash (\"objects\")"))
 		{
 			return -1;
 		}

@@ -653,6 +653,7 @@ twine_workflow_s3_put_(TWINE *restrict context, TWINEGRAPH *restrict graph, void
 	}
 
 	/* Index all the media pointed at and how they are pointed at */
+	// This is useful for spindle-generate
 	if (twine_cache_index_media_(context, graph))
 	{
 		twine_logf(LOG_CRIT, "could not index the graph for target media\n");

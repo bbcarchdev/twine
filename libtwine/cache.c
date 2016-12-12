@@ -7,6 +7,7 @@
 /* Utility function for interfacing with S3 and the DB */
 size_t twine_cache_store_s3_upload_(char *buffer, size_t size, size_t nitems, void *userdata);
 size_t twine_cache_fetch_s3_download_(char *buffer, size_t size, size_t nitems, void *userdata);
+int add_node_to_list_(librdf_node *node, char ***array, size_t *array_size);
 
 struct s3_upload_struct
 {
@@ -233,88 +234,51 @@ twine_cache_fetch_s3_download_(char *buffer, size_t size, size_t nitems, void *u
 int
 twine_cache_index_subject_objects_(TWINE *restrict context, TWINEGRAPH *restrict graph)
 {
-	char **subject_objects;
-	size_t nb_subject_objects;
+	char **subjects;
+	char **objects;
+	size_t nb_subjects;
+	size_t nb_objects;
 	librdf_stream *st;
 	librdf_statement *statement;
-	librdf_node *node;
-	librdf_node *nodes[2];
-	librdf_uri *node_uri;
-	const char *node_uri_str;
-	char *node_uri_str_dup;
-	int match;
+	librdf_node *subject, *object;
 
 	// We extract a list of all the URI which are a subject or an object in
 	// this graph. This will go in the table "subject_objects" and be used
 	// to search for related data
-	subject_objects = NULL;
-	nb_subject_objects = 0;
+	subjects = NULL;
+	objects = NULL;
+	nb_subjects = 0;
+	nb_objects = 0;
 	st = librdf_model_as_stream(graph->store);
 	while(!librdf_stream_end(st))
 	{
 		// Get the current statement from the stream
 		statement = librdf_stream_get_object(st);
 
-		// Look at the subject and objects
-		nodes[0] = librdf_statement_get_subject(statement);
-		nodes[1] = librdf_statement_get_object(statement);
-
-		// See if the subjects and objects could be added to the list
-		for (size_t i=0; i < 2; i++)
+		// Look at the subject
+		subject = librdf_statement_get_subject(statement);
+		if (add_node_to_list_(subject, &subjects, &nb_subjects))
 		{
-			// Extract the string of the URI
-			node = nodes[i];
-			if(!librdf_node_is_resource(node))
-			{
-				librdf_stream_next(st);
-				continue;
-			}
-			node_uri = librdf_node_get_uri(node);
-			if (!node_uri)
-			{
-				librdf_stream_next(st);
-				continue;
-			}
-			node_uri_str = (const char *) librdf_uri_as_string(node_uri);
-			if (!node_uri_str)
-			{
-				librdf_stream_next(st);
-				continue;
-			}
+			twine_logf(LOG_CRIT, "error indexing the subject\n");
+			librdf_free_stream(st);
+			return -1;
+		}
 
-			// See if that string is already in the set
-			match = 0;
-			for(size_t c = 0; c < nb_subject_objects; c++)
-			{
-				if(!strcmp(subject_objects[c], node_uri_str))
-				{
-					match = 1;
-					break;
-				}
-			}
-
-			// If it was not append it to the set
-			if(!match)
-			{
-				subject_objects = realloc(subject_objects, sizeof(char *)*(nb_subject_objects+1));
-				if (!subject_objects)
-				{
-					twine_logf(LOG_CRIT, "could not allocate memory\n");
-					librdf_free_stream(st);
-					return -1;
-				}
-				node_uri_str_dup = malloc(sizeof(char *) * (strlen(node_uri_str) + 1));
-				strcpy(node_uri_str_dup, node_uri_str);
-				subject_objects[nb_subject_objects] = node_uri_str_dup;
-				nb_subject_objects = nb_subject_objects + 1;
-			}
+		// Look at the object
+		object = librdf_statement_get_object(statement);
+		if (add_node_to_list_(object, &objects, &nb_objects))
+		{
+			twine_logf(LOG_CRIT, "error indexing the object\n");
+			librdf_free_stream(st);
+			return -1;
 		}
 
 		// Move to the next statement
 		librdf_stream_next(st);
 	}
 	librdf_free_stream(st);
-	twine_logf(LOG_DEBUG, "found %d subject/objects\n", nb_subject_objects);
+	twine_logf(LOG_DEBUG, "found %d subjects\n", nb_subjects);
+	twine_logf(LOG_DEBUG, "found %d objects\n", nb_objects);
 
 	// We now remove the previous entry for this graph, add a new empty entry
 	// and append all the subjects and objects found
@@ -324,27 +288,87 @@ twine_cache_index_subject_objects_(TWINE *restrict context, TWINEGRAPH *restrict
 		twine_logf(LOG_CRIT, "could not remove the entry from the graph\n");
 		return -2;
 	}
-	if(sql_executef(context->db, "INSERT INTO \"subject_objects\" (\"graph\", \"uris\") VALUES (%Q, ARRAY[]::text[])", graph->uri))
+	if(sql_executef(context->db, "INSERT INTO \"subject_objects\" (\"graph\", \"subjects\", \"objects\") VALUES (%Q, ARRAY[]::text[], ARRAY[]::text[])", graph->uri))
 	{
 		twine_logf(LOG_CRIT, "could not remove add an entry for the graph\n");
 		return -2;
 	}
-	for (size_t i=0; i < nb_subject_objects; i++)
+	for (size_t i=0; i < nb_subjects; i++)
 	{
-		if(sql_executef(context->db, "UPDATE \"subject_objects\" SET \"uris\" = array_append(\"uris\", %Q) WHERE \"graph\" = %Q", subject_objects[i], graph->uri))
+		if(sql_executef(context->db, "UPDATE \"subject_objects\" SET \"subjects\" = array_append(\"subjects\", %Q) WHERE \"graph\" = %Q", subjects[i], graph->uri))
 		{
-			twine_logf(LOG_CRIT, "could not save the subject/object\n");
+			twine_logf(LOG_CRIT, "could not save the subject\n");
 			return -2;
+		}
+		free(subjects[i]);
+	}
+	for (size_t i=0; i < nb_objects; i++)
+	{
+		if(sql_executef(context->db, "UPDATE \"subject_objects\" SET \"objects\" = array_append(\"objects\", %Q) WHERE \"graph\" = %Q", objects[i], graph->uri))
+		{
+			twine_logf(LOG_CRIT, "could not save the object\n");
+			return -2;
+		}
+		free(objects[i]);
+	}
+
+	// Free the arrays of subjects and objects
+	free(subjects);
+	free(objects);
+
+	return 0;
+}
+
+
+int
+add_node_to_list_(librdf_node *node, char ***array, size_t *array_size)
+{
+	librdf_uri *node_uri;
+	const char *node_uri_str;
+	char *node_uri_str_dup;
+	int match;
+
+	// Extract the string of the URI
+	if(!librdf_node_is_resource(node))
+	{
+		return 0;
+	}
+	node_uri = librdf_node_get_uri(node);
+	if (!node_uri)
+	{
+		return -1;
+	}
+	node_uri_str = (const char *) librdf_uri_as_string(node_uri);
+	if (!node_uri_str)
+	{
+		return -1;
+	}
+
+	// See if that string is already in the set
+	match = 0;
+	for(size_t c = 0; c < *array_size; c++)
+	{
+		if(!strcmp((*array)[c], node_uri_str))
+		{
+			match = 1;
+			break;
 		}
 	}
 
-	// We won't need the string anymore so best to free them
-	for (size_t i=0; i < nb_subject_objects; i++)
+	// If it was not append it to the set
+	if(!match)
 	{
-		free(subject_objects[i]);
+		*array = realloc(*array, sizeof(char *)*(*array_size+1));
+		if (!*array)
+		{
+			twine_logf(LOG_CRIT, "could not allocate memory\n");
+			return -1;
+		}
+		node_uri_str_dup = malloc(sizeof(char *) * (strlen(node_uri_str) + 1));
+		strcpy(node_uri_str_dup, node_uri_str);
+		(*array)[*array_size] = node_uri_str_dup;
+		*array_size = *array_size + 1;
 	}
-	free(subject_objects);
-	nb_subject_objects = 0;
 
 	return 0;
 }
@@ -474,3 +498,93 @@ twine_cache_index_media_(TWINE *restrict context, TWINEGRAPH *restrict graph)
 
 	return 0;
 }
+
+// Takes a parameter the model to which to put data in, the name of the target
+// named graph and the name of the target proxy
+// spindle/twine/generate/related.c
+/**
+ * Given
+ *
+ * http://localhost/a9d3d9dac7804f4689789e455365b6c4
+ * http://localhost/a9d3d9dac7804f4689789e455365b6c4#id
+ *
+ * Mimicks
+ *
+ * SELECT DISTINCT ?s ?p ?o ?g WHERE {
+ *  GRAPH <http://localhost/a9d3d9dac7804f4689789e455365b6c4> {
+ *   <http://localhost/a9d3d9dac7804f4689789e455365b6c4#id> ?p1 ?s .
+ *   FILTER(?p1 = <http://xmlns.com/foaf/0.1/page> ||
+ *   ?p1 = <http://search.yahoo.com/mrss/player> ||
+ *   ?p1 = <http://search.yahoo.com/mrss/content>)
+ *  }
+ *  GRAPH ?g {
+ *   ?s ?p ?o .
+ *  }
+ *  FILTER(?g != <http://localhost/a9d3d9dac7804f4689789e455365b6c4> &&
+ *  ?g != <http://localhost/>)
+ * }
+ */
+int
+twine_cache_fetch_media_(librdf_model *model, librdf_node *graph, librdf_node *proxy)
+{
+	librdf_uri *graph_uri, *proxy_uri;
+	const char *graph_uri_str, *proxy_uri_str;
+	SQL_STATEMENT *rs;
+	char *t;
+
+	// Check the input
+	if (!librdf_node_is_resource(graph) || !librdf_node_is_resource(proxy))
+	{
+		twine_logf(LOG_CRIT, "unacceptable input for twine_cache_fetch_media_\n");
+		return -1;
+	}
+
+	// Extract target resources strings
+	graph_uri = librdf_node_get_uri(graph);
+	if (!graph_uri)
+	{
+		return -1;
+	}
+	graph_uri_str = (const char *) librdf_uri_as_string(graph_uri);
+	if (!graph_uri_str)
+	{
+		return -1;
+	}
+	proxy_uri = librdf_node_get_uri(proxy);
+	if (!proxy_uri)
+	{
+		return -1;
+	}
+	proxy_uri_str = (const char *) librdf_uri_as_string(proxy_uri);
+	if (!proxy_uri_str)
+	{
+		return -1;
+	}
+
+	// Query for all the related media
+	rs = sql_queryf(twine_->db, "SELECT \"predicate\", \"object\" FROM \"target_media\" WHERE \"graph\" = %Q AND \"subject\" = %Q", graph_uri_str, proxy_uri_str);
+	if(!rs)
+	{
+		twine_logf(LOG_CRIT, "could not remove add an entry for the graph\n");
+		return -1;
+	}
+
+	twine_logf(LOG_DEBUG, "SELECT \"predicate\", \"object\" FROM \"target_media\" WHERE \"graph\" = '%s' AND \"subject\" = '%s'", graph_uri_str, proxy_uri_str);
+
+	for(; !sql_stmt_eof(rs); sql_stmt_next(rs))
+	{
+		t = sql_stmt_str(rs, 0);
+		twine_logf(LOG_DEBUG, "result: %s\n", t);
+	}
+
+	// TODO Code not finished
+
+	return 0;
+}
+
+
+// SELECT DISTINCT ?s ?p ?o WHERE {  GRAPH <http://shakespeare.acropolis.org.uk/index.ttl> {   ?s ?p ?o .  } }
+// spindle/twine/common/graphcache.c
+
+// SELECT DISTINCT ?s ?p ?o ?g WHERE {  GRAPH ?g {  { <http://shakespeare.acropolis.org.uk/images#id> ?p ?o .   BIND(<http://shakespeare.acropolis.org.uk/images#id> as ?s)  }  UNION  { ?s ?p <http://shakespeare.acropolis.org.uk/images#id> .   BIND(<http://shakespeare.acropolis.org.uk/images#id> as ?o)  } }}
+// spindle/twine/generate/source.c
