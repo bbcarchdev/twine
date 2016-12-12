@@ -194,6 +194,7 @@ int twine_sparql_init_(TWINE *context);
 int twine_cache_store_s3_(const char *g, char *ntbuf, size_t bufsize);
 int twine_cache_fetch_s3_(const char *g, char **ntbuf, size_t *buflen);
 int twine_cache_index_subject_objects_(TWINE *restrict context, TWINEGRAPH *restrict graph);
+int twine_cache_index_media_(TWINE *restrict context, TWINEGRAPH *restrict graph);
 
 int twine_db_init_(TWINE *context);
 int twine_db_schema_update_(TWINE *twine);

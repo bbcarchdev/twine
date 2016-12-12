@@ -147,6 +147,7 @@ twine_cache_fetch_s3_(const char *g, char **ntbuf, size_t *buflen)
 		curl_easy_getinfo(ch, CURLINFO_RESPONSE_CODE, &status);
 		if(status == 404 || status == 403)
 		{
+			twine_logf(LOG_DEBUG, "not found\n");
 			r = 0;
 		}
 		else if(status != 200)
@@ -213,6 +214,22 @@ twine_cache_fetch_s3_download_(char *buffer, size_t size, size_t nitems, void *u
 	return size;
 }
 
+/** Index 1 : Find all the triples having <X> as a subject or object
+ * return all the triples and the name of the source they came from
+ * SELECT DISTINCT ?s ?p ?o ?g WHERE {
+ * GRAPH ?g {
+ *  { <X> ?p ?o .
+ *  BIND(<X> as ?s)  }
+ *  UNION
+ *  { ?s ?p <X> .
+ *  BIND(<X> as ?o)  }
+ * }
+ * }
+ *
+ * Table => Graph | {subject/object}
+ *
+ * Query => Get the list of graphs, fetch them from S3, filter relevant triples
+**/
 int
 twine_cache_index_subject_objects_(TWINE *restrict context, TWINEGRAPH *restrict graph)
 {
@@ -249,16 +266,19 @@ twine_cache_index_subject_objects_(TWINE *restrict context, TWINEGRAPH *restrict
 			node = nodes[i];
 			if(!librdf_node_is_resource(node))
 			{
+				librdf_stream_next(st);
 				continue;
 			}
 			node_uri = librdf_node_get_uri(node);
 			if (!node_uri)
 			{
+				librdf_stream_next(st);
 				continue;
 			}
 			node_uri_str = (const char *) librdf_uri_as_string(node_uri);
 			if (!node_uri_str)
 			{
+				librdf_stream_next(st);
 				continue;
 			}
 
@@ -298,6 +318,7 @@ twine_cache_index_subject_objects_(TWINE *restrict context, TWINEGRAPH *restrict
 
 	// We now remove the previous entry for this graph, add a new empty entry
 	// and append all the subjects and objects found
+	// TODO optimise that code to send less SQL queries
 	if(sql_executef(context->db, "DELETE FROM subject_objects WHERE \"graph\" = %Q", graph->uri))
 	{
 		twine_logf(LOG_CRIT, "could not remove the entry from the graph\n");
@@ -324,6 +345,132 @@ twine_cache_index_subject_objects_(TWINE *restrict context, TWINEGRAPH *restrict
 	}
 	free(subject_objects);
 	nb_subject_objects = 0;
+
+	return 0;
+}
+
+/** Index 2 : For a given graph find all the media pointed at. Then
+ * fetch their descriptions too. The index actually concerns the first
+ * part of the query only
+ * SELECT DISTINCT ?s ?p ?o ?g WHERE {
+ *  GRAPH <http://localhost/a9d3d9dac7804f4689789e455365b6c4> {
+ *   <http://localhost/a9d3d9dac7804f4689789e455365b6c4#id> ?p1 ?s .
+ *   FILTER(?p1 = <http://xmlns.com/foaf/0.1/page> ||
+ *   ?p1 = <http://search.yahoo.com/mrss/player> ||
+ *   ?p1 = <http://search.yahoo.com/mrss/content>)
+ *  }
+ *  GRAPH ?g {
+ *   ?s ?p ?o .
+ *  }
+ *  FILTER(?g != <http://localhost/a9d3d9dac7804f4689789e455365b6c4> &&
+ *  ?g != <http://localhost/>)
+ * }
+ * Table => Graph | Subject | link_type | target_media
+ * Query => Get the list of link_type+target_media, create triples,
+ * fetch target descriptions and add them to the model
+**/
+int
+twine_cache_index_media_(TWINE *restrict context, TWINEGRAPH *restrict graph)
+{
+	librdf_stream *st;
+	librdf_statement *statement;
+	librdf_node *subject, *predicate, *object;
+	librdf_uri *subject_uri, *predicate_uri, *object_uri;
+	const char *subject_uri_str, *predicate_uri_str, *object_uri_str;
+	const char *media_predicates[] = {"http://xmlns.com/foaf/0.1/page",
+			"http://search.yahoo.com/mrss/player",
+			"http://search.yahoo.com/mrss/content"};
+
+	// Remove all the previous entries for this resource
+	if(sql_executef(context->db, "DELETE FROM target_media WHERE \"graph\" = %Q", graph->uri))
+	{
+		twine_logf(LOG_CRIT, "could not remove the media entries for the graph\n");
+		return -1;
+	}
+
+	// Iterate over all the triples to find the resources having a
+	// foaf:page, mrss:player or mrss:content link to a resource
+	st = librdf_model_as_stream(graph->store);
+	while(!librdf_stream_end(st))
+	{
+		// Get the current statement from the stream
+		statement = librdf_stream_get_object(st);
+
+		// Get the subject, predicate and object
+		subject = librdf_statement_get_subject(statement);
+		predicate = librdf_statement_get_predicate(statement);
+		object = librdf_statement_get_object(statement);
+
+		// Continue if any of them is not a resource
+		if(!librdf_node_is_resource(subject) ||
+		   !librdf_node_is_resource(predicate) ||
+		   !librdf_node_is_resource(object))
+		{
+			librdf_stream_next(st);
+			continue;
+		}
+
+		// Extract the string of the predicate
+		predicate_uri = librdf_node_get_uri(predicate);
+		if (!predicate_uri)
+		{
+			librdf_stream_next(st);
+			continue;
+		}
+		predicate_uri_str = (const char *) librdf_uri_as_string(predicate_uri);
+		if (!predicate_uri_str)
+		{
+			librdf_stream_next(st);
+			continue;
+		}
+
+		// See if it's one we like
+		if(!strcmp(predicate_uri_str, media_predicates[0]) ||
+		   !strcmp(predicate_uri_str, media_predicates[1]) ||
+		   !strcmp(predicate_uri_str, media_predicates[2]))
+		{
+			twine_logf(LOG_DEBUG, "found a media linked with <%s>\n", predicate_uri_str);
+
+			// Extract the string of the subject
+			subject_uri = librdf_node_get_uri(subject);
+			if (!subject_uri)
+			{
+				librdf_stream_next(st);
+				continue;
+			}
+			subject_uri_str = (const char *) librdf_uri_as_string(subject_uri);
+			if (!subject_uri_str)
+			{
+				librdf_stream_next(st);
+				continue;
+			}
+
+			// Do the same for the object
+			object_uri = librdf_node_get_uri(object);
+			if (!object_uri)
+			{
+				librdf_stream_next(st);
+				continue;
+			}
+			object_uri_str = (const char *) librdf_uri_as_string(object_uri);
+			if (!object_uri_str)
+			{
+				librdf_stream_next(st);
+				continue;
+			}
+
+			// Insert the entry
+			if(sql_executef(context->db, "INSERT INTO \"target_media\" (\"graph\", \"subject\", \"predicate\", \"object\") VALUES (%Q, %Q, %Q, %Q)", graph->uri, subject_uri_str, predicate_uri_str, object_uri_str))
+			{
+				twine_logf(LOG_CRIT, "could not remove add an entry for the graph\n");
+				return -1;
+			}
+		}
+
+		// Move to the next statement
+		librdf_stream_next(st);
+	}
+	librdf_free_stream(st);
 
 	return 0;
 }
