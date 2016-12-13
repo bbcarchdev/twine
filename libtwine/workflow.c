@@ -553,12 +553,6 @@ twine_workflow_sparql_put_(TWINE *restrict context, TWINEGRAPH *restrict graph, 
 static int
 twine_workflow_s3_get_(TWINE *restrict context, TWINEGRAPH *restrict graph, void *dummy)
 {
-	size_t l;
-	char *tbuf;
-	librdf_parser *parser;
-	librdf_uri *base;
-	int r;
-
 	(void) context;
 	(void) dummy;
 
@@ -572,46 +566,12 @@ twine_workflow_s3_get_(TWINE *restrict context, TWINEGRAPH *restrict graph, void
 		return -1;
 	}
 
-	// Get the triples as a buffer, tbuf will be set to NULL in case of failure
-	// or if the data is not available
-	twine_cache_fetch_s3_(graph->uri, &tbuf, &l);
-	if (!tbuf)
+	// Load the data from the cache
+	if (twine_cache_fetch_graph_(graph->old, graph->uri))
 	{
-		twine_logf(LOG_DEBUG, "could not load any triples from the cache !\n");
+		twine_logf(LOG_CRIT, "failed to load graph from the cache\n");
+		return -1;
 	}
-	else
-	{
-		// Create a parser
-		parser = librdf_new_parser(twine_->world, "ntriples", "application/n-triples", NULL);
-		if(!parser)
-		{
-			twine_logf(LOG_ERR, "failed to create a new parser\n");
-			return -1;
-		}
-
-		// Configure it
-		base = librdf_new_uri(twine_->world, (const unsigned char *) "/");
-		if(!base)
-		{
-			librdf_free_parser(parser);
-			twine_logf(LOG_CRIT, "failed to parse URI\n");
-			return -1;
-		}
-
-		// Parse the buffer into the model
-		r = librdf_parser_parse_counted_string_into_model(parser, (const unsigned char *) tbuf, l, base, graph->old);
-		if(r)
-		{
-			librdf_free_parser(parser);
-			twine_logf(LOG_DEBUG, "failed to parse buffer\n");
-			return -1;
-		}
-
-		free(tbuf);
-		librdf_free_parser(parser);
-	}
-
-	twine_logf(LOG_DEBUG, "Ok!\n");
 
 	return 0;
 }

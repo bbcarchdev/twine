@@ -4,7 +4,6 @@
 
 #include "p_libtwine.h"
 
-/* Utility function for interfacing with S3 and the DB */
 size_t twine_cache_store_s3_upload_(char *buffer, size_t size, size_t nitems, void *userdata);
 size_t twine_cache_fetch_s3_download_(char *buffer, size_t size, size_t nitems, void *userdata);
 int add_node_to_list_(librdf_node *node, char ***array, size_t *array_size);
@@ -15,7 +14,6 @@ struct s3_upload_struct
 	size_t bufsize;
 	size_t pos;
 };
-
 
 int
 twine_cache_store_s3_(const char *g, char *ntbuf, size_t bufsize)
@@ -89,6 +87,22 @@ twine_cache_store_s3_(const char *g, char *ntbuf, size_t bufsize)
 	aws_s3_destroy(bucket);
 
 	return r;
+}
+
+size_t
+twine_cache_store_s3_upload_(char *buffer, size_t size, size_t nitems, void *userdata)
+{
+	struct s3_upload_struct *data;
+
+	data = (struct s3_upload_struct *) userdata;
+	size *= nitems;
+	if(size > data->bufsize - data->pos)
+	{
+		size = data->bufsize - data->pos;
+	}
+	memcpy(buffer, &(data->buf[data->pos]), size);
+	data->pos += size;
+	return size;
 }
 
 int
@@ -171,22 +185,6 @@ twine_cache_fetch_s3_(const char *g, char **ntbuf, size_t *buflen)
 	aws_s3_destroy(bucket);
 
 	return r;
-}
-
-size_t
-twine_cache_store_s3_upload_(char *buffer, size_t size, size_t nitems, void *userdata)
-{
-	struct s3_upload_struct *data;
-
-	data = (struct s3_upload_struct *) userdata;
-	size *= nitems;
-	if(size > data->bufsize - data->pos)
-	{
-		size = data->bufsize - data->pos;
-	}
-	memcpy(buffer, &(data->buf[data->pos]), size);
-	data->pos += size;
-	return size;
 }
 
 size_t
@@ -499,30 +497,26 @@ twine_cache_index_media_(TWINE *restrict context, TWINEGRAPH *restrict graph)
 	return 0;
 }
 
-// Takes a parameter the model to which to put data in, the name of the target
-// named graph and the name of the target proxy
-// spindle/twine/generate/related.c
 /**
- * Given
+ * Takes a parameter the model to which to put data in, the name of the target
+ * named graph and the name of the target proxy
  *
- * http://localhost/a9d3d9dac7804f4689789e455365b6c4
- * http://localhost/a9d3d9dac7804f4689789e455365b6c4#id
- *
- * Mimicks
+ * Replaces the query
  *
  * SELECT DISTINCT ?s ?p ?o ?g WHERE {
- *  GRAPH <http://localhost/a9d3d9dac7804f4689789e455365b6c4> {
- *   <http://localhost/a9d3d9dac7804f4689789e455365b6c4#id> ?p1 ?s .
- *   FILTER(?p1 = <http://xmlns.com/foaf/0.1/page> ||
- *   ?p1 = <http://search.yahoo.com/mrss/player> ||
- *   ?p1 = <http://search.yahoo.com/mrss/content>)
+ *  GRAPH <graph> {
+ *   <proxy> ?p1 ?s .
+ *   FILTER(?p1 = <http://xmlns.com/foaf/0.1/page>      ||
+ *          ?p1 = <http://search.yahoo.com/mrss/player> ||
+ *          ?p1 = <http://search.yahoo.com/mrss/content>)
  *  }
  *  GRAPH ?g {
  *   ?s ?p ?o .
  *  }
- *  FILTER(?g != <http://localhost/a9d3d9dac7804f4689789e455365b6c4> &&
- *  ?g != <http://localhost/>)
+ *  FILTER(?g != <graph> && ?g != <http://localhost/>)
  * }
+ *
+ * That used to be in spindle/twine/generate/related.c
  */
 int
 twine_cache_fetch_media_(librdf_model *model, librdf_node *graph, librdf_node *proxy)
@@ -530,7 +524,11 @@ twine_cache_fetch_media_(librdf_model *model, librdf_node *graph, librdf_node *p
 	librdf_uri *graph_uri, *proxy_uri;
 	const char *graph_uri_str, *proxy_uri_str;
 	SQL_STATEMENT *rs;
-	char *t;
+	char *target_graph;
+	librdf_model *temp;
+	librdf_node *context;
+	librdf_stream *st;
+	librdf_statement *statement;
 
 	// Check the input
 	if (!librdf_node_is_resource(graph) || !librdf_node_is_resource(proxy))
@@ -562,29 +560,231 @@ twine_cache_fetch_media_(librdf_model *model, librdf_node *graph, librdf_node *p
 	}
 
 	// Query for all the related media
-	rs = sql_queryf(twine_->db, "SELECT \"predicate\", \"object\" FROM \"target_media\" WHERE \"graph\" = %Q AND \"subject\" = %Q", graph_uri_str, proxy_uri_str);
+	rs = sql_queryf(twine_->db, "SELECT \"object\" FROM \"target_media\" WHERE \"graph\" = %Q AND \"subject\" = %Q", graph_uri_str, proxy_uri_str);
 	if(!rs)
 	{
-		twine_logf(LOG_CRIT, "could not remove add an entry for the graph\n");
+		twine_logf(LOG_CRIT, "could not query the DB\n");
 		return -1;
 	}
 
-	twine_logf(LOG_DEBUG, "SELECT \"predicate\", \"object\" FROM \"target_media\" WHERE \"graph\" = '%s' AND \"subject\" = '%s'", graph_uri_str, proxy_uri_str);
-
+	// Load the graphs
 	for(; !sql_stmt_eof(rs); sql_stmt_next(rs))
 	{
-		t = sql_stmt_str(rs, 0);
-		twine_logf(LOG_DEBUG, "result: %s\n", t);
-	}
+		// Get the graph name
+		target_graph = sql_stmt_str(rs, 0);
 
-	// TODO Code not finished
+		// Skip the graph if it's the same as the query graph
+		if (!strcmp(target_graph, graph_uri_str))
+		{
+			continue;
+		}
+
+		// Load the graph
+		temp = twine_rdf_model_create();
+		if (twine_cache_fetch_graph_(temp, target_graph))
+		{
+			twine_logf(LOG_CRIT, "failed to load graph from the cache\n");
+			return -1;
+		}
+
+		// Set the context node
+		context = librdf_new_node_from_uri_string(twine_->world, (const unsigned char *)graph);
+
+		// Add the statements to the model
+		st = librdf_model_as_stream(temp);
+		while (!librdf_stream_end(st))
+		{
+			// Get the statement and add it
+			statement = librdf_stream_get_object(st);
+			if (librdf_model_context_add_statement(model, context, statement))
+			{
+				twine_logf(LOG_CRIT, "could not add a statement\n");
+				librdf_free_stream(st);
+				return -1;
+			}
+
+			// Next!
+			librdf_stream_next(st);
+		}
+
+		// Free the model, the context and the stream
+		twine_rdf_model_destroy(temp);
+		librdf_free_node(context);
+	}
+	sql_stmt_destroy(rs);
 
 	return 0;
 }
 
 
-// SELECT DISTINCT ?s ?p ?o WHERE {  GRAPH <http://shakespeare.acropolis.org.uk/index.ttl> {   ?s ?p ?o .  } }
-// spindle/twine/common/graphcache.c
+/**
+ * Loads the content of the graph with the URI 'graph' and put the triples
+ * into the model 'model'
+ *
+ * Replaces the query
+ * SELECT DISTINCT ?s ?p ?o WHERE {
+ *   GRAPH <uri> {
+ *     ?s ?p ?o .
+ *   }
+ * }
+ *
+ * That used to be in spindle/twine/common/graphcache.c
+ */
+int
+twine_cache_fetch_graph_(librdf_model *model, const char *uri)
+{
+	size_t l;
+	char *tbuf;
+	librdf_parser *parser;
+	librdf_uri *base;
+	int r;
 
-// SELECT DISTINCT ?s ?p ?o ?g WHERE {  GRAPH ?g {  { <http://shakespeare.acropolis.org.uk/images#id> ?p ?o .   BIND(<http://shakespeare.acropolis.org.uk/images#id> as ?s)  }  UNION  { ?s ?p <http://shakespeare.acropolis.org.uk/images#id> .   BIND(<http://shakespeare.acropolis.org.uk/images#id> as ?o)  } }}
-// spindle/twine/generate/source.c
+	// Get the triples as a buffer, tbuf will be set to NULL in case of failure
+	// or if the data is not available
+	twine_cache_fetch_s3_(uri, &tbuf, &l);
+	if (!tbuf)
+	{
+		twine_logf(LOG_DEBUG, "could not load any triples from the cache !\n");
+	}
+	else
+	{
+		// Create a parser
+		parser = librdf_new_parser(twine_->world, "ntriples", "application/n-triples", NULL);
+		if(!parser)
+		{
+			twine_logf(LOG_ERR, "failed to create a new parser\n");
+			return -1;
+		}
+
+		// Configure it
+		base = librdf_new_uri(twine_->world, (const unsigned char *) "/");
+		if(!base)
+		{
+			librdf_free_parser(parser);
+			twine_logf(LOG_CRIT, "failed to parse URI\n");
+			return -1;
+		}
+
+		// Parse the buffer into the model
+		r = librdf_parser_parse_counted_string_into_model(parser, (const unsigned char *) tbuf, l, base, model);
+		if(r)
+		{
+			librdf_free_parser(parser);
+			twine_logf(LOG_DEBUG, "failed to parse buffer\n");
+			return -1;
+		}
+
+		free(tbuf);
+		librdf_free_parser(parser);
+	}
+
+	return 0;
+}
+
+
+/**
+ * Fetches the content of resource that relate to a particular 'uri'. The
+ * content is loaded as quads into 'model'
+ *
+ * Replaces the query
+ * SELECT DISTINCT ?s ?p ?o ?g WHERE {
+ *   GRAPH ?g {
+ *     { <uri> ?p ?o .
+ *       BIND(<uri> as ?s)}
+ *     UNION
+ *     { ?s ?p <uri> .
+ *       BIND(<uri> as ?o)}
+ *   }
+ * }
+ *
+ * That used to be in spindle/twine/generate/source.c
+ */
+int
+twine_cache_fetch_about_(librdf_model *model, const char *uri)
+{
+	SQL_STATEMENT *rs;
+	librdf_model *temp;
+	char *graph;
+	librdf_stream *st;
+	librdf_statement *statement;
+	librdf_node *subject, *object, *context;
+	librdf_uri *subject_uri, *object_uri;
+	const char *subject_uri_str, *object_uri_str;
+	int subject_match, object_match;
+
+	twine_logf(LOG_DEBUG, "calling twine_cache_fetch_about_ for %s\n", uri);
+
+	// Find all the graphs that have 'uri' as a subject or object
+	rs = sql_queryf(twine_->db, "SELECT \"graph\" FROM \"subject_objects\" WHERE %Q = ANY(\"subjects\") OR %Q = ANY(\"objects\")", uri, uri);
+	if(!rs)
+	{
+		twine_logf(LOG_CRIT, "could not query the DB for graphs about %s\n", uri);
+		return -1;
+	}
+	// Iterate over the results
+	for(; !sql_stmt_eof(rs); sql_stmt_next(rs))
+	{
+		// Load the graph
+		graph = sql_stmt_str(rs, 0);
+		temp = twine_rdf_model_create();
+		if (twine_cache_fetch_graph_(temp, graph))
+		{
+			twine_logf(LOG_CRIT, "failed to load graph from the cache\n");
+			return -1;
+		}
+
+		// Set the context node
+		context = librdf_new_node_from_uri_string(twine_->world, (const unsigned char *)graph);
+
+		// Iterate over the statements to add those using 'graph' as a subject
+		// to the model. TODO if we find that the extra triples are not causing
+		// any trouble we could instead directly all all the graph into the
+		// target context
+		st = librdf_model_as_stream(temp);
+		while (!librdf_stream_end(st))
+		{
+			statement = librdf_stream_get_object(st);
+
+			// Check if the subject matches
+			subject_match = 0;
+			subject = librdf_statement_get_subject(statement);
+			if (librdf_node_is_resource(subject))
+			{
+				subject_uri = librdf_node_get_uri(subject);
+				subject_uri_str = (const char *) librdf_uri_as_string(subject_uri);
+				subject_match = !strcmp(subject_uri_str, uri);
+			}
+
+			// Check if the object matches
+			object_match = 0;
+			object = librdf_statement_get_object(statement);
+			if (librdf_node_is_resource(object))
+			{
+				object_uri = librdf_node_get_uri(object);
+				object_uri_str = (const char *) librdf_uri_as_string(object_uri);
+				object_match = !strcmp(object_uri_str, uri);
+			}
+
+			if (subject_match || object_match)
+			{
+				if (librdf_model_context_add_statement(model, context, statement))
+				{
+					twine_logf(LOG_CRIT, "could not add a statement\n");
+					librdf_free_stream(st);
+					return -1;
+				}
+			}
+
+			// Next!
+			librdf_stream_next(st);
+		}
+
+		// Free the model, the context and the stream
+		librdf_free_stream(st);
+		twine_rdf_model_destroy(temp);
+		librdf_free_node(context);
+	}
+	sql_stmt_destroy(rs);
+
+	return 0;
+}
