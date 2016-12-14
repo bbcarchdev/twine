@@ -402,6 +402,7 @@ twine_cache_index_media_(TWINE *restrict context, TWINEGRAPH *restrict graph)
 	const char *media_predicates[] = {"http://xmlns.com/foaf/0.1/page",
 			"http://search.yahoo.com/mrss/player",
 			"http://search.yahoo.com/mrss/content"};
+	SQL_STATEMENT *rs;
 
 	// Remove all the previous entries for this resource
 	if(sql_executef(context->db, "DELETE FROM target_media WHERE \"graph\" = %Q", graph->uri))
@@ -481,10 +482,30 @@ twine_cache_index_media_(TWINE *restrict context, TWINEGRAPH *restrict graph)
 				continue;
 			}
 
-			// Insert the entry
-			if(sql_executef(context->db, "INSERT INTO \"target_media\" (\"graph\", \"subject\", \"predicate\", \"object\") VALUES (%Q, %Q, %Q, %Q)", graph->uri, subject_uri_str, predicate_uri_str, object_uri_str))
+			// TODO Could we optimise that to send less queries ?
+
+			// If it's the first time we see this subject first insert an empty list of objects
+			rs = sql_queryf(twine_->db, "SELECT \"graph\", \"subject\" FROM \"target_media\" WHERE \"graph\" = %Q AND \"subject\" = %Q", graph->uri, subject_uri_str);
+			if(!rs)
 			{
-				twine_logf(LOG_CRIT, "could not remove add an entry for the graph\n");
+				twine_logf(LOG_CRIT, "could not query the DB\n");
+				return -1;
+			}
+			if (sql_stmt_eof(rs))
+			{
+				// Insert a blank set
+				if(sql_executef(context->db, "INSERT INTO \"target_media\" (\"graph\", \"subject\", \"objects\") VALUES (%Q, %Q, ARRAY[]::text[])", graph->uri, subject_uri_str))
+				{
+					twine_logf(LOG_CRIT, "could not set an empty entry for the graph\n");
+					return -1;
+				}
+			}
+			sql_stmt_destroy(rs);
+
+			// Then add this entry to the list of objects
+			if(sql_executef(context->db, "UPDATE \"target_media\" SET \"objects\" = array_append(\"objects\", %Q) WHERE \"graph\" = %Q and \"subject\" = %Q", object_uri_str, graph->uri, subject_uri_str))
+			{
+				twine_logf(LOG_CRIT, "could not add an entry for the graph\n");
 				return -1;
 			}
 		}
@@ -560,7 +581,7 @@ twine_cache_fetch_media_(librdf_model *model, librdf_node *graph, librdf_node *p
 	}
 
 	// Query for all the related media
-	rs = sql_queryf(twine_->db, "SELECT \"object\" FROM \"target_media\" WHERE \"graph\" = %Q AND \"subject\" = %Q", graph_uri_str, proxy_uri_str);
+	rs = sql_queryf(twine_->db, "SELECT unnest(\"objects\") AS \"object\" FROM \"target_media\" WHERE \"graph\" = %Q AND \"subject\" = %Q", graph_uri_str, proxy_uri_str);
 	if(!rs)
 	{
 		twine_logf(LOG_CRIT, "could not query the DB\n");

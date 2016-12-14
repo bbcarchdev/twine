@@ -61,21 +61,28 @@ twine_db_migrate_(SQL *restrict sql, const char *identifier, int newversion, voi
 		{
 			return -1;
 		}
-		if(sql_execute(sql, "CREATE INDEX \"subject_uris\" ON \"subject_objects\" USING hash (\"subjects\")"))
+		if(sql_execute(sql, "CREATE INDEX \"subject_objects_subjects\" ON \"subject_objects\" USING hash (\"subjects\")"))
 		{
 			return -1;
 		}
-		if(sql_execute(sql, "CREATE INDEX \"object_uris\" ON \"subject_objects\" USING hash (\"objects\")"))
+		if(sql_execute(sql, "CREATE INDEX \"subject_objects_objects\" ON \"subject_objects\" USING hash (\"objects\")"))
 		{
 			return -1;
 		}
 		if(sql_execute(sql, "CREATE TABLE \"target_media\" ("
 					   "\"graph\" text NOT NULL,"
 					   "\"subject\" text NOT NULL,"
-    				   "\"predicate\" text NOT NULL,"
-	    			   "\"object\" text NOT NULL,"
-					   "PRIMARY KEY (\"graph\", \"subject\", \"predicate\", \"object\")"
+	    			   "\"objects\" text[],"
+					   "PRIMARY KEY (\"graph\", \"subject\")"
 					   ")"))
+		{
+			return -1;
+		}
+		if(sql_execute(sql, "CREATE INDEX \"target_media_graph\" ON \"target_media\" USING hash (\"graph\")"))
+		{
+			return -1;
+		}
+		if(sql_execute(sql, "CREATE INDEX \"target_media_subject\" ON \"target_media\" USING hash (\"subject\")"))
 		{
 			return -1;
 		}
