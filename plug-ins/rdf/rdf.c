@@ -190,10 +190,10 @@ describe_sources(librdf_model *model)
 	librdf_uri *nodeuri;
 	const char *nodeuristr;
 	librdf_statement *statement;
-	const char *base_template = "http://%s/";
 	const char *literal_template = "Data from '%s'";
-	char *strbuf, *hostname, *baseuri;
-	size_t i;
+	char *strbuf, *root_uri_str;
+	size_t i, l;
+	URI *graph_uri, *root_uri;
 
 	// Get all the sources
 	iter = librdf_model_get_contexts(model);
@@ -201,38 +201,52 @@ describe_sources(librdf_model *model)
 	{
 		// Extract the needed resources
 		node = librdf_iterator_get_object(iter);
+		if (!node)
+		{
+			continue;
+		}
 		nodeuri = librdf_node_get_uri(node);
+		if (!nodeuri)
+		{
+			continue;
+		}
 		nodeuristr = (const char *)librdf_uri_as_string(nodeuri);
+		if (!nodeuristr)
+		{
+			continue;
+		}
 		twine_logf(LOG_DEBUG, TWINE_PLUGIN_NAME ": uristr {%s} \n", nodeuristr);
-		hostname = strtok(nodeuristr, "/");
-		hostname = strtok(NULL, "/");
-		twine_logf(LOG_DEBUG, TWINE_PLUGIN_NAME ": hostname {%s} \n", hostname);
-		baseuri =  (char *) calloc(1, strlen(hostname) + strlen(base_template) + 1);
-		sprintf(baseuri, base_template, hostname);
-		twine_logf(LOG_DEBUG, TWINE_PLUGIN_NAME ": base {%s} \n", baseuri);
+
+		// Find the root of name to use to describe the dataset
+		graph_uri = uri_create_str(nodeuristr, NULL);
+		root_uri = uri_create_str("/", graph_uri);
+		uri_destroy(graph_uri);
+		root_uri_str = uri_stralloc(root_uri);
+		twine_logf(LOG_DEBUG, TWINE_PLUGIN_NAME ": base {%s}\n", root_uri_str);
+		uri_destroy(root_uri);
 
 		// Say that we have a void:Dataset
 		statement = twine_rdf_st_create();
-		librdf_statement_set_subject(statement, twine_rdf_node_createuri(baseuri));
+		librdf_statement_set_subject(statement, twine_rdf_node_createuri(root_uri_str));
 		librdf_statement_set_predicate(statement, twine_rdf_node_createuri("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"));
 		librdf_statement_set_object(statement, twine_rdf_node_createuri("http://rdfs.org/ns/void#Dataset"));
-		twine_logf(LOG_DEBUG, TWINE_PLUGIN_NAME ": adding {%s} to {%s}\n", librdf_statement_to_string(statement), baseuri);
-		twine_rdf_model_add_st(model, statement, twine_rdf_node_createuri(baseuri));
+		twine_logf(LOG_DEBUG, TWINE_PLUGIN_NAME ": adding {%s}\n", librdf_statement_to_string(statement));
+		twine_rdf_model_add_st(model, statement, twine_rdf_node_createuri(root_uri_str));
 		librdf_free_statement(statement);
 
 		// Give it a label
 		statement = twine_rdf_st_create();
-		librdf_statement_set_subject(statement, twine_rdf_node_createuri(baseuri));
+		librdf_statement_set_subject(statement, twine_rdf_node_createuri(root_uri_str));
 		librdf_statement_set_predicate(statement, twine_rdf_node_createuri("http://www.w3.org/2000/01/rdf-schema#label"));
-		strbuf = (char *) calloc(1, strlen(hostname) + strlen(literal_template) + 1);
-		sprintf(strbuf, literal_template, hostname);
+		strbuf = (char *) calloc(1, strlen(root_uri_str) + strlen(literal_template) + 1);
+		sprintf(strbuf, literal_template, root_uri_str);
 		librdf_statement_set_object(statement, twine_rdf_node_createliteral(strbuf));
 		free(strbuf);
-		twine_logf(LOG_DEBUG, TWINE_PLUGIN_NAME ": adding {%s} to {%s}\n", librdf_statement_to_string(statement), baseuri);
-		twine_rdf_model_add_st(model, statement, twine_rdf_node_createuri(baseuri));
+		twine_logf(LOG_DEBUG, TWINE_PLUGIN_NAME ": adding {%s}\n", librdf_statement_to_string(statement));
+		twine_rdf_model_add_st(model, statement, twine_rdf_node_createuri(root_uri_str));
 		librdf_free_statement(statement);
 
-		free(baseuri);
+		free(root_uri_str);
 	}
 	librdf_free_iterator(iter);
 

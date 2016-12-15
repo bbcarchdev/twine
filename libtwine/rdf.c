@@ -403,6 +403,7 @@ twine_rdf_node_createuri(const char *uri)
 		twine_logf(LOG_ERR, "failed to create new node from <%s>\n", uri);
 		return NULL;
 	}
+
 	return p;
 }
 
