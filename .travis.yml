@@ -1,0 +1,18 @@
+language: c
+sudo: required
+dist: trusty
+compiler: clang
+before_install:
+- curl https://letsencrypt.org/certs/isrgrootx1.pem.txt | sudo tee /usr/share/ca-certificates/isrgrootx1.crt
+- echo "isrgrootx1.crt" | sudo tee -a /etc/ca-certificates.conf
+- curl https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem.txt | sudo tee /usr/share/ca-certificates/lets-encrypt-x3-cross-signed.crt
+- echo "lets-encrypt-x3-cross-signed.crt" | sudo tee -a /etc/ca-certificates.conf
+- sudo update-ca-certificates
+- curl https://raw.githubusercontent.com/bbcarchdev/bbcarchdev-keys/main/bbcarchdev-apt.asc | sudo apt-key add -
+- echo "deb [arch=amd64] https://apt.bbcarchdev.net/debian wheezy main ports dev stage live" | sudo tee -a /etc/apt/sources.list
+- sudo apt-get update -qq
+- sudo apt-get install -qq libcurl4-gnutls-dev librdf0-dev uuid-dev liburi-dev libsparqlclient-dev libltdl-dev libqpid-proton-dev libxml2-dev libxslt1-dev libawsclient-dev libmq-dev libcluster-dev automake autoconf libtool pkg-config
+before_script:
+- autoreconf -f -i
+script:
+- ./configure && make && make check
