@@ -93,7 +93,7 @@ case "$1" in
 		if ! is_true "$START" ; then
 			[ "$VERBOSE" != no ] && log_warning_msg "$DESC is not configured to start"
 			do_stop
-			exit $?
+			exit 0
 		fi
 		[ "$VERBOSE" != no ] && log_daemon_msg "Restarting $DESC" $NAME
 		do_stop
