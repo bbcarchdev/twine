@@ -67,7 +67,8 @@ process_rdf(TWINE *restrict context, const char *restrict mime, const unsigned c
 	librdf_iterator *iter;
 	librdf_node *node;
 	librdf_uri *uri;
-	librdf_stream *stream;	
+	librdf_stream *stream;
+	size_t graphtotal, graphcount;
 	int r;
 
 	(void) subject;
@@ -101,18 +102,32 @@ process_rdf(TWINE *restrict context, const char *restrict mime, const unsigned c
 		twine_rdf_model_destroy(model);
 		return -1;
 	}
+	for(graphtotal = 0; !librdf_iterator_end(iter); graphtotal++)
+	{
+		librdf_iterator_next(iter);
+	}
+	librdf_free_iterator(iter);
+	graphcount = 0;
+	iter = librdf_model_get_contexts(model);
+	if(!iter)
+	{
+		twine_logf(LOG_ERR, "failed to retrieve contexts from model\n");
+		twine_rdf_model_destroy(model);
+		return -1;
+	}
 	while(!librdf_iterator_end(iter))
 	{
 		node = (librdf_node *) librdf_iterator_get_object(iter);
 		if(!node)
 		{
+			graphcount++;
 			continue;
 		}
 		else if(librdf_node_is_resource(node))
 		{
 			uri = librdf_node_get_uri(node);
 			stream = librdf_model_context_as_stream(model, node);
-			twine_logf(LOG_DEBUG, "RDF: processing graph <%s>\n", (const char *) librdf_uri_as_string(uri));
+			twine_logf(LOG_DEBUG, "RDF: processing graph %d of %s: <%s>\n", graphcount, graphtotal, (const char *) librdf_uri_as_string(uri));
 			if(twine_workflow_process_stream(context, (const char *) librdf_uri_as_string(uri), stream))
 			{
 				twine_logf(LOG_ERR, "failed to process graph <%s>\n", (const char *) librdf_uri_as_string(uri));
@@ -122,6 +137,7 @@ process_rdf(TWINE *restrict context, const char *restrict mime, const unsigned c
 			librdf_free_stream(stream);
 		}
 		librdf_iterator_next(iter);
+		graphcount++;
 	}
 
 	librdf_free_iterator(iter);
