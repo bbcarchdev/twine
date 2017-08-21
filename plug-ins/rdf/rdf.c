@@ -125,8 +125,8 @@ process_rdf(TWINE *restrict context, const char *restrict mime, const unsigned c
 		}
 		else if(librdf_node_is_resource(node))
 		{
-			twine_logf(LOG_DEBUG, "RDF: processing graph %d of %d: <%s>\n", graphcount, graphtotal, (const char *) librdf_uri_as_string(uri));
 			uri = librdf_node_get_uri(node);
+			twine_logf(LOG_DEBUG, "RDF: processing graph %d of %d: <%s>\n", graphcount, graphtotal, (const char *) librdf_uri_as_string(uri));
 			stream = librdf_model_context_as_stream(model, node);
 			if(twine_workflow_process_stream(context, (const char *) librdf_uri_as_string(uri), stream))
 			{
