@@ -19,11 +19,11 @@
 ACLOCAL_AMFLAGS = -I m4
 
 DIST_SUBDIRS = libsupport libtwine libutils \
-	writer cli bridges plug-ins \
+	writer cli inject plug-ins \
 	conf docs m4 docbook-html5
 
 SUBDIRS = libsupport @subdirs@ libtwine libutils \
-	writer cli bridges plug-ins \
+	writer cli inject plug-ins \
 	conf docs
 
 pkgconfigdir = @libdir@/pkgconfig

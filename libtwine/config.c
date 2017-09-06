@@ -31,7 +31,7 @@ static char *twine_config_key_alloc_(TWINE *restrict context, const char *restri
  *
  * @key is formatted as "section:name". As a special case, if section is
  * simply an asterisk, then it is replaced in turn by the appname provided
- * via twine_set_appname() and then "twine".
+ * via twine_set_appname() and then "defaults".
  */
 size_t
 twine_config_get(const char *key, const char *defval, char *buf, size_t bufsize)

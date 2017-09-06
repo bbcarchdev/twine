@@ -1,8 +1,8 @@
-/* Twine: Stand-alone import utility
+/* Twine: Stand-alone import/processing utility
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014-2016 BBC
+ * Copyright (c) 2014-2017 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@
 # include "libutils.h"
 # include "libtwine-internal.h"
 
-# define TWINE_APP_NAME                 "twinecli"
+# define TWINE_APP_NAME                 "cli"
 
 struct twinecli_extmime_struct
 {

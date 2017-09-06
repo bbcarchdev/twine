@@ -31,7 +31,7 @@
 # include "libutils.h"
 # include "libtwine-internal.h"
 
-# define TWINE_APP_NAME                 "writerd"
+# define TWINE_APP_NAME                 "writer"
 
 int writerd_runloop(TWINE *context);
 int writerd_exit(void);

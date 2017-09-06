@@ -1,35 +1,78 @@
-[twine]
-;; Configuration settings in this section apply to all applications which
-;; support them; any settings in application-specific sections will override
-;; those provided here.
+;;;; Defaults which, if not overidden, apply to the writer daemon and to the
+;;;; command-line tools
 
-;; The URI of the message queue endpoint
+[defaults]
+;; The default workflow performs a sparql-get, invokes any configured
+;; pre-processors, sparql-put, and then any configured post-processors.
+;;
+;; Note that pre-processors and post-processors are now deprecated, and
+;; support will be removed in a future release: instead, any plug-in can
+;; register one or more processors which can be arranged in any (meaningful)
+;; order to achieve the desired workflow.
+;;
+;; This default workflow therefore exists for compatibility. Alternatives
+;; are included below in the [writer] and [cli] sections.
+
+; workflow=sparql-get, deprecated:preprocess, sparql-put, deprecated:postprocess
+
+;; The URI of the message queue endpoint, used by the writer daemon and
+;; inject tool
 mq=amqp://localhost/amq.direct
 
-;; SPARQL connection configuration
-sparql=http://localhost/
-;sparql-verbose=yes
-;sparql-query=http://localhost/sparql/
-;sparql-update=http://localhost/update/
-;sparql-data=http://localhost/data/
+;; SPARQL connection configuration (used by the sparql-get and sparql-put
+;; workflow processors)
+sparql=http://localhost:9000/?verbose=true
 
-;; Loadable modules for Twine processors
+;; Loadable modules - you can specify separate lists in the [writer],
+;; [cli], and [inject] sections instead, but it's very much not
+;; recommended (because it will be very confusing for tools all using
+;; the same configuration file to be loading different sets of
+;; modules).
 plugin=rdf.so
+
+;; See the [xslt:application/x-example+xml] section below for information
+;; about how the XSLT plug-in is used.
 plugin=xslt.so
+
+;; The Geonames plug-in is capable of parsing the GeoNames RDF dump format,
+;; which is a series of lines in the form:
+;;
+;; [graph-uri]
+;; [RDF/XML]
+;; [graph-uri]
+;; [RDF/XML]
+;; :
+;; :
+;;
+;; To use it, specify the input MIME type as text/x-geonames-dump, e.g.:
+;; 
+;; $ twine -t text/x-geonames-dump all-countries.txt
+;;
+;; With the workflow specified in the [cli] section below, this will cause
+;; the GeoNames dump file to be parsed, and then serialised as N-Quads.
 plugin=geonames.so
 
-;; Configuration specifically for the writer daemon (twine-writerd)
-[writerd]
+;;;; Configuration specifically for the writer daemon (twine-writerd)
+
+[writer]
 ;; If twine-writerd should use a specific message queue URI, specify it here
 ;mq=amqp://localhost/custom-inbound
+
 ;; The location of the writer PID file
 pidfile=@LOCALSTATEDIR@/run/twine-writerd.pid
 
-;; Configuraiton specifically for the command-line tool ("twine")
-[twine-cli]
-; sparql=http://otherhost/
+;; Override the default workflow specifically for the writer daemon
+workflow=sparql-put
 
-;; Configuration specifically for the inject tool (twine-inject)
+;;;; Configuraiton specifically for the command-line tool ("twine")
+
+[cli]
+;; Override the default workflow specifically for the command-line tool to
+;; simply serialise the input file as N-Quads to standard output
+workflow=dump-nquads
+
+;;;; Configuration specifically for the inject tool (twine-inject)
+
 [inject]
 ;; If twine-inject should use a specific message queue URI, specify it here
 ;mq=amqp://localhost/custom-outbound
@@ -45,10 +88,22 @@ level=notice
 ;; Logging facility
 facility=daemon
 
+;;;; Individual processors may have their own configuration sections
+
 ;; Define a MIME type to be processed via the loadable XSLT processor
+;; An example XML document has been provided to demonstrate this
+;; configuration. It can be processed with:
+;;
+;; $ twine -t application/x-example+xml /path/to/example.xml
+;;
+;; With the dump-nquads workflow processor as configured in [cli] section
+;; abvove, Twine will parse the XML, perform the XSL transform, parse the
+;; resulting RDF/XML, apply the graph name using the XPath expression below,
+;; and output the resulting quads in N-Quads format.
+;;
 [xslt:application/x-example+xml]
 ;; A description of this type
-desc=Example XSLT-transformable XML
+desc=Example XSL-transformable XML
 ;; Specify the path to the XSLT stylesheet
 xslt=@LIBDIR@/twine/example-xml.xsl
 ;; Specify the XPath expression to retrieve the graph URI

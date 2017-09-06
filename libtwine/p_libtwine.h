@@ -44,9 +44,9 @@
 # define DEFAULT_MQ_URI                 "amqp://~0.0.0.0/amq.direct"
 
 # define DEFAULT_CONFIG_PATH            SYSCONFDIR "/twine.conf"
-# define DEFAULT_CONFIG_SECTION_NAME    "twine"
+# define DEFAULT_CONFIG_SECTION_NAME    "defaults"
 # define DEFAULT_CONFIG_SECTION         DEFAULT_CONFIG_SECTION_NAME ":"
-# define DEFAULT_CONFIG_SECTION_LEN     6
+# define DEFAULT_CONFIG_SECTION_LEN     9
 
 # define MIME_TURTLE                    "text/turtle"
 # define MIME_NTRIPLES                  "application/n-triples"
