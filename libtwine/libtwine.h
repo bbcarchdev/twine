@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014-2016 BBC
+ * Copyright (c) 2014-2017 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -214,6 +214,8 @@ SPARQL *twine_sparql_create(void);
 /* Clustering */
 CLUSTER *twine_cluster(TWINE *context);
 int twine_cluster_enable(TWINE *context, int enabled);
+CLUSTERJOB *twine_job(TWINE *context);
+int twine_set_job(TWINE *context, CLUSTERJOB *job);
 
 /* The interface defined below is now considered legacy. It will continue to
  * be provided for binary compatibility, but plug-ins built from source must
@@ -234,6 +236,8 @@ struct twine_graph_struct
 	librdf_model *store;
 	/* The old graph in the quad store, if available */
 	librdf_model *old;
+	/* The job associated with this graph */
+	CLUSTERJOB *job;
 };
 
 /* A Twine processor callback

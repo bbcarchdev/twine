@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014-2016 BBC
+ * Copyright (c) 2014-2017 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -318,45 +318,69 @@ twinecli_import(const char *type, const char *filename)
 	unsigned char *buffer, *p;
 	size_t buflen, bufsize;
 	ssize_t r;
+	CLUSTERJOB *job, *prevjob;
 
+	prevjob = twine_job(twine);
+	job = cluster_job_create(twine_cluster(twine));
+	twine_set_job(twine, job);
+	cluster_job_begin(job);
+	cluster_job_set(job, "Content-Type", type);
 	if(filename)
 	{
+		cluster_job_set(job, "Content-Location", filename);
 		f = fopen(filename, "rb");
 		if(!f)
 		{
-			twine_logf(LOG_CRIT, "%s: %s\n", filename, strerror(errno));
+			cluster_job_logf(job, LOG_CRIT, "cannot open '%s' for reading: %s\n", filename, strerror(errno));
+			cluster_job_fail(job);
+			twine_set_job(twine, prevjob);
+			cluster_job_destroy(job);
 			return -1;
 		}
 	}
 	else
 	{
 		f = stdin;
+		cluster_job_set(job, "Content-Location", "*standard input*");
 	}
 	if(twine_plugin_bulk_exists(twine, type))
-	{
+	{		
 		r = twine_workflow_process_file(twine, type, f);
 		if(filename)
 		{
 			fclose(f);
 		}
+		if(r)
+		{
+			cluster_job_fail(job);
+		}
+		else
+		{
+			cluster_job_complete(job);
+		}
+		cluster_job_destroy(job);
+		job = NULL;
 		return (r ? -1 : 0);
 	}
 	if(!twine_plugin_input_exists(twine, type))
 	{
-		twine_logf(LOG_CRIT, "no registered plug-in supports the MIME type '%s'\n", type);
+		cluster_job_logf(job, LOG_CRIT, "no registered plug-in supports the MIME type '%s'\n", type);
 		if(filename)
 		{
 			fclose(f);
 		}
+		cluster_job_fail(job);
+		twine_set_job(twine, prevjob);
+		cluster_job_destroy(job);
 		return -1;
 	}
 	if(filename)
 	{
-		twine_logf(LOG_INFO, "performing bulk import of '%s' from '%s'\n", type, filename);
+		cluster_job_logf(job, LOG_INFO, "performing bulk import of '%s' from '%s'\n", type, filename);
 	}
 	else
 	{
-		twine_logf(LOG_INFO, "performing bulk import of '%s' from standard input\n", type);
+		cluster_job_logf(job, LOG_INFO, "performing bulk import of '%s' from standard input\n", type);
 	}
 	/* Read file into the buffer, extending as needed */
 	buffer = NULL;
@@ -369,7 +393,10 @@ twinecli_import(const char *type, const char *filename)
 			p = (unsigned char *) realloc(buffer, bufsize + 1024);
 			if(!p)
 			{
-				twine_logf(LOG_CRIT, "failed to reallocate buffer from %u bytes to %u bytes\n", (unsigned) bufsize, (unsigned) bufsize + 1024);
+				cluster_job_logf(job, LOG_CRIT, "failed to reallocate import buffer from %u bytes to %u bytes\n", (unsigned) bufsize, (unsigned) bufsize + 1024);
+				cluster_job_fail(job);
+				twine_set_job(twine, prevjob);
+				cluster_job_destroy(job);
 				free(buffer);
 				return -1;
 			}
@@ -396,10 +423,12 @@ twinecli_import(const char *type, const char *filename)
 	r = twine_workflow_process_message(twine, type, buffer, buflen, NULL);
 	if(r)
 	{
-		twine_logf(LOG_CRIT, "failed to process input as '%s'\n", type);
+		cluster_job_logf(job, LOG_CRIT, "failed to process input as '%s'\n", type);
+		cluster_job_fail(job);
 	}
 	else
 	{
+		cluster_job_complete(job);
 		twine_logf(LOG_NOTICE, "successfully imported data as '%s'\n", type);
 	}
 	free(buffer);
@@ -407,5 +436,7 @@ twinecli_import(const char *type, const char *filename)
 	{
 		fclose(f);
 	}
+	twine_set_job(twine, prevjob);
+	cluster_job_destroy(job);
 	return (r ? -1 : 0);
 }

@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014-2015 BBC
+ * Copyright (c) 2014-2017 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -160,6 +160,7 @@ struct twine_context_struct
 	int plugins_enabled;
 	CLUSTER *cluster;
 	int cluster_enabled;
+	CLUSTERJOB *job;
 	void *plugin_current;
 	struct twine_callback_struct *callbacks;
 	size_t cbcount;

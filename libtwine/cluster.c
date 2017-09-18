@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014-2016 BBC
+ * Copyright (c) 2014-2017 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -30,6 +30,19 @@ CLUSTER *
 twine_cluster(TWINE *context)
 {
 	return context->cluster;
+}
+
+CLUSTERJOB *
+twine_job(TWINE *context)
+{
+	return context->job;
+}
+
+int
+twine_set_job(TWINE *context, CLUSTERJOB *job)
+{
+	context->job = job;
+	return 0;
 }
 
 /* Internal: enable clustering support - if this is disabled (the default),

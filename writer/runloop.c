@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014-2016 BBC
+ * Copyright (c) 2014-2017 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -40,9 +40,11 @@ writerd_runloop(TWINE *context)
 {
 	MQ *messenger;
 	MQMESSAGE *msg;
+	CLUSTER *cluster;
+	CLUSTERJOB *job;
 	const unsigned char *body;
 	size_t len;
-	const char *mime, *subject;
+	const char *mime, *subject, *addr;
 	
 	messenger = utils_mq_messenger();
 	if(!messenger)
@@ -50,14 +52,16 @@ writerd_runloop(TWINE *context)
 		twine_logf(LOG_CRIT, "failed to create message queue conenction\n");
 		return -1;
 	}
-	if (twine_cluster(context))
+	cluster = twine_cluster(context);
+	if(!cluster)
 	{
-		int r = mq_set_cluster(messenger, twine_cluster(context));
-		if (r != 0)
-		{
-			twine_logf(LOG_CRIT, "failed to set the cluster %d up\n", r);
-			return -1;
-		}
+		twine_logf(LOG_CRIT, "failed to obtain cluster instance\n");
+		return -1;
+	}
+	if(mq_set_cluster(messenger, cluster) < 0)
+	{
+		twine_logf(LOG_CRIT, "failed to associate the cluster details with the message queue\n");
+		return -1;
 	}
 	
 	twine_logf(LOG_NOTICE, TWINE_APP_NAME " ready and waiting for messages\n");
@@ -82,27 +86,47 @@ writerd_runloop(TWINE *context)
 			/* Timed out, loop and wait again */
 			continue;
 		}
-		mime = mq_message_type(msg);
-		subject = mq_message_subject(msg);
+		job = cluster_job_create(cluster);
+		twine_set_job(context, job);
+		if((mime = mq_message_type(msg)))
+		{
+			cluster_job_set(job, "Content-Type", mime);
+		}
+		if((subject = mq_message_subject(msg)))
+		{
+			cluster_job_set(job, "Subject", subject);
+		}
+		if((addr = mq_message_address(msg)))
+		{
+			cluster_job_set(job, "From", addr);
+		}
 		body = mq_message_body(msg);
 		len = mq_message_len(msg);
 		if(!mime)
 		{				
-			twine_logf(LOG_ERR, "rejecting message with no content type\n");
+			cluster_job_logf(job, LOG_ERR, "rejecting message '%s' from %s with no content type\n", subject, addr);
 			mq_message_reject(msg);
+			cluster_job_fail(job);
+			twine_set_job(context, NULL);
+			cluster_job_destroy(job);			
 			continue;
-		}		 
-		twine_logf(LOG_DEBUG, "received a %s '%s' message via %s\n", mime, mq_message_subject(msg), mq_message_address(msg));
+		}
+		twine_logf(LOG_DEBUG, "received a %s '%s' message via %s\n", mime, subject, addr);
+		cluster_job_begin(job);
 		if(twine_workflow_process_message(context, mime, body, len, subject))
 		{
-			twine_logf(LOG_ERR, "processing of a %s '%s' message via %s failed\n", mime, mq_message_subject(msg), mq_message_address(msg));
+			cluster_job_logf(job, LOG_ERR, "processing of a %s '%s' message via %s failed\n", mime, subject, addr);
+			cluster_job_fail(job);
 			mq_message_reject(msg);
 		}
 		else
 		{
-			twine_logf(LOG_INFO, "processing of a %s '%s' message via %s completed successfully\n", mime, mq_message_subject(msg), mq_message_address(msg));
+			cluster_job_logf(job, LOG_INFO, "processing of a %s '%s' message via %s completed successfully\n", mime, subject, addr);
+			cluster_job_complete(job);
 			mq_message_accept(msg);
 		}
+		twine_set_job(context, NULL);
+		cluster_job_destroy(job);
 	}
 	twine_logf(LOG_NOTICE, "shutting down\n");
 	return 0;
