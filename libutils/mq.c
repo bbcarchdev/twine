@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014-2016 BBC
+ * Copyright (c) 2014-2017 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@
 #include "p_libutils.h"
 
 static MQ *messenger;
-static char mq_uri[256];
+static char *mq_uri;
 
 static int utils_mq_init(const char *confkey);
 
@@ -91,8 +91,6 @@ utils_mq_messenger(void)
 static int
 utils_mq_init(const char *confkey)
 {
-	size_t l;
-
 	if(messenger)
 	{
 		return 0;
@@ -100,27 +98,22 @@ utils_mq_init(const char *confkey)
 	/* Try the application-specific configuration key first */
 	if(confkey)
 	{
-		l = twine_config_get(confkey, NULL, mq_uri, sizeof(mq_uri));
+		mq_uri = twine_config_geta(confkey, NULL);
 	}
-	else
+	if(!mq_uri)
 	{
-		l = 0;
+		mq_uri = twine_config_geta("*:mq", NULL);
 	}
-	if(!l || l > sizeof(mq_uri))
+	/* If that fails, try the global 'uri' key in the [mq] section */
+	if(!mq_uri)
 	{
-		/* Try the global 'uri' key in the [twine] section */
-		l = twine_config_get(DEFAULT_CONFIG_SECTION_NAME ":mq", NULL, mq_uri, sizeof(mq_uri));
-	}
-	if(!l || l > sizeof(mq_uri))
-	{
-		/* If that fails, try the global 'uri' key in the [mq] section */
-		l = twine_config_get("mq:uri", NULL, mq_uri, sizeof(mq_uri));
-		if(l)
+		mq_uri = twine_config_geta("mq:uri", NULL);
+		if(mq_uri)
 		{
 			twine_logf(LOG_NOTICE, "The [mq] configuration section has been deprecated; you should use mq=URI in the application-specific or common [%s] section instead\n", DEFAULT_CONFIG_SECTION_NAME);
 		}
 	}
-	if(!l || l == (size_t) -1 || l > sizeof(mq_uri))
+	if(!mq_uri)
 	{
 		twine_logf(LOG_CRIT, "failed to determine message queue URI\n");
 		return -1;
