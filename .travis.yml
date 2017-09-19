@@ -5,14 +5,22 @@ compiler: clang
 before_install:
 - curl https://letsencrypt.org/certs/isrgrootx1.pem.txt | sudo tee /usr/share/ca-certificates/isrgrootx1.crt
 - echo "isrgrootx1.crt" | sudo tee -a /etc/ca-certificates.conf
-- curl https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem.txt | sudo tee /usr/share/ca-certificates/lets-encrypt-x3-cross-signed.crt
+- curl https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem.txt | sudo tee
+  /usr/share/ca-certificates/lets-encrypt-x3-cross-signed.crt
 - echo "lets-encrypt-x3-cross-signed.crt" | sudo tee -a /etc/ca-certificates.conf
 - sudo update-ca-certificates
-- curl https://raw.githubusercontent.com/bbcarchdev/bbcarchdev-keys/main/bbcarchdev-apt.asc | sudo apt-key add -
-- echo "deb [arch=amd64] https://apt.bbcarchdev.net/debian wheezy main ports dev stage live" | sudo tee -a /etc/apt/sources.list
+- curl https://raw.githubusercontent.com/bbcarchdev/bbcarchdev-keys/main/bbcarchdev-apt.asc
+  | sudo apt-key add -
+- echo "deb [arch=amd64] https://apt.bbcarchdev.net/debian wheezy main ports dev stage
+  live" | sudo tee -a /etc/apt/sources.list
 - sudo apt-get update -qq
-- sudo apt-get install -qq libcurl4-gnutls-dev librdf0-dev uuid-dev liburi-dev libsparqlclient-dev libltdl-dev libqpid-proton-dev libxml2-dev libxslt1-dev libawsclient-dev libmq-dev libcluster-dev automake autoconf libtool pkg-config
+- sudo apt-get install -qq libcurl4-gnutls-dev librdf0-dev uuid-dev liburi-dev libsparqlclient-dev
+  libltdl-dev libqpid-proton-dev libxml2-dev libxslt1-dev libawsclient-dev libmq-dev
+  libcluster-dev automake autoconf libtool pkg-config
 before_script:
 - autoreconf -f -i
 script:
 - ./configure && make && make check
+notifications:
+  slack:
+    secure: dt55gROZG1STX/ygUi9uOedslD9t0OqoPwWle5FhlcUCgUCaCrPdCkx+L9y6XSHUJgNB8Mclr6NHJ8asvafiDYBNyE3F+hQU+68KiCK5Wj8OvWaA+9g5YBdKeAFD9/8CahfiHatgYyXq9zbUIXNpSnO3+Uw6+iDog8Xj9h3O/9k=
