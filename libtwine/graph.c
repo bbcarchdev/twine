@@ -38,6 +38,7 @@ twine_graph_create(TWINE *restrict context, const char *restrict uri)
 	}
 	p->uri = strdup(uri);
 	p->store = twine_rdf_model_create();
+	p->job = context->job;
 	if(!p->uri || !p->store)
 	{
 		twine_graph_destroy(p);
@@ -115,4 +116,11 @@ librdf_model *
 twine_graph_orig_model(TWINEGRAPH *graph)
 {
 	return graph->old;
+}
+
+/* Public: return the job associated with the graph */
+CLUSTERJOB *
+twine_graph_job(TWINEGRAPH *graph)
+{
+	return graph->job;
 }

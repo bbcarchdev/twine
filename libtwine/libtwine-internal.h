@@ -2,7 +2,7 @@
  *
  * Author: Mo McRoberts <mo.mcroberts@bbc.co.uk>
  *
- * Copyright (c) 2014-2016 BBC
+ * Copyright (c) 2014-2017 BBC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -77,6 +77,7 @@ int twine_set_plugins_enabled(TWINE *context, int enabled);
 void *twine_plugin_load(TWINE *restrict context, const char *restrict pathname);
 int twine_plugin_unload(TWINE *restrict context, void *handle);
 const char *twine_config_path(void);
+int twine_set_job(TWINE *context, CLUSTERJOB *job);
 pid_t twine_daemonize(TWINE *context, const char *pidfile);
 
 /* Perform a bulk import from a file */

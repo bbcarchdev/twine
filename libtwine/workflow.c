@@ -215,17 +215,27 @@ twine_workflow_process_graph(TWINE *restrict context, TWINEGRAPH *restrict graph
 {
 	size_t c;
 	int r;
-
+	CLUSTERJOB *job, *wfjob;
+	
 	twine_logf(LOG_DEBUG, "workflow: processing <%s>\n", graph->uri);
 	r = 0;
+	job = twine_job(context);
 	for(c = 0; c < nworkflow; c++)
 	{
+		wfjob = cluster_job_create_job_name(job, workflow[c]);
+		graph->job = wfjob;
+		cluster_job_begin(wfjob);
 		twine_logf(LOG_DEBUG, "workflow: invoking graph processor '%s'\n", workflow[c]);
 		r = twine_workflow_process_single_(context, graph, workflow[c]);
+		graph->job = job;		
 		if(r)
 		{
+			cluster_job_fail(wfjob);
+			cluster_job_destroy(wfjob);
 			break;
 		}
+		cluster_job_complete(wfjob);
+		cluster_job_destroy(wfjob);
 	}
 	return r;
 }
@@ -510,7 +520,7 @@ twine_workflow_sparql_get_(TWINE *restrict context, TWINEGRAPH *restrict graph, 
 	free(qbuf);
 	if(r)
 	{
-		twine_logf(LOG_ERR, "failed to obtain triples for graph <%s>\n", graph->uri);
+		cluster_job_logf(graph->job, LOG_ERR, "failed to obtain triples for graph <%s>\n", graph->uri);
 		sparql_destroy(conn);
 		return -1;
 	}
@@ -539,6 +549,7 @@ twine_workflow_sparql_put_(TWINE *restrict context, TWINEGRAPH *restrict graph, 
 	}
 	else
 	{
+		cluster_job_logf(graph->job, LOG_ERR, "failed to perform SPARQL PUT for <%s>\n", graph->uri);
 		r = -1;
 	}
 	sparql_destroy(conn);
@@ -563,7 +574,7 @@ twine_workflow_process_single_(TWINE *context, TWINEGRAPH *graph, const char *na
 			context->plugin_current = context->callbacks[c].module;
 			if(context->callbacks[c].m.processor.fn(context, graph, context->callbacks[c].data))
 			{
-				twine_logf(LOG_ERR, "graph processor '%s' failed\n", context->callbacks[c].m.processor.name);
+				cluster_job_logf(graph->job, LOG_ERR, "graph processor '%s' failed\n", context->callbacks[c].m.processor.name);
 				r = -1;
 			}
 			break;
@@ -574,7 +585,7 @@ twine_workflow_process_single_(TWINE *context, TWINEGRAPH *graph, const char *na
 			context->plugin_current = context->callbacks[c].module;
 			if(context->callbacks[c].m.legacy_graph.fn(graph, context->callbacks[c].data))
 			{
-				twine_logf(LOG_ERR, "graph processor '%s' failed\n", context->callbacks[c].m.legacy_graph.name);
+				cluster_job_logf(graph->job, LOG_ERR, "graph processor '%s' failed\n", context->callbacks[c].m.legacy_graph.name);
 				r = -1;
 			}
 			break;

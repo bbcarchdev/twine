@@ -139,6 +139,7 @@ int twine_graph_destroy(TWINEGRAPH *graph);
 const char *twine_graph_uri(TWINEGRAPH *graph);
 librdf_model *twine_graph_model(TWINEGRAPH *graph);
 librdf_model *twine_graph_orig_model(TWINEGRAPH *graph);
+CLUSTERJOB *twine_graph_job(TWINEGRAPH *graph);
 
 /* Workflow processing */
 int twine_workflow_process_message(TWINE *restrict context, const char *restrict mimetype, const unsigned char *restrict message, size_t messagelen, const char *restrict subject);
@@ -215,7 +216,6 @@ SPARQL *twine_sparql_create(void);
 CLUSTER *twine_cluster(TWINE *context);
 int twine_cluster_enable(TWINE *context, int enabled);
 CLUSTERJOB *twine_job(TWINE *context);
-int twine_set_job(TWINE *context, CLUSTERJOB *job);
 
 /* The interface defined below is now considered legacy. It will continue to
  * be provided for binary compatibility, but plug-ins built from source must
