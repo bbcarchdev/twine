@@ -5,6 +5,8 @@ A workflow engine for processing [RDF](https://www.w3.org/RDF/) in customisable 
 
 ## Table of contents
 
+* [What is it?](#what-is-it)
+* [History](#history)
 * [Requirements](#requirements)
 * [Changes as of Twine 7.x](#changes)
 * [Building from source](#building-from-source)
@@ -12,6 +14,24 @@ A workflow engine for processing [RDF](https://www.w3.org/RDF/) in customisable 
 * [Plug-ins](#plug-ins)
 * [Contributing](#contributing)
 * [License](#license)
+
+## What is it?
+
+Twine is a server that receives messages from a queue, and then performs one or
+more processing steps on it. All of the processing steps operate on sets of
+RDF graphs. The exact processing steps depend upon a _workflow_ specified
+in Twine's configuration.
+
+Plug-in modules provide message _handlers_ (code which understands different
+message formats and can convert them to RDF for processing), as well as workflow
+processors which operate on the RDF graphs.
+
+## History
+
+Twine was originally written to receive data in multiple formats, and with
+a small amount of format-specific code (or an XSLT stylesheet), push an RDF
+representation of that data into a graph store via SPARQL. It can still be
+used for this purpose via the `sparql-put` workflow processor.
 
 ## Requirements
 
